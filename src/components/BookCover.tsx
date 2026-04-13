@@ -7,7 +7,6 @@ interface BookCoverProps {
   className?: string;
 }
 
-// Color palettes for book covers - each has [bg gradient start, bg gradient end, accent, spine]
 const colorPalettes = [
   ["#1a1a2e", "#16213e", "#e94560", "#0f3460"],
   ["#2d132c", "#801336", "#c72c41", "#ee4540"],
@@ -36,12 +35,10 @@ function seededRandom(seed: number) {
   return x - Math.floor(x);
 }
 
-// Split title into lines that fit nicely
 function splitTitle(title: string, maxCharsPerLine: number): string[] {
   const words = title.split(" ");
   const lines: string[] = [];
   let currentLine = "";
-
   for (const word of words) {
     if (currentLine.length + word.length + 1 > maxCharsPerLine && currentLine) {
       lines.push(currentLine.trim());
@@ -51,125 +48,142 @@ function splitTitle(title: string, maxCharsPerLine: number): string[] {
     }
   }
   if (currentLine) lines.push(currentLine.trim());
-  return lines.slice(0, 4); // Max 4 lines
+  return lines.slice(0, 4);
 }
 
 const BookCover = ({ title, category, index, className = "" }: BookCoverProps) => {
   const palette = useMemo(() => colorPalettes[index % colorPalettes.length], [index]);
-  const lines = useMemo(() => splitTitle(title, 18), [title]);
-  const rotation = useMemo(() => (seededRandom(index + 50) * 6 - 3), [index]);
+  const lines = useMemo(() => splitTitle(title, 16), [title]);
   const decorPattern = useMemo(() => Math.floor(seededRandom(index + 77) * 5), [index]);
 
   const [bgStart, bgEnd, accent, spine] = palette;
 
   return (
-    <div className={`relative w-full h-full flex items-center justify-center overflow-hidden ${className}`}
-      style={{ background: `linear-gradient(135deg, ${bgStart} 0%, ${bgEnd} 100%)` }}
+    <div
+      className={`relative w-full h-full flex items-center justify-center overflow-hidden ${className}`}
+      style={{ background: `linear-gradient(135deg, ${bgStart}99 0%, ${bgEnd}99 100%)` }}
     >
-      {/* Subtle background pattern */}
-      <svg className="absolute inset-0 w-full h-full opacity-[0.05]" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <pattern id={`dots-${index}`} x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-            <circle cx="2" cy="2" r="1" fill="white" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill={`url(#dots-${index})`} />
-      </svg>
-
-      {/* Book */}
+      {/* Ambient glow */}
       <div
-        className="relative transition-transform duration-500 group-hover:scale-105"
+        className="absolute w-[60%] h-[60%] rounded-full blur-[60px] opacity-20"
+        style={{ background: accent }}
+      />
+
+      {/* 3D Book container */}
+      <div
+        className="relative transition-transform duration-700 ease-out group-hover:[transform:perspective(800px)_rotateY(-25deg)_rotateX(5deg)_scale(1.05)] group-hover:[filter:drop-shadow(12px_12px_20px_rgba(0,0,0,0.5))]"
         style={{
-          width: "55%",
-          height: "78%",
-          transform: `rotate(${rotation}deg)`,
-          perspective: "800px",
+          width: "48%",
+          height: "75%",
+          transformStyle: "preserve-3d",
+          transform: "perspective(800px) rotateY(-15deg) rotateX(3deg)",
+          filter: "drop-shadow(8px 8px 16px rgba(0,0,0,0.4))",
         }}
       >
-        {/* Book shadow */}
+        {/* === SPINE (left side - 3D) === */}
         <div
-          className="absolute inset-0 rounded-sm"
+          className="absolute top-0 bottom-0 left-0 origin-left"
           style={{
-            background: "rgba(0,0,0,0.4)",
-            filter: "blur(12px)",
-            transform: "translateY(6px) translateX(4px)",
-          }}
-        />
-
-        {/* Spine */}
-        <div
-          className="absolute left-0 top-0 bottom-0 w-[6%] rounded-l-sm z-10"
-          style={{
-            background: `linear-gradient(90deg, ${spine}, ${spine}dd)`,
-            boxShadow: `inset -2px 0 4px rgba(0,0,0,0.3)`,
-          }}
-        />
-
-        {/* Book body */}
-        <div
-          className="absolute inset-0 rounded-sm overflow-hidden"
-          style={{
-            background: `linear-gradient(160deg, ${bgEnd} 0%, ${bgStart} 100%)`,
-            boxShadow: `4px 4px 15px rgba(0,0,0,0.4), inset 0 0 30px rgba(255,255,255,0.03)`,
-            border: `1px solid rgba(255,255,255,0.08)`,
+            width: "20px",
+            transform: "rotateY(90deg) translateZ(0px) translateX(-10px)",
+            transformStyle: "preserve-3d",
+            background: `linear-gradient(180deg, ${spine}, ${spine}cc, ${spine})`,
+            borderRadius: "2px 0 0 2px",
           }}
         >
-          {/* Page edges (right side) */}
+          {/* Spine highlight */}
           <div
-            className="absolute right-0 top-[3%] bottom-[3%] w-[3px]"
+            className="absolute inset-0"
             style={{
-              background: "linear-gradient(180deg, #f5f0e8, #e8e0d4, #f5f0e8)",
-              opacity: 0.6,
+              background: "linear-gradient(90deg, rgba(255,255,255,0.15) 0%, transparent 40%, rgba(0,0,0,0.2) 100%)",
+            }}
+          />
+        </div>
+
+        {/* === PAGE EDGES (right side) === */}
+        <div
+          className="absolute top-[2%] bottom-[2%] right-[-3px]"
+          style={{
+            width: "6px",
+            background: "linear-gradient(90deg, #e8e0d4, #f5f0e8, #e8e0d4)",
+            borderRadius: "0 1px 1px 0",
+            boxShadow: "1px 0 3px rgba(0,0,0,0.15)",
+          }}
+        />
+
+        {/* === PAGE EDGES (bottom) === */}
+        <div
+          className="absolute bottom-[-3px] left-[3%] right-[3%]"
+          style={{
+            height: "5px",
+            background: "linear-gradient(180deg, #e8e0d4, #f5f0e8, #e8e0d4)",
+            borderRadius: "0 0 1px 1px",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+          }}
+        />
+
+        {/* === FRONT COVER === */}
+        <div
+          className="absolute inset-0 rounded-r-sm overflow-hidden"
+          style={{
+            background: `linear-gradient(160deg, ${bgEnd} 0%, ${bgStart} 100%)`,
+            boxShadow: `inset 0 0 40px rgba(0,0,0,0.15), inset 0 0 80px rgba(255,255,255,0.02)`,
+            border: `1px solid rgba(255,255,255,0.1)`,
+            borderLeft: `3px solid ${spine}`,
+          }}
+        >
+          {/* Inner border frame */}
+          <div
+            className="absolute top-[6%] bottom-[6%] left-[10%] right-[8%] rounded-sm pointer-events-none"
+            style={{
+              border: `1px solid ${accent}25`,
             }}
           />
 
-          {/* Decorative elements based on pattern */}
+          {/* Decorative top accent */}
           {decorPattern === 0 && (
             <>
-              <div className="absolute top-[8%] left-[12%] right-[12%] h-[1px]" style={{ background: accent, opacity: 0.6 }} />
-              <div className="absolute top-[10%] left-[20%] right-[20%] h-[1px]" style={{ background: accent, opacity: 0.3 }} />
-              <div className="absolute bottom-[12%] left-[12%] right-[12%] h-[1px]" style={{ background: accent, opacity: 0.6 }} />
-              <div className="absolute bottom-[14%] left-[20%] right-[20%] h-[1px]" style={{ background: accent, opacity: 0.3 }} />
+              <div className="absolute top-[9%] left-[14%] right-[12%] h-[2px]" style={{ background: `${accent}90` }} />
+              <div className="absolute top-[11%] left-[22%] right-[20%] h-[1px]" style={{ background: `${accent}40` }} />
+              <div className="absolute bottom-[9%] left-[14%] right-[12%] h-[2px]" style={{ background: `${accent}90` }} />
+              <div className="absolute bottom-[11%] left-[22%] right-[20%] h-[1px]" style={{ background: `${accent}40` }} />
             </>
           )}
           {decorPattern === 1 && (
-            <div
-              className="absolute top-[6%] right-[8%] w-[30%] h-[30%] rounded-full"
-              style={{ border: `2px solid ${accent}40`, opacity: 0.5 }}
-            />
+            <>
+              <div className="absolute top-[7%] right-[10%] w-[28%] aspect-square rounded-full" style={{ border: `2px solid ${accent}35` }} />
+              <div className="absolute bottom-[7%] left-[10%] w-[20%] aspect-square rounded-full" style={{ border: `1px solid ${accent}25` }} />
+            </>
           )}
           {decorPattern === 2 && (
             <>
-              <div className="absolute top-[6%] left-[10%] w-[15%] h-[2px]" style={{ background: accent }} />
-              <div className="absolute top-[6%] right-[10%] w-[15%] h-[2px]" style={{ background: accent }} />
+              <div className="absolute top-[7%] left-[14%] w-[20%] h-[2px]" style={{ background: accent }} />
+              <div className="absolute top-[7%] right-[10%] w-[20%] h-[2px]" style={{ background: accent }} />
+              <div className="absolute bottom-[7%] left-[50%] -translate-x-1/2 w-[30%] h-[1px]" style={{ background: `${accent}60` }} />
             </>
           )}
           {decorPattern === 3 && (
-            <div
-              className="absolute bottom-[8%] left-[15%] right-[15%] h-[25%] rounded-t-lg"
-              style={{ border: `1px solid ${accent}30`, borderBottom: "none" }}
-            />
+            <div className="absolute bottom-[8%] left-[18%] right-[16%] h-[20%] rounded-t-md" style={{ border: `1px solid ${accent}20`, borderBottom: "none" }} />
           )}
           {decorPattern === 4 && (
             <>
-              <div className="absolute top-[8%] left-[50%] -translate-x-1/2 w-[4px] h-[4px] rounded-full" style={{ background: accent }} />
-              <div className="absolute bottom-[10%] left-[50%] -translate-x-1/2 w-[4px] h-[4px] rounded-full" style={{ background: accent }} />
+              <div className="absolute top-[8%] left-[50%] -translate-x-1/2 w-2 h-2 rotate-45" style={{ background: accent, opacity: 0.6 }} />
+              <div className="absolute bottom-[8%] left-[50%] -translate-x-1/2 w-2 h-2 rotate-45" style={{ background: accent, opacity: 0.6 }} />
             </>
           )}
 
           {/* Title area */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center px-[14%]">
-            {/* Title */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center px-[16%]">
             <div className="text-center">
               {lines.map((line, i) => (
                 <p
                   key={i}
-                  className="font-bold leading-tight"
+                  className="font-bold leading-[1.2]"
                   style={{
                     color: "#fff",
-                    fontSize: lines.length > 3 ? "0.55em" : lines.length > 2 ? "0.65em" : "0.75em",
-                    textShadow: "0 1px 3px rgba(0,0,0,0.5)",
-                    letterSpacing: "0.02em",
+                    fontSize: lines.length > 3 ? "0.5em" : lines.length > 2 ? "0.6em" : "0.7em",
+                    textShadow: "0 2px 6px rgba(0,0,0,0.6)",
+                    letterSpacing: "0.03em",
                   }}
                 >
                   {line}
@@ -177,34 +191,47 @@ const BookCover = ({ title, category, index, className = "" }: BookCoverProps) =
               ))}
             </div>
 
-            {/* Accent line under title */}
-            <div
-              className="mt-[6%] h-[2px] w-[40%] rounded-full"
-              style={{ background: accent }}
-            />
+            {/* Accent divider */}
+            <div className="mt-[8%] h-[2px] w-[45%] rounded-full" style={{ background: accent, boxShadow: `0 0 8px ${accent}60` }} />
 
             {/* Category */}
             <p
-              className="mt-[5%] uppercase tracking-widest"
+              className="mt-[6%] uppercase tracking-[0.2em] font-medium"
               style={{
                 color: `${accent}cc`,
-                fontSize: "0.35em",
-                letterSpacing: "0.15em",
+                fontSize: "0.3em",
               }}
             >
               {category}
             </p>
           </div>
 
-          {/* Subtle glossy reflection */}
+          {/* Glossy reflection overlay */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
-              background: "linear-gradient(130deg, rgba(255,255,255,0.08) 0%, transparent 50%)",
+              background: "linear-gradient(125deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 30%, transparent 50%, rgba(0,0,0,0.05) 100%)",
+            }}
+          />
+
+          {/* Edge highlight (left - near spine) */}
+          <div
+            className="absolute left-0 top-0 bottom-0 w-[8px] pointer-events-none"
+            style={{
+              background: "linear-gradient(90deg, rgba(255,255,255,0.08), transparent)",
             }}
           />
         </div>
       </div>
+
+      {/* Floor reflection */}
+      <div
+        className="absolute bottom-0 left-[20%] right-[20%] h-[15%]"
+        style={{
+          background: `linear-gradient(to top, ${bgStart}80, transparent)`,
+          filter: "blur(8px)",
+        }}
+      />
     </div>
   );
 };
