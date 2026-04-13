@@ -69,12 +69,11 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group shrink-0">
-          <img src={hnLogo} alt="HN Groupe" className="h-10 w-10 rounded-full object-cover shadow-glow transition-transform duration-300 group-hover:scale-110" />
-          <div className="flex flex-col">
-            <span className="text-sm font-bold tracking-tight text-white leading-tight">
+          <div className="flex flex-col items-center">
+            <img src={hnLogo} alt="HN Groupe" className="h-10 w-10 rounded-full object-cover shadow-glow transition-transform duration-300 group-hover:scale-110" />
+            <span className="text-[9px] font-bold tracking-tight text-white leading-none mt-0.5">
               HN <span className="text-primary">BOOK</span>
             </span>
-            <span className="text-[8px] text-muted-foreground uppercase tracking-[0.25em]">Digital Library</span>
           </div>
         </Link>
 
