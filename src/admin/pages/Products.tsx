@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Package, Search, Plus, Edit, Trash2, Eye, X, Upload } from "lucide-react";
+import { Package, Search, Plus, Edit, Trash2, Eye, X, Upload, ExternalLink, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
