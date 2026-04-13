@@ -27,16 +27,24 @@ function seededRandom(seed: number) {
   return x - Math.floor(x);
 }
 
-const categoryImages: Record<string, string> = {
-  "eBooks & PLR": ebooksImg,
-  "Design Templates": designTemplatesImg,
-  "Online Courses": onlineCoursesImg,
-  "AI Tools": aiToolsImg,
-  "Design Assets": designAssetsImg,
-  "Business Courses": businessCoursesImg,
-  "Video Courses": videoCoursesImg,
-  "Language Courses": languageCoursesImg,
+// Category-specific Unsplash search terms for unique product images
+const categorySearchTerms: Record<string, string> = {
+  "eBooks & PLR": "ebook,digital-book,reading",
+  "Design Templates": "web-design,ui-template,mockup",
+  "Online Courses": "online-learning,education,laptop-study",
+  "AI Tools": "artificial-intelligence,technology,data",
+  "Design Assets": "graphic-design,icons,illustration",
+  "Business Courses": "business,finance,charts",
+  "Video Courses": "video-production,filmmaking,camera",
+  "Language Courses": "language-learning,education,books",
 };
+
+// Generate a unique image URL per product using Unsplash source with seed
+function getProductImage(category: string, idx: number): string {
+  const terms = categorySearchTerms[category] || "digital-product";
+  const term = terms.split(",")[idx % terms.split(",").length];
+  return `https://images.unsplash.com/photo-${1500000000000 + idx * 73 + seededRandom(idx + 500) * 99999 | 0}?w=800&h=544&fit=crop&q=80`;
+}
 
 interface CatTemplate {
   name: string;
