@@ -96,31 +96,28 @@ const Index = () => {
     <div className="relative min-h-screen noise-bg">
       <ParticleCanvas />
       <div className="relative z-10 pt-14">
-        <Navbar />
+        <Navbar
+          categories={categories}
+          activeCategory={activeCategory}
+          onCategorySelect={(cat) => { setActiveCategory(cat); setVisibleCount(ITEMS_PER_PAGE); }}
+          productCounts={productCounts}
+        />
 
         {/* Products Section */}
         <section id="products" className="relative py-20">
           <div className="container mx-auto px-4">
-            {/* Filters row: Categories + Search */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <CategoryBar
-                categories={categories}
-                activeCategory={activeCategory}
-                onSelect={(cat) => { setActiveCategory(cat); setVisibleCount(ITEMS_PER_PAGE); }}
-                productCounts={productCounts}
+            {/* Search */}
+            <div className="relative w-full max-w-xs">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
+              <Input
+                placeholder={t("products.search")}
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setVisibleCount(ITEMS_PER_PAGE);
+                }}
+                className="pl-10 rounded-xl bg-card/30 border-border/20 focus:border-primary/30 transition-colors"
               />
-              <div className="relative w-full max-w-xs shrink-0">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
-                <Input
-                  placeholder={t("products.search")}
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setVisibleCount(ITEMS_PER_PAGE);
-                  }}
-                  className="pl-10 rounded-xl bg-card/30 border-border/20 focus:border-primary/30 transition-colors"
-                />
-              </div>
             </div>
 
             {loading ? (
