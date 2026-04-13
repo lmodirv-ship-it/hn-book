@@ -42,9 +42,8 @@ const Index = () => {
   return (
     <div className="relative min-h-screen noise-bg">
       <ParticleCanvas />
-      <div className="relative z-10">
+      <div className="relative z-10 pt-14">
         <Navbar />
-        
 
         {/* Products Section */}
         <section id="products" className="relative py-20">
