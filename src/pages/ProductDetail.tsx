@@ -31,6 +31,7 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [liked, setLiked] = useState(false);
+  const [hasPdf, setHasPdf] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
