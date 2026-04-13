@@ -13,21 +13,21 @@ serve(async (req) => {
     const { category, count } = await req.json();
     const bookCount = Math.min(Math.max(count || 5, 1), 20);
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
 
     const systemPrompt = `You are a multilingual book data generator. For each book, generate content in Arabic, French, and English. Make books realistic with authentic names and authors for each language.`;
 
     const userPrompt = `Generate ${bookCount} books in the "${category}" category. For EACH book, provide the name, short description, detailed description, author name, and 4 features in ALL THREE languages (Arabic, French, English). Also provide page count (50-500), price (5-49 USD), and original price (higher). Make each language version feel native, not translated.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -98,7 +98,7 @@ serve(async (req) => {
       const status = response.status;
       if (status === 429) return new Response(JSON.stringify({ error: "معدل الطلبات مرتفع، حاول لاحقاً" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       if (status === 402) return new Response(JSON.stringify({ error: "يرجى إضافة رصيد لحسابك" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      throw new Error(`AI error: ${status}`);
+      throw new Error(`OpenAI error: ${status}`);
     }
 
     const aiData = await response.json();
@@ -118,7 +118,6 @@ serve(async (req) => {
     for (const book of books) {
       const bookCode = `HNB-${String(nextNum).padStart(4, "0")}`;
 
-      // Build multilingual description
       const fullDesc = [
         `📖 ${book.ar.description}`,
         `المؤلف: ${book.ar.author} | عدد الصفحات: ${book.pages}`,
@@ -130,10 +129,8 @@ serve(async (req) => {
         `Author: ${book.en.author}`,
       ].join("\n");
 
-      // Combine multilingual name
       const multiName = book.ar.name;
 
-      // Combine features from all languages
       const allFeatures = [
         ...book.ar.features,
         `🇫🇷 ${book.fr.name}`,
