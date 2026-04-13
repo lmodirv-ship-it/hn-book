@@ -175,6 +175,16 @@ const BookCover = ({ title, category, index, className = "" }: BookCoverProps) =
 
           {/* Title area */}
           <div className="absolute inset-0 flex flex-col items-center justify-center px-[16%]">
+            {/* Logo */}
+            <img
+              src={hnLogo}
+              alt="HN Groupe"
+              className="w-[28%] aspect-square rounded-full object-cover mb-[6%] opacity-90"
+              style={{
+                boxShadow: `0 2px 10px rgba(0,0,0,0.4), 0 0 15px ${accent}30`,
+                border: `1px solid ${accent}40`,
+              }}
+            />
             <div className="text-center">
               {lines.map((line, i) => (
                 <p
