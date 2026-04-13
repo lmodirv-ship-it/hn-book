@@ -1,10 +1,8 @@
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { ShoppingCart, Zap, Flame } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Product } from "@/lib/products";
-import { useRef } from "react";
 
 interface ProductCardProps {
   product: Product;
@@ -16,180 +14,93 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
-  const cardRef = useRef<HTMLDivElement>(null);
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-
-  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [8, -8]), { stiffness: 200, damping: 20 });
-  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-8, 8]), { stiffness: 200, damping: 20 });
-  const glareX = useSpring(useTransform(mouseX, [-0.5, 0.5], [0, 100]), { stiffness: 200, damping: 20 });
-  const glareY = useSpring(useTransform(mouseY, [-0.5, 0.5], [0, 100]), { stiffness: 200, damping: 20 });
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    mouseX.set((e.clientX - rect.left) / rect.width - 0.5);
-    mouseY.set((e.clientY - rect.top) / rect.height - 0.5);
-  };
-
-  const handleMouseLeave = () => {
-    mouseX.set(0);
-    mouseY.set(0);
-  };
-
   return (
     <motion.div
-      initial={{ opacity: 0, y: 50, scale: 0.9 }}
-      whileInView={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{
-        duration: 0.6,
-        delay: index * 0.08,
-        type: "spring",
-        stiffness: 100,
-      }}
-      viewport={{ once: true, margin: "-50px" }}
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: Math.min(index * 0.03, 0.3) }}
+      viewport={{ once: true, margin: "-20px" }}
     >
       <Link to={`/product/${product.id}`}>
-        <motion.div
-          ref={cardRef}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
-          style={{
-            rotateX,
-            rotateY,
-            transformPerspective: 800,
-          }}
-          className="group relative cursor-pointer"
-        >
-          {/* Animated border glow */}
-          <div className="absolute -inset-0.5 rounded-xl bg-gradient-to-r from-primary via-accent to-primary opacity-0 blur-sm transition-opacity duration-500 group-hover:opacity-75" />
-
-          <div className="relative overflow-hidden rounded-xl border bg-card shadow-lg transition-shadow duration-500 group-hover:shadow-2xl">
-            {/* Holographic glare effect */}
-            <motion.div
-              className="pointer-events-none absolute inset-0 z-10 opacity-0 transition-opacity duration-300 group-hover:opacity-30"
-              style={{
-                background: useTransform(
-                  [glareX, glareY],
-                  ([x, y]) =>
-                    `radial-gradient(circle at ${x}% ${y}%, rgba(255,255,255,0.8) 0%, transparent 50%)`
-                ),
-              }}
+        <div className="group relative cursor-pointer overflow-hidden rounded-xl border bg-card transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1">
+          {/* Image */}
+          <div className="relative aspect-[3/2] overflow-hidden bg-muted">
+            <img
+              src={product.image}
+              alt={product.name}
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              loading="lazy"
+              width={400}
+              height={272}
             />
 
-            {/* Image */}
-            <div className="relative aspect-[3/2] overflow-hidden bg-muted">
-              <motion.img
-                src={product.image}
-                alt={product.name}
-                className="h-full w-full object-cover"
-                loading="lazy"
-                width={800}
-                height={544}
-                whileHover={{ scale: 1.1 }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
-              />
+            {/* Overlay on hover */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
-              {/* Flash overlay on hover */}
-              <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+            {/* Badges */}
+            {product.badge && (
+              <div className="absolute left-2 top-2">
+                <Badge className="bg-primary text-primary-foreground text-[10px] px-2 py-0.5">
+                  {product.badge}
+                </Badge>
+              </div>
+            )}
 
-              {/* Badges */}
-              {product.badge && (
-                <motion.div
-                  className="absolute left-3 top-3"
-                  animate={{ scale: [1, 1.05, 1] }}
-                  transition={{ repeat: Infinity, duration: 2 }}
-                >
-                  <Badge className="bg-primary text-primary-foreground shadow-lg">
-                    <Zap className="mr-1 h-3 w-3" />
-                    {product.badge}
-                  </Badge>
-                </motion.div>
-              )}
+            {discount > 0 && (
+              <div className="absolute right-2 top-2">
+                <Badge variant="destructive" className="text-[10px] font-bold px-2 py-0.5">
+                  -{discount}%
+                </Badge>
+              </div>
+            )}
 
-              {discount > 0 && (
-                <motion.div
-                  className="absolute right-3 top-3"
-                  initial={{ rotate: -12 }}
-                  animate={{ rotate: [-12, 0, -12] }}
-                  transition={{ repeat: Infinity, duration: 3 }}
-                >
-                  <Badge variant="destructive" className="text-sm font-bold shadow-lg">
-                    -{discount}%
-                  </Badge>
-                </motion.div>
-              )}
+            {product.isFlashDeal && (
+              <div className="absolute bottom-2 left-2">
+                <Badge className="bg-orange-500 text-white text-[10px] px-2 py-0.5 animate-pulse">
+                  ⚡ {product.dealEndsIn}h left
+                </Badge>
+              </div>
+            )}
 
-              {/* Flash-style price on hover */}
-              <motion.div
-                className="absolute bottom-3 left-3 right-3 flex items-end justify-between opacity-0 transition-all duration-500 group-hover:opacity-100"
-              >
-                <div className="flex items-center gap-2">
-                  <motion.span
-                    className="text-3xl font-black text-primary-foreground drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]"
-                    animate={{ textShadow: ["0 0 10px rgba(255,255,255,0.3)", "0 0 25px rgba(255,255,255,0.8)", "0 0 10px rgba(255,255,255,0.3)"] }}
-                    transition={{ repeat: Infinity, duration: 1.5 }}
-                  >
-                    ${product.price}
-                  </motion.span>
-                  <Flame className="h-5 w-5 text-orange-400 animate-pulse" />
-                </div>
-                <Button size="sm" className="gap-1.5 shadow-xl">
-                  <ShoppingCart className="h-4 w-4" /> Buy
-                </Button>
-              </motion.div>
+            {/* Buy button on hover */}
+            <div className="absolute bottom-2 right-2 opacity-0 transition-all duration-300 group-hover:opacity-100">
+              <button className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-lg">
+                <ShoppingCart className="h-3 w-3" /> Buy
+              </button>
             </div>
+          </div>
 
-            {/* Content */}
-            <div className="p-5">
-              <motion.p
-                className="text-xs font-bold uppercase tracking-widest text-primary"
-                initial={{ width: 0 }}
-                whileInView={{ width: "100%" }}
-                transition={{ duration: 0.8, delay: index * 0.05 + 0.3 }}
-                viewport={{ once: true }}
-              >
-                {product.category}
-              </motion.p>
+          {/* Content */}
+          <div className="p-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-primary">
+              {product.category}
+            </p>
+            <h3 className="mt-1 text-sm font-bold leading-tight line-clamp-1 transition-colors group-hover:text-primary">
+              {product.name}
+            </h3>
+            <p className="mt-1 text-xs text-muted-foreground line-clamp-1">
+              {product.shortDescription}
+            </p>
 
-              <h3 className="mt-2 text-lg font-bold leading-tight transition-colors group-hover:text-primary line-clamp-1">
-                {product.name}
-              </h3>
-
-              <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
-                {product.shortDescription}
-              </p>
-
-              {/* Flash-style price section */}
-              <div className="mt-4 flex items-center justify-between border-t pt-3">
-                <div className="relative flex items-baseline gap-2">
-                  <motion.span
-                    className="relative text-2xl font-black text-primary"
-                    animate={{
-                      textShadow: [
-                        "0 0 0px hsl(var(--primary))",
-                        "0 0 12px hsl(var(--primary))",
-                        "0 0 0px hsl(var(--primary))",
-                      ],
-                    }}
-                    transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-                  >
-                    ${product.price}
-                  </motion.span>
-                  {product.originalPrice && (
-                    <span className="text-sm text-muted-foreground line-through">
-                      ${product.originalPrice}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <div className="h-2 w-2 animate-pulse rounded-full bg-accent" />
-                  Instant
-                </div>
+            {/* Price */}
+            <div className="mt-2 flex items-center justify-between border-t pt-2">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-lg font-black text-primary">
+                  ${product.price}
+                </span>
+                {product.originalPrice && (
+                  <span className="text-xs text-muted-foreground line-through">
+                    ${product.originalPrice}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                <div className="h-1.5 w-1.5 rounded-full bg-accent" />
+                Instant
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
       </Link>
     </motion.div>
   );
