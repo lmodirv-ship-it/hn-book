@@ -158,41 +158,6 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
 
         {/* Desktop actions */}
         <div className="hidden items-center gap-2.5 md:flex shrink-0">
-          {/* Language switcher */}
-          <div className="relative" ref={langRef}>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/40"
-              onClick={() => setLangOpen(!langOpen)}
-            >
-              <Globe className="h-4 w-4" />
-            </Button>
-            <AnimatePresence>
-              {langOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -6, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -6, scale: 0.95 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute end-0 top-full mt-2 w-36 rounded-xl p-1.5 shadow-dramatic bg-card/95 backdrop-blur-2xl border border-border/40"
-                >
-                  {locales.map((l) => (
-                    <button
-                      key={l.code}
-                      onClick={() => { setLocale(l.code); setLangOpen(false); }}
-                      className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors hover:bg-muted/50 ${
-                        locale === l.code ? "text-primary font-medium bg-primary/5" : "text-foreground"
-                      }`}
-                    >
-                      <span>{l.flag}</span>
-                      <span>{l.label}</span>
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
 
           <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/40">
             <ShoppingCart className="h-4 w-4" />
