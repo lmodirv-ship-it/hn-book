@@ -309,7 +309,7 @@ const BookGeneration = () => {
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
-          disabled={analyzing}
+          disabled={analyzing || saving}
           className={`w-full py-12 rounded-2xl border-2 border-dashed transition-all flex flex-col items-center justify-center gap-4 ${
             dragOver
               ? "border-primary bg-primary/10 scale-[1.01]"
