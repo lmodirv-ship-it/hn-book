@@ -87,7 +87,7 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                 <React.Fragment key={link.href}>
                   <a
                     href={link.href}
-                    className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white transition-all duration-200 bg-primary/10 border border-primary/25 hover:bg-primary/20 hover:border-primary/45 hover:shadow-[0_0_12px_-3px_hsl(199,89%,48%,0.3)]"
+                    className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white transition-all duration-300 bg-gradient-to-b from-primary/20 via-primary/10 to-primary/5 border border-primary/30 shadow-[inset_0_1px_8px_-1px_hsl(199,89%,48%,0.25),0_0_10px_-3px_hsl(199,89%,48%,0.2)] hover:from-primary/30 hover:via-primary/15 hover:to-primary/8 hover:border-primary/50 hover:shadow-[inset_0_1px_12px_-1px_hsl(199,89%,48%,0.4),0_0_18px_-3px_hsl(199,89%,48%,0.35)]"
                   >
                     {link.label}
                   </a>
@@ -96,7 +96,7 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                     <div className="relative" ref={langRef}>
                       <button
                         onClick={() => setLangOpen(!langOpen)}
-                        className="rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-white transition-all duration-200 bg-primary/10 border border-primary/25 hover:bg-primary/20 hover:border-primary/45 hover:shadow-[0_0_12px_-3px_hsl(199,89%,48%,0.3)] flex items-center gap-1"
+                        className="rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-white transition-all duration-300 bg-gradient-to-b from-primary/20 via-primary/10 to-primary/5 border border-primary/30 shadow-[inset_0_1px_8px_-1px_hsl(199,89%,48%,0.25),0_0_10px_-3px_hsl(199,89%,48%,0.2)] hover:from-primary/30 hover:via-primary/15 hover:to-primary/8 hover:border-primary/50 hover:shadow-[inset_0_1px_12px_-1px_hsl(199,89%,48%,0.4),0_0_18px_-3px_hsl(199,89%,48%,0.35)] flex items-center gap-1"
                       >
                         <Globe className="h-3 w-3" />
                         {locales.find(l => l.code === locale)?.flag}
@@ -131,7 +131,7 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
               ))}
               <button
                 onClick={() => navigate("/auth")}
-                className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white transition-all duration-200 bg-primary/10 border border-primary/25 hover:bg-primary/20 hover:border-primary/45 hover:shadow-[0_0_12px_-3px_hsl(199,89%,48%,0.3)]"
+                className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white transition-all duration-300 bg-gradient-to-b from-primary/20 via-primary/10 to-primary/5 border border-primary/30 shadow-[inset_0_1px_8px_-1px_hsl(199,89%,48%,0.25),0_0_10px_-3px_hsl(199,89%,48%,0.2)] hover:from-primary/30 hover:via-primary/15 hover:to-primary/8 hover:border-primary/50 hover:shadow-[inset_0_1px_12px_-1px_hsl(199,89%,48%,0.4),0_0_18px_-3px_hsl(199,89%,48%,0.35)]"
               >
                 {t("nav.getStarted")}
               </button>
@@ -147,10 +147,10 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                     <button
                       key={cat}
                       onClick={() => onCategorySelect?.(cat)}
-                      className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all duration-200 ${
+                      className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all duration-300 ${
                         isActive
-                          ? "bg-primary/25 text-white border border-primary/50 shadow-[0_0_15px_-3px_hsl(199,89%,48%,0.4)]"
-                          : "bg-primary/10 text-white border border-primary/25 hover:bg-primary/20 hover:border-primary/45 hover:shadow-[0_0_12px_-3px_hsl(199,89%,48%,0.3)]"
+                          ? "bg-gradient-to-b from-primary/35 via-primary/20 to-primary/10 text-white border border-primary/55 shadow-[inset_0_1px_12px_-1px_hsl(199,89%,48%,0.45),0_0_20px_-3px_hsl(199,89%,48%,0.4)]"
+                          : "bg-gradient-to-b from-primary/20 via-primary/10 to-primary/5 text-white border border-primary/30 shadow-[inset_0_1px_8px_-1px_hsl(199,89%,48%,0.25),0_0_10px_-3px_hsl(199,89%,48%,0.2)] hover:from-primary/30 hover:via-primary/15 hover:to-primary/8 hover:border-primary/50 hover:shadow-[inset_0_1px_12px_-1px_hsl(199,89%,48%,0.4),0_0_18px_-3px_hsl(199,89%,48%,0.35)]"
                       }`}
                     >
                       {label}
