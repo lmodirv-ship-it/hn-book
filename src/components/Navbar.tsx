@@ -129,6 +129,12 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                   )}
                 </React.Fragment>
               ))}
+              <button
+                onClick={() => navigate("/auth")}
+                className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white transition-all duration-200 bg-primary/10 border border-primary/25 hover:bg-primary/20 hover:border-primary/45 hover:shadow-[0_0_12px_-3px_hsl(199,89%,48%,0.3)]"
+              >
+                {t("nav.getStarted")}
+              </button>
             </div>
 
             {/* Categories box */}
@@ -166,13 +172,6 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
             </span>
           </Button>
 
-          <Button
-            className="h-9 gap-1.5 rounded-full bg-gradient-to-r from-accent to-accent/80 text-accent-foreground text-xs font-bold hover:from-accent/90 hover:to-accent/70 border-0 px-5 shadow-glow-accent transition-all duration-300 hover:shadow-[0_6px_24px_-4px_hsl(25,95%,53%,0.5)]"
-            onClick={() => navigate("/auth")}
-          >
-            <ArrowRight className="h-3.5 w-3.5" />
-            تسجيل الدخول
-          </Button>
         </div>
 
         {/* Mobile toggle */}
@@ -248,13 +247,12 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                   </button>
                 ))}
               </div>
-              <Button
-                className="mt-3 w-full gap-1.5 rounded-xl bg-gradient-to-r from-accent to-accent/80 text-accent-foreground border-0 text-xs font-bold shadow-glow-accent"
+              <button
                 onClick={() => { navigate("/auth"); setMobileOpen(false); }}
+                className="mt-1 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white transition-all duration-300 bg-primary/10 border border-primary/20 hover:bg-primary/25 hover:border-primary/40 hover:shadow-[0_0_15px_-3px_hsl(199,89%,48%,0.3)] backdrop-blur-sm"
               >
-                <ArrowRight className="h-3.5 w-3.5" />
-                تسجيل الدخول
-              </Button>
+                {t("nav.getStarted")}
+              </button>
             </nav>
           </motion.div>
         )}
