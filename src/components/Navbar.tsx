@@ -79,9 +79,9 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
 
         {/* Desktop nav: nested box buttons */}
         <nav className="hidden items-center md:flex absolute left-1/2 -translate-x-1/2">
-          <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5 glass-glow">
+          <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5 bg-black/80 backdrop-blur-xl border border-white/5 shadow-[0_4px_30px_-5px_rgba(0,0,0,0.7)]">
             {/* Pages box */}
-            <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/5 border border-primary/15">
+            <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/8 border border-primary/20 shadow-[0_0_20px_-5px_hsl(199,89%,48%,0.12),inset_0_1px_0_0_hsl(199,89%,48%,0.06)]">
               {navLinks.map((link) => (
                 <a
                   key={link.href}
@@ -95,7 +95,7 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
 
             {/* Categories box */}
             {allCategories.length > 0 && (
-              <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/5 border border-primary/15">
+              <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/8 border border-primary/20 shadow-[0_0_20px_-5px_hsl(199,89%,48%,0.1),inset_0_1px_0_0_hsl(199,89%,48%,0.06)]">
                 {allCategories.map((cat) => {
                   const isActive = activeCategory === cat;
                   const label = CATEGORY_LABELS[cat] || cat;
