@@ -71,7 +71,17 @@ const BookGeneration = () => {
   const [statusMessage, setStatusMessage] = useState<string>("");
   const [pendingFiles, setPendingFiles] = useState<File[] | null>(null);
   const [pendingTotalSize, setPendingTotalSize] = useState(0);
+  const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const FILE_FILTERS: { key: string; label: string; icon: any; exts: string[] }[] = [
+    { key: "pdf", label: "PDF", icon: BookOpen, exts: ["pdf"] },
+    { key: "images", label: "صور", icon: ImageIcon, exts: ["jpg","jpeg","png","gif","webp","bmp","svg","tiff","heic","avif"] },
+    { key: "docs", label: "وثائق", icon: FileCheck, exts: ["doc","docx","txt","rtf","odt","md","xls","xlsx","csv","ods"] },
+    { key: "presentations", label: "عروض", icon: MonitorPlay, exts: ["ppt","pptx","key","odp"] },
+    { key: "design", label: "تصميم", icon: Layout, exts: ["psd","ai","eps","fig","sketch","svg"] },
+    { key: "archives", label: "أرشيف", icon: Archive, exts: ["zip","rar","7z","tar","gz"] },
+  ];
 
   // Get next product code from DB
   const getNextCode = async (prefix: string): Promise<string> => {
