@@ -66,7 +66,14 @@ const ProductDetail = () => {
           .select("id, file_type, file_name, public_url, is_primary")
           .eq("product_id", data.id);
 
-        if (files) setProductFiles(files);
+        if (files) {
+          setProductFiles(files);
+          // Check if product has a PDF file
+          const pdfExists = !!data.pdf_url || files.some(f => f.file_type === "pdf" || f.file_name.toLowerCase().endsWith(".pdf"));
+          setHasPdf(pdfExists);
+        } else {
+          setHasPdf(!!data.pdf_url);
+        }
 
         // Fetch related products
         const { data: related } = await supabase
