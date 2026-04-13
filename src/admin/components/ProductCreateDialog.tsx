@@ -206,24 +206,32 @@ export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: Pr
             </Button>
 
             {generatedBooks.length > 0 && (
-              <div className="space-y-2 max-h-52 overflow-y-auto border border-border rounded-lg p-2">
-                {generatedBooks.map((b, i) => (
-                  <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-secondary/30 text-xs">
-                    <div className="flex-1 min-w-0">
-                      <span className="truncate block text-foreground font-medium">{b.name}</span>
-                      <span className="text-muted-foreground truncate block">{b.short_description}</span>
+              <div className="space-y-2 max-h-60 overflow-y-auto border border-border rounded-lg p-2">
+                {generatedBooks.map((b, i) => {
+                  const ml = b._multilingual;
+                  return (
+                    <div key={i} className="p-2.5 rounded-lg bg-secondary/30 text-xs space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-foreground">{b.badge}</span>
+                        <span className="text-primary font-semibold">${b.price}</span>
+                      </div>
+                      {ml ? (
+                        <div className="space-y-0.5">
+                          <p className="text-foreground">🇸🇦 {ml.ar.name}</p>
+                          <p className="text-muted-foreground">🇫🇷 {ml.fr.name}</p>
+                          <p className="text-muted-foreground">🇬🇧 {ml.en.name}</p>
+                        </div>
+                      ) : (
+                        <p className="text-foreground truncate">{b.name}</p>
+                      )}
                     </div>
-                    <div className="text-left mr-2 shrink-0">
-                      <span className="text-primary font-semibold">${b.price}</span>
-                      <span className="text-muted-foreground text-[10px] block">{b.badge}</span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
             {generatedBooks.length > 0 && (
-              <p className="text-xs text-muted-foreground text-center">✅ تم حفظ {generatedBooks.length} كتاب تلقائياً في قاعدة البيانات</p>
+              <p className="text-xs text-muted-foreground text-center">✅ تم حفظ {generatedBooks.length} كتاب بـ 3 لغات (عربي، فرنسي، إنجليزي)</p>
             )}
 
             <div className="flex gap-2 pt-2">
