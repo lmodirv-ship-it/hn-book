@@ -17,6 +17,7 @@ interface Product {
   category: string;
   image: string | null;
   is_active: boolean | null;
+  badge: string | null;
 }
 
 const AdminProducts = () => {
