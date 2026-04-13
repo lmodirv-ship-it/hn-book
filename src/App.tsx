@@ -27,6 +27,7 @@ import VisitorAnalytics from "./admin/pages/VisitorAnalytics.tsx";
 import SystemHealthCheck from "./admin/pages/SystemHealthCheck.tsx";
 import BookGeneration from "./admin/pages/BookGeneration.tsx";
 import WebBookSearch from "./admin/pages/WebBookSearch.tsx";
+import BulkPdfUpload from "./admin/pages/BulkPdfUpload.tsx";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,7 @@ const App = () => (
               <Route path="products" element={<AdminProducts />} />
               <Route path="book-generation" element={<BookGeneration />} />
               <Route path="web-search" element={<WebBookSearch />} />
+              <Route path="bulk-pdf" element={<BulkPdfUpload />} />
               <Route path="orders" element={<AdminOrders />} />
               <Route path="customers" element={<AdminCustomers />} />
               <Route path="earnings" element={<AdminEarnings />} />
