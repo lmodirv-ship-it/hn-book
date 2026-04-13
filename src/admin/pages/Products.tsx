@@ -31,15 +31,16 @@ const AdminProducts = () => {
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [showCreate, setShowCreate] = useState(false);
 
+  const fetchProducts = async () => {
+    const { data } = await supabase
+      .from("products")
+      .select("id, name, short_description, price, original_price, category, image, is_active, badge, pdf_url")
+      .order("created_at", { ascending: false });
+    setProducts(data || []);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const fetchProducts = async () => {
-      const { data } = await supabase
-        .from("products")
-        .select("id, name, short_description, price, original_price, category, image, is_active, badge, pdf_url")
-        .order("created_at", { ascending: false });
-      setProducts(data || []);
-      setLoading(false);
-    };
     fetchProducts();
   }, []);
 
