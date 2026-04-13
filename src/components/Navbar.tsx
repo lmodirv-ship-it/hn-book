@@ -84,7 +84,7 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
               <a
                 key={link.href}
                 href={link.href}
-                className="rounded-xl px-4 py-2 text-[12px] font-semibold text-white transition-all duration-300 bg-primary/10 border border-primary/20 hover:bg-primary/25 hover:border-primary/40 hover:shadow-[0_0_15px_-3px_hsl(199,89%,48%,0.3)] backdrop-blur-sm"
+                className="rounded-xl px-3.5 py-2 text-[11px] font-semibold text-white transition-all duration-300 bg-primary/10 border border-primary/20 hover:bg-primary/25 hover:border-primary/40 hover:shadow-[0_0_15px_-3px_hsl(199,89%,48%,0.3)] backdrop-blur-sm"
               >
                 {link.label}
               </a>
@@ -102,7 +102,7 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                       className={`rounded-xl px-3.5 py-2 text-[11px] font-semibold transition-all duration-300 backdrop-blur-sm ${
                         isActive
                           ? "bg-primary/25 text-white border border-primary/50 shadow-[0_0_20px_-4px_hsl(199,89%,48%,0.4)]"
-                          : "bg-primary/8 text-white/80 border border-primary/15 hover:bg-primary/20 hover:text-white hover:border-primary/35 hover:shadow-[0_0_12px_-3px_hsl(199,89%,48%,0.25)]"
+                          : "bg-primary/10 text-white border border-primary/20 hover:bg-primary/25 hover:border-primary/40 hover:shadow-[0_0_15px_-3px_hsl(199,89%,48%,0.3)]"
                       }`}
                     >
                       {label}
