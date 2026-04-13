@@ -10,20 +10,15 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { category, count, language } = await req.json();
+    const { category, count } = await req.json();
     const bookCount = Math.min(Math.max(count || 5, 1), 20);
-    const lang = language || "ar";
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const systemPrompt = lang === "ar"
-      ? `أنت مساعد لتوليد بيانات كتب عربية واقعية. أنشئ كتباً بأسماء عربية أصلية وأوصاف احترافية.`
-      : `You are an assistant that generates realistic book data. Create books with authentic names and professional descriptions.`;
+    const systemPrompt = `You are a multilingual book data generator. For each book, generate content in Arabic, French, and English. Make books realistic with authentic names and authors for each language.`;
 
-    const userPrompt = lang === "ar"
-      ? `أنشئ ${bookCount} كتاب في تصنيف "${category}". لكل كتاب أعطني: اسم عربي احترافي، وصف قصير (سطر واحد)، وصف مفصل (3 أسطر)، اسم المؤلف العربي، عدد الصفحات (50-500)، السعر (5-49 دولار)، السعر الأصلي (أعلى من السعر)، 4 مميزات للكتاب. اجعل الأسماء متنوعة وواقعية.`
-      : `Generate ${bookCount} books in the "${category}" category. For each book provide: professional name, short description (1 line), detailed description (3 lines), author name, page count (50-500), price (5-49 USD), original price (higher than price), 4 features. Make names diverse and realistic.`;
+    const userPrompt = `Generate ${bookCount} books in the "${category}" category. For EACH book, provide the name, short description, detailed description, author name, and 4 features in ALL THREE languages (Arabic, French, English). Also provide page count (50-500), price (5-49 USD), and original price (higher). Make each language version feel native, not translated.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -41,7 +36,7 @@ serve(async (req) => {
           type: "function",
           function: {
             name: "return_books",
-            description: "Return generated book data",
+            description: "Return generated multilingual book data",
             parameters: {
               type: "object",
               properties: {
@@ -50,16 +45,44 @@ serve(async (req) => {
                   items: {
                     type: "object",
                     properties: {
-                      name: { type: "string" },
-                      short_description: { type: "string" },
-                      description: { type: "string" },
-                      author: { type: "string" },
+                      ar: {
+                        type: "object",
+                        properties: {
+                          name: { type: "string" },
+                          short_description: { type: "string" },
+                          description: { type: "string" },
+                          author: { type: "string" },
+                          features: { type: "array", items: { type: "string" } },
+                        },
+                        required: ["name", "short_description", "description", "author", "features"],
+                      },
+                      fr: {
+                        type: "object",
+                        properties: {
+                          name: { type: "string" },
+                          short_description: { type: "string" },
+                          description: { type: "string" },
+                          author: { type: "string" },
+                          features: { type: "array", items: { type: "string" } },
+                        },
+                        required: ["name", "short_description", "description", "author", "features"],
+                      },
+                      en: {
+                        type: "object",
+                        properties: {
+                          name: { type: "string" },
+                          short_description: { type: "string" },
+                          description: { type: "string" },
+                          author: { type: "string" },
+                          features: { type: "array", items: { type: "string" } },
+                        },
+                        required: ["name", "short_description", "description", "author", "features"],
+                      },
                       pages: { type: "number" },
                       price: { type: "number" },
                       original_price: { type: "number" },
-                      features: { type: "array", items: { type: "string" } },
                     },
-                    required: ["name", "short_description", "description", "author", "pages", "price", "original_price", "features"],
+                    required: ["ar", "fr", "en", "pages", "price", "original_price"],
                   },
                 },
               },
@@ -84,7 +107,6 @@ serve(async (req) => {
 
     const { books } = JSON.parse(toolCall.function.arguments);
 
-    // Get current product count for numbering
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -92,33 +114,54 @@ serve(async (req) => {
     const { count: existingCount } = await supabase.from("products").select("*", { count: "exact", head: true });
     let nextNum = (existingCount || 0) + 1;
 
-    // Insert books
     const insertedBooks = [];
     for (const book of books) {
       const bookCode = `HNB-${String(nextNum).padStart(4, "0")}`;
-      
+
+      // Build multilingual description
+      const fullDesc = [
+        `📖 ${book.ar.description}`,
+        `المؤلف: ${book.ar.author} | عدد الصفحات: ${book.pages}`,
+        ``,
+        `🇫🇷 ${book.fr.description}`,
+        `Auteur: ${book.fr.author}`,
+        ``,
+        `🇬🇧 ${book.en.description}`,
+        `Author: ${book.en.author}`,
+      ].join("\n");
+
+      // Combine multilingual name
+      const multiName = book.ar.name;
+
+      // Combine features from all languages
+      const allFeatures = [
+        ...book.ar.features,
+        `🇫🇷 ${book.fr.name}`,
+        `🇬🇧 ${book.en.name}`,
+      ];
+
       const { data: product, error } = await supabase.from("products").insert({
-        name: book.name,
-        short_description: book.short_description,
-        description: `${book.description}\n\nالمؤلف: ${book.author}\nعدد الصفحات: ${book.pages}`,
+        name: multiName,
+        short_description: `${book.ar.short_description} | ${book.fr.short_description} | ${book.en.short_description}`,
+        description: fullDesc,
         category: category || "كتب عامة",
         price: book.price,
         original_price: book.original_price,
-        features: book.features,
+        features: allFeatures,
         badge: bookCode,
         is_active: true,
       }).select().single();
 
       if (!error && product) {
-        insertedBooks.push(product);
+        insertedBooks.push({ ...product, _multilingual: book });
         nextNum++;
       }
     }
 
-    return new Response(JSON.stringify({ 
-      success: true, 
-      count: insertedBooks.length, 
-      books: insertedBooks 
+    return new Response(JSON.stringify({
+      success: true,
+      count: insertedBooks.length,
+      books: insertedBooks,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
