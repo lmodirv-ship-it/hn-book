@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useI18n, locales } from "@/lib/i18n";
 
 const Navbar = () => {
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
