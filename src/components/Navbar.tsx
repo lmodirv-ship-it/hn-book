@@ -1,11 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Menu, X, ArrowRight, Globe } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useI18n, locales } from "@/lib/i18n";
 
 const Navbar = () => {
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
@@ -115,6 +116,7 @@ const Navbar = () => {
           <Button
             size="sm"
             className="h-8 gap-1 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 border-0 px-3"
+            onClick={() => navigate("/admin/login")}
           >
             {t("nav.getStarted")}
             <ArrowRight className="h-3 w-3" />
@@ -168,7 +170,7 @@ const Navbar = () => {
                   </button>
                 ))}
               </div>
-              <Button size="sm" className="mt-2 w-full gap-1 rounded-md bg-primary text-primary-foreground border-0 text-xs">
+              <Button size="sm" className="mt-2 w-full gap-1 rounded-md bg-primary text-primary-foreground border-0 text-xs" onClick={() => { navigate("/admin/login"); setMobileOpen(false); }}>
                 {t("nav.getStarted")} <ArrowRight className="h-3 w-3" />
               </Button>
             </nav>
