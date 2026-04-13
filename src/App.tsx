@@ -7,6 +7,7 @@ import { I18nProvider } from "@/lib/i18n";
 import ChatBot from "@/components/ChatBot";
 import Index from "./pages/Index.tsx";
 import ProductDetail from "./pages/ProductDetail.tsx";
+import CategoryPage from "./pages/CategoryPage.tsx";
 import BookReader from "./pages/BookReader.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import CustomerAuth from "./pages/CustomerAuth.tsx";
@@ -39,6 +40,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/category/:category" element={<CategoryPage />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/read/:id" element={<BookReader />} />
             <Route path="/auth" element={<CustomerAuth />} />
