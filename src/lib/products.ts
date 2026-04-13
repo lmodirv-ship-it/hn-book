@@ -13,6 +13,7 @@ export interface Product {
   isFlashDeal?: boolean;
   dealEndsIn?: number;
   referenceCode?: string;
+  pdfUrl?: string;
 }
 
 function seededRandom(seed: number) {
