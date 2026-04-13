@@ -49,8 +49,63 @@ interface RawItem {
   fileSizeKB: number; fileBytes: Uint8Array; fromArchive?: string;
 }
 
+function isReadableTextFile(mime: string, ext: string): boolean {
+  return mime.startsWith("text/") || [
+    "txt", "md", "json", "csv", "xml", "html", "htm", "css", "js", "ts", "jsx", "tsx",
+    "yml", "yaml", "toml", "ini", "log", "sql"
+  ].includes(ext);
+}
+
+function extractTextPreview(bytes: Uint8Array): string {
+  try {
+    const slice = bytes.slice(0, 256 * 1024);
+    return new TextDecoder("utf-8", { fatal: false })
+      .decode(slice)
+      .replace(/\0/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 12000);
+  } catch {
+    return "";
+  }
+}
+
 async function classifyAI(bytes: Uint8Array, name: string, mime: string, cat: string): Promise<any> {
+  const ext = getExt(name);
+
   if (cat !== "image" && cat !== "pdf") {
+    const textPreview = isReadableTextFile(mime, ext) ? extractTextPreview(bytes) : "";
+
+    if (textPreview) {
+      try {
+        const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${LOVABLE_API_KEY}` },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [{
+              role: "user",
+              content: `Analyze this text-based file and return ONLY valid JSON:\n{"type":"one of: كتب, بطاقات, قوالب, صور, وثائق, عروض, أخرى","name_ar":"Arabic title","name_en":"English title","description_ar":"Short Arabic description","author":"author or empty","tags":["tag1"],"suggested_price":0}\nRules: كتب=books/ebooks, بطاقات=cards, قوالب=templates, صور=photos/graphics, وثائق=documents/forms, عروض=presentations, أخرى=other. File name: ${name}\nFile type: ${mime}\nExtracted content preview:\n${textPreview}`,
+            }],
+            max_tokens: 900,
+            temperature: 0.1,
+          }),
+        });
+        if (res.ok) {
+          const d = await res.json();
+          const c = d.choices?.[0]?.message?.content || "";
+          const m = c.match(/\{[\s\S]*\}/);
+          if (m) {
+            try {
+              return JSON.parse(m[0]);
+            } catch {}
+          }
+        }
+      } catch (e) {
+        console.error("AI text classification error:", e);
+      }
+    }
+
     const map: Record<string, string> = {
       document: "وثائق", presentation: "عروض", spreadsheet: "وثائق",
       design: "قوالب", image: "صور", pdf: "كتب", other: "أخرى",
@@ -59,13 +114,12 @@ async function classifyAI(bytes: Uint8Array, name: string, mime: string, cat: st
       type: map[cat] || "أخرى",
       name_ar: name.replace(/\.[^.]+$/, ""),
       name_en: name.replace(/\.[^.]+$/, ""),
-      description_ar: `ملف ${name}`,
+      description_ar: textPreview ? `ملف ${name} يحتوي على محتوى نصي قابل للقراءة` : `ملف ${name}`,
       author: "", tags: [], suggested_price: 0,
     };
   }
 
   try {
-    // For AI classification, limit to first 4MB to avoid token limits
     const maxBytes = 4 * 1024 * 1024;
     const classifyBytes = bytes.length > maxBytes ? bytes.slice(0, maxBytes) : bytes;
     

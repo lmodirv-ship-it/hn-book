@@ -418,7 +418,7 @@ const BookGeneration = () => {
                 <Upload className="w-8 h-8 text-primary" />
               </div>
               <div className="text-center">
-                <p className="text-sm font-medium text-foreground">اسحب الملفات هنا أو اضغط للاختيار</p>
+                <p className="text-sm font-medium text-foreground">اسحب الملفات هنا أو اضغط للرفع</p>
                 <p className="text-[11px] text-muted-foreground mt-1.5">
                   PDF · صور · Word · PowerPoint · Excel · <strong>ZIP</strong> · وأكثر
                 </p>
