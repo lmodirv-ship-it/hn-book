@@ -25,10 +25,7 @@ export const BookPdfUpload = ({ productId, currentPdfUrl, onPdfUpdated }: BookPd
       return;
     }
 
-    if (file.size > 50 * 1024 * 1024) {
-      toast.error("حجم الملف يجب أن لا يتجاوز 50MB");
-      return;
-    }
+    // No size limit - files of any size are supported
 
     setUploading(true);
     try {

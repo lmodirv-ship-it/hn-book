@@ -37,6 +37,9 @@ const CATEGORY_ICONS: Record<string, any> = {
   "أخرى": HelpCircle,
 };
 
+// Threshold: files above this size are uploaded to storage first
+const DIRECT_UPLOAD_LIMIT = 10 * 1024 * 1024; // 10MB
+
 const BookGeneration = () => {
   const [processing, setProcessing] = useState(false);
   const [currentFile, setCurrentFile] = useState<string | null>(null);
@@ -47,21 +50,48 @@ const BookGeneration = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const processFile = async (file: File): Promise<ProcessedItem[]> => {
-    const formData = new FormData();
-    formData.append("file", file);
-
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData?.session?.access_token;
+    const url = `https://${projectId}.supabase.co/functions/v1/process-universal-file`;
 
-    const response = await fetch(
-      `https://${projectId}.supabase.co/functions/v1/process-universal-file`,
-      {
+    let response: Response;
+
+    if (file.size > DIRECT_UPLOAD_LIMIT) {
+      // Large file: upload to storage first, then send path
+      const tempPath = `temp-uploads/${Date.now()}-${file.name}`;
+      
+      const { error: uploadErr } = await supabase.storage
+        .from("book-files")
+        .upload(tempPath, file, { upsert: true });
+
+      if (uploadErr) {
+        return [{ success: false, fileName: file.name, error: "فشل رفع الملف إلى التخزين: " + uploadErr.message }];
+      }
+
+      response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          storage_path: tempPath,
+          file_name: file.name,
+          bucket: "book-files",
+        }),
+      });
+    } else {
+      // Small file: send directly as FormData
+      const formData = new FormData();
+      formData.append("file", file);
+
+      response = await fetch(url, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
-      }
-    );
+      });
+    }
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
@@ -77,13 +107,6 @@ const BookGeneration = () => {
     const fileArray = Array.from(files);
     if (fileArray.length === 0) return;
 
-    const maxSize = 20 * 1024 * 1024;
-    const oversized = fileArray.filter(f => f.size > maxSize);
-    if (oversized.length > 0) {
-      toast.error(`${oversized.length} ملف(ات) تتجاوز 20MB`);
-      return;
-    }
-
     setProcessing(true);
     setResults([]);
     setProgress(0);
@@ -93,7 +116,7 @@ const BookGeneration = () => {
 
     for (let i = 0; i < fileArray.length; i++) {
       const file = fileArray[i];
-      setCurrentFile(file.name);
+      setCurrentFile(`${file.name} (${formatSize(file.size)})`);
       setProgress(Math.round((i / fileArray.length) * 100));
 
       try {
@@ -127,6 +150,12 @@ const BookGeneration = () => {
     handleFiles(e.dataTransfer.files);
   }, [handleFiles]);
 
+  const formatSize = (bytes: number) => {
+    if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)}GB`;
+    if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+    return `${Math.round(bytes / 1024)}KB`;
+  };
+
   const successCount = results.filter(r => r.success).length;
   const failCount = results.filter(r => !r.success).length;
 
@@ -142,7 +171,7 @@ const BookGeneration = () => {
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl font-extrabold text-foreground">🗂️ نظام الاستيراد الذكي</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          ارفع أي ملف — يحلل ويصنف ويرقّم ويحفظ ويُنشئ روابط التحميل تلقائياً
+          ارفع أي ملف بأي حجم — يحلل ويصنف ويرقّم ويحفظ ويُنشئ روابط التحميل تلقائياً
         </p>
       </motion.div>
 
@@ -201,7 +230,7 @@ const BookGeneration = () => {
                   PDF · صور · Word · PowerPoint · Excel · <strong>ZIP</strong> · وأكثر
                 </p>
                 <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-                  نظام متكامل: تحليل ← تصنيف ← ترقيم ← رفع ← حفظ ← رابط تحميل · حتى 20MB
+                  نظام متكامل: تحليل ← تصنيف ← ترقيم ← رفع ← حفظ ← رابط تحميل · <strong>بدون حد للحجم</strong>
                 </p>
               </div>
             </>
@@ -301,7 +330,7 @@ const BookGeneration = () => {
                         <p className="text-[11px] text-muted-foreground flex items-center gap-2">
                           <span>{r.fileName}</span>
                           <span>·</span>
-                          <span>{r.fileSizeKB}KB</span>
+                          <span>{r.fileSizeKB && r.fileSizeKB > 1024 ? `${(r.fileSizeKB / 1024).toFixed(1)}MB` : `${r.fileSizeKB}KB`}</span>
                           {r.fromArchive && (
                             <><span>·</span><Archive className="w-3 h-3 inline" /></>
                           )}

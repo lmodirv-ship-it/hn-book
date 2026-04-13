@@ -31,10 +31,7 @@ export const BookCatalogUpload = ({ onComplete }: CatalogUploadProps) => {
       return;
     }
 
-    if (file.size > 20 * 1024 * 1024) {
-      toast.error("حجم الملف يجب أن لا يتجاوز 20MB");
-      return;
-    }
+    // No size limit - files of any size are supported
 
     setUploading(true);
     setResults(null);
