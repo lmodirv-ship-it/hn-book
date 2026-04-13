@@ -4,7 +4,7 @@ import {
   Upload, Loader2, CheckCircle2, XCircle, FileText,
   BookOpen, CreditCard, Layout, ImageIcon, FileCheck,
   MonitorPlay, HelpCircle, Download, ExternalLink,
-  Archive, RotateCcw
+  Archive, RotateCcw, FolderSearch
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
