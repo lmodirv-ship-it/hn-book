@@ -231,7 +231,14 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                   return (
                     <motion.button
                       key={cat}
-                      onClick={() => onCategorySelect?.(cat)}
+                      onClick={() => {
+                        if (cat === "All") {
+                          navigate("/");
+                          onCategorySelect?.(cat);
+                        } else {
+                          navigate(`/category/${encodeURIComponent(cat)}`);
+                        }
+                      }}
                       className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border bg-primary/20 backdrop-blur-sm ${
                         isActive ? "border-primary/80" : "border-primary/50"
                       }`}
@@ -323,7 +330,15 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                     return (
                       <button
                         key={cat}
-                        onClick={() => { onCategorySelect?.(cat); setMobileOpen(false); }}
+                        onClick={() => {
+                          if (cat === "All") {
+                            navigate("/");
+                            onCategorySelect?.(cat);
+                          } else {
+                            navigate(`/category/${encodeURIComponent(cat)}`);
+                          }
+                          setMobileOpen(false);
+                        }}
                         className={`rounded-xl px-3.5 py-2 text-xs font-semibold transition-all duration-300 backdrop-blur-sm ${
                           isActive
                             ? "bg-primary/25 text-white border border-primary/50 shadow-[0_0_20px_-4px_hsl(199,89%,48%,0.4)]"
