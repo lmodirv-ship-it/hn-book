@@ -50,39 +50,19 @@ const Index = () => {
         <section id="products" className="relative py-20">
           <div className="container mx-auto px-4">
             {/* Section header */}
-            <motion.div
-              className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between"
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              viewport={{ once: true }}
-            >
-              <div>
-                <span className="text-xs font-medium uppercase tracking-widest text-primary">
-                  Catalog
-                </span>
-                <h2 className="mt-2 text-3xl font-bold md:text-4xl">
-                  Browse Products
-                </h2>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {filteredProducts.length.toLocaleString()} products available
-                </p>
-              </div>
-
-              {/* Search */}
-              <div className="relative w-full max-w-xs">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setVisibleCount(ITEMS_PER_PAGE);
-                  }}
-                  className="pl-10 rounded-lg bg-card/50 border-border/40"
-                />
-              </div>
-            </motion.div>
+            {/* Search */}
+            <div className="relative w-full max-w-xs">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setVisibleCount(ITEMS_PER_PAGE);
+                }}
+                className="pl-10 rounded-lg bg-card/50 border-border/40"
+              />
+            </div>
 
             {/* Category filters */}
             <div className="mt-6 flex flex-wrap gap-2">
