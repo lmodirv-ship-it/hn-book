@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -54,10 +56,12 @@ const BookGeneration = () => {
   const [analyzing, setAnalyzing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [currentFile, setCurrentFile] = useState<string | null>(null);
+  const [statusText, setStatusText] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [items, setItems] = useState<AnalyzedItem[]>([]);
   const [sourceName, setSourceName] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [autoSave, setAutoSave] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const analyzeFile = async (file: File) => {
@@ -131,12 +135,53 @@ const BookGeneration = () => {
     setCurrentFile(null);
     setAnalyzing(false);
 
-    if (allItems.length > 0) {
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
+    if (allItems.length === 0) return;
+
+    if (autoSave) {
+      // Auto-save all items immediately
+      setStatusText("جاري الحفظ التلقائي...");
+      setSaving(true);
+      setItems(prev => prev.map(it => ({ ...it, saving: true })));
+
+      try {
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const { data: sd } = await supabase.auth.getSession();
+        const tk = sd?.session?.access_token;
+
+        const res = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/process-universal-file?mode=save`,
+          {
+            method: "POST",
+            headers: { Authorization: `Bearer ${tk}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ items: allItems }),
+          }
+        );
+        const data = await res.json();
+        if (data.results) {
+          const okSet = new Set(data.results.filter((r: any) => r.success).map((r: any) => r.index));
+          setItems(prev => prev.map(it => {
+            if (okSet.has(it.index)) {
+              const r = data.results.find((x: any) => x.index === it.index);
+              return { ...it, saved: true, saving: false, selected: false, code: r?.code };
+            }
+            return { ...it, saving: false };
+          }));
+          const ok = okSet.size;
+          if (ok > 0) toast.success(`✅ تم تحليل وحفظ ${ok} عنصر تلقائياً`);
+          if (ok < allItems.length) toast.error(`فشل حفظ ${allItems.length - ok} عنصر`);
+        }
+      } catch (err: any) {
+        toast.error("خطأ في الحفظ التلقائي: " + err.message);
+        setItems(prev => prev.map(it => ({ ...it, saving: false })));
+      }
+      setSaving(false);
+      setStatusText(null);
+    } else {
       toast.success(`✅ تم تحليل ${allItems.length} عنصر — راجعها ثم اضغط حفظ`);
     }
-
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  }, []);
+  }, [autoSave]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -247,14 +292,24 @@ const BookGeneration = () => {
         ))}
       </div>
 
-      {/* Drop zone */}
+      {/* Auto-save toggle */}
+      <div className="flex items-center gap-3 max-w-3xl">
+        <Switch id="auto-save" checked={autoSave} onCheckedChange={setAutoSave} />
+        <Label htmlFor="auto-save" className="text-sm text-foreground cursor-pointer">
+          حفظ تلقائي
+        </Label>
+        <span className="text-xs text-muted-foreground">
+          {autoSave ? "يحلل ويحفظ مباشرة بدون مراجعة" : "يحلل أولاً ثم تراجع وتحفظ يدوياً"}
+        </span>
+      </div>
+
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl">
         <button
           onClick={() => fileInputRef.current?.click()}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
-          disabled={analyzing}
+          disabled={analyzing || saving}
           className={`w-full py-12 rounded-2xl border-2 border-dashed transition-all flex flex-col items-center justify-center gap-4 ${
             dragOver
               ? "border-primary bg-primary/10 scale-[1.01]"
@@ -263,18 +318,20 @@ const BookGeneration = () => {
               : "border-border hover:border-primary/50 bg-card hover:bg-secondary/10"
           }`}
         >
-          {analyzing ? (
+          {(analyzing || saving) ? (
             <>
               <Loader2 className="w-10 h-10 text-primary animate-spin" />
               <div className="text-center">
-                <p className="text-sm font-semibold text-foreground">جاري التحليل والاستخراج...</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {statusText || (analyzing ? "جاري التحليل والاستخراج..." : "جاري الحفظ...")}
+                </p>
                 {currentFile && (
                   <p className="text-xs text-muted-foreground mt-1 truncate max-w-xs">{currentFile}</p>
                 )}
               </div>
               <Progress value={progress} className="w-56 h-2" />
             </>
-          ) : (
+          ) : items.length === 0 ? (
             <>
               <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
                 <Upload className="w-8 h-8 text-primary" />
@@ -289,7 +346,7 @@ const BookGeneration = () => {
                 </p>
               </div>
             </>
-          )}
+          ) : null}
         </button>
 
         <input
