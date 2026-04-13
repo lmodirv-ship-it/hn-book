@@ -94,8 +94,16 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
                 />
               )}
 
-              {/* Badges */}
-              <div className="absolute right-2 top-2 flex gap-1.5">
+              {/* Stars & Badges */}
+              <div className="absolute right-2 top-2 flex items-center gap-1.5">
+                <div className="flex gap-0.5 px-2 py-1 rounded-lg bg-black/60 backdrop-blur-md">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`h-2.5 w-2.5 ${i < starRating ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/30'}`}
+                    />
+                  ))}
+                </div>
                 {product.isFlashDeal && (
                   <Badge className="bg-destructive/90 text-destructive-foreground text-[10px] px-2.5 py-0.5 border-0 backdrop-blur-sm">
                     ⚡ {product.dealEndsIn}h
@@ -141,14 +149,9 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
                     <span className="text-base font-bold text-accent">مجاني</span>
                   )}
                 </div>
-                <div className="flex gap-0.5">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`h-3 w-3 ${i < starRating ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/20'}`}
-                    />
-                  ))}
-                </div>
+                <span className="text-[10px] font-mono text-muted-foreground/50 tracking-wide">
+                  {product.referenceCode || product.id.slice(0, 6).toUpperCase()}
+                </span>
               </div>
             </div>
           </div>
