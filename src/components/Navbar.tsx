@@ -77,21 +77,25 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
           </div>
         </Link>
 
-        {/* Desktop nav: pages + categories as glowing box buttons */}
+        {/* Desktop nav: nested box buttons */}
         <nav className="hidden items-center md:flex absolute left-1/2 -translate-x-1/2">
-          <div className="flex items-center gap-1.5 rounded-2xl px-2 py-1.5 glass-glow">
-            {navLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="rounded-xl px-3.5 py-2 text-[11px] font-semibold text-white transition-all duration-300 bg-primary/10 border border-primary/20 hover:bg-primary/25 hover:border-primary/40 hover:shadow-[0_0_15px_-3px_hsl(199,89%,48%,0.3)] backdrop-blur-sm"
-              >
-                {link.label}
-              </a>
-            ))}
+          <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5 glass-glow">
+            {/* Pages box */}
+            <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/5 border border-primary/15">
+              {navLinks.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white transition-all duration-200 bg-primary/10 border border-primary/25 hover:bg-primary/20 hover:border-primary/45 hover:shadow-[0_0_12px_-3px_hsl(199,89%,48%,0.3)]"
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
+
+            {/* Categories box */}
             {allCategories.length > 0 && (
-              <>
-                <div className="h-5 w-px bg-primary/20 mx-0.5" />
+              <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/5 border border-primary/15">
                 {allCategories.map((cat) => {
                   const isActive = activeCategory === cat;
                   const label = CATEGORY_LABELS[cat] || cat;
@@ -99,17 +103,17 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                     <button
                       key={cat}
                       onClick={() => onCategorySelect?.(cat)}
-                      className={`rounded-xl px-3.5 py-2 text-[11px] font-semibold transition-all duration-300 backdrop-blur-sm ${
+                      className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all duration-200 ${
                         isActive
-                          ? "bg-primary/25 text-white border border-primary/50 shadow-[0_0_20px_-4px_hsl(199,89%,48%,0.4)]"
-                          : "bg-primary/10 text-white border border-primary/20 hover:bg-primary/25 hover:border-primary/40 hover:shadow-[0_0_15px_-3px_hsl(199,89%,48%,0.3)]"
+                          ? "bg-primary/25 text-white border border-primary/50 shadow-[0_0_15px_-3px_hsl(199,89%,48%,0.4)]"
+                          : "bg-primary/10 text-white border border-primary/25 hover:bg-primary/20 hover:border-primary/45 hover:shadow-[0_0_12px_-3px_hsl(199,89%,48%,0.3)]"
                       }`}
                     >
                       {label}
                     </button>
                   );
                 })}
-              </>
+              </div>
             )}
           </div>
         </nav>
