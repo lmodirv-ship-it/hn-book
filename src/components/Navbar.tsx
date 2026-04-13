@@ -85,10 +85,10 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
             <img src={hnLogo} alt="HN Groupe" className="h-20 w-20 rounded-full object-cover transition-transform duration-300 group-hover:scale-110 ring-2 ring-primary/40" />
           </motion.div>
           <motion.div
-            className="relative mt-2 px-5 py-2 rounded-xl overflow-hidden"
+            className="relative mt-0 px-5 py-2 rounded-xl overflow-hidden"
             style={{
-              background: "linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 40%, rgba(59,130,246,0.08) 100%)",
-              border: "1px solid rgba(255,255,255,0.2)",
+              background: "linear-gradient(135deg, rgba(0,0,0,0.95) 0%, rgba(10,10,10,0.9) 40%, rgba(20,20,30,0.95) 100%)",
+              border: "1px solid rgba(255,255,255,0.15)",
               backdropFilter: "blur(12px)",
               perspective: "600px",
               transformStyle: "preserve-3d",
