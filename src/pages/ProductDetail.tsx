@@ -1,6 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check, ShoppingCart, Star, Shield, Download, Clock, Zap, Gift, Award, ChevronRight } from "lucide-react";
+import { ArrowLeft, Check, ShoppingCart, Star, Shield, Download, Clock, Zap, Gift, Award, ChevronRight, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
