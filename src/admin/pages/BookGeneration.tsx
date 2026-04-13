@@ -490,7 +490,7 @@ const BookGeneration = () => {
         />
 
         {/* Analyse folder button */}
-        {!processing && (
+        {!processing && !pendingFiles && (
           <Button
             variant="outline"
             className="w-full mt-3 gap-2 border-dashed border-primary/30 text-primary hover:bg-primary/10"
@@ -499,6 +499,37 @@ const BookGeneration = () => {
             <FolderSearch className="w-4 h-4" />
             Analyse — تحليل مجلد كامل
           </Button>
+        )}
+
+        {/* Pending files confirmation */}
+        {pendingFiles && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3"
+          >
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <FolderSearch className="w-4 h-4 text-primary" />
+              تم اكتشاف {pendingFiles.length} ملف — الحجم الإجمالي: {formatSize(pendingTotalSize)}
+            </div>
+            <div className="flex items-center gap-2 flex-wrap text-[11px] text-muted-foreground max-h-20 overflow-y-auto">
+              {pendingFiles.slice(0, 20).map((f, i) => (
+                <span key={i} className="px-2 py-0.5 rounded bg-secondary/50">{f.name}</span>
+              ))}
+              {pendingFiles.length > 20 && (
+                <span className="text-muted-foreground">+{pendingFiles.length - 20} ملف آخر</span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" onClick={confirmPendingFiles} className="gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                بدء المعالجة
+              </Button>
+              <Button size="sm" variant="ghost" onClick={cancelPendingFiles}>
+                إلغاء
+              </Button>
+            </div>
+          </motion.div>
         )}
       </motion.div>
 
