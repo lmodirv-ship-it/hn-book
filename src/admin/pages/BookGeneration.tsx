@@ -356,40 +356,56 @@ const BookGeneration = () => {
     handleFiles(e.dataTransfer.files);
   }, [handleFiles]);
 
+  const handleFolderFiles = useCallback((files: File[]) => {
+    const filtered = files.filter(f => !f.name.startsWith(".") && f.size > 512 && !f.webkitRelativePath?.includes("__MACOSX"));
+    if (filtered.length === 0) {
+      toast.error("لم يتم العثور على ملفات في المجلد");
+      return;
+    }
+    const totalSize = filtered.reduce((sum, f) => sum + f.size, 0);
+    setPendingFiles(filtered);
+    setPendingTotalSize(totalSize);
+  }, []);
+
   const handleFolderPick = useCallback(async () => {
-    try {
-      const dirHandle = await (window as any).showDirectoryPicker();
-      const files: File[] = [];
-      
-      const collectFiles = async (handle: any, path = "") => {
-        for await (const entry of handle.values()) {
-          if (entry.kind === "file") {
-            const file = await entry.getFile();
-            if (!file.name.startsWith(".") && file.size > 512) {
-              files.push(file);
+    // Try modern File System Access API first
+    if ((window as any).showDirectoryPicker) {
+      try {
+        const dirHandle = await (window as any).showDirectoryPicker();
+        const files: File[] = [];
+        
+        const collectFiles = async (handle: any, path = "") => {
+          for await (const entry of handle.values()) {
+            if (entry.kind === "file") {
+              const file = await entry.getFile();
+              if (!file.name.startsWith(".") && file.size > 512) {
+                files.push(file);
+              }
+            } else if (entry.kind === "directory" && !entry.name.startsWith(".") && entry.name !== "__MACOSX") {
+              await collectFiles(entry, `${path}${entry.name}/`);
             }
-          } else if (entry.kind === "directory" && !entry.name.startsWith(".") && entry.name !== "__MACOSX") {
-            await collectFiles(entry, `${path}${entry.name}/`);
           }
-        }
-      };
-      
-      await collectFiles(dirHandle);
-      
-      if (files.length === 0) {
-        toast.error("لم يتم العثور على ملفات في المجلد");
+        };
+        
+        await collectFiles(dirHandle);
+        handleFolderFiles(files);
         return;
-      }
-      
-      const totalSize = files.reduce((sum, f) => sum + f.size, 0);
-      setPendingFiles(files);
-      setPendingTotalSize(totalSize);
-    } catch (err: any) {
-      if (err.name !== "AbortError") {
-        toast.error("فشل في فتح المجلد");
+      } catch (err: any) {
+        if (err.name === "AbortError") return;
+        // Fall through to webkitdirectory fallback
       }
     }
-  }, []);
+
+    // Fallback: use hidden input with webkitdirectory
+    folderInputRef.current?.click();
+  }, [handleFolderFiles]);
+
+  const handleFolderInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      handleFolderFiles(Array.from(e.target.files));
+    }
+    if (folderInputRef.current) folderInputRef.current.value = "";
+  }, [handleFolderFiles]);
 
   const getFileExt = (name: string) => name.split(".").pop()?.toLowerCase() || "";
 
