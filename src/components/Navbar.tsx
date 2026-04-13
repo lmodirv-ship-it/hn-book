@@ -1,3 +1,4 @@
+import React from "react";
 import { Button } from "@/components/ui/button";
 import hnLogo from "@/assets/hn-logo.jpeg";
 import { ShoppingCart, Menu, X, ArrowRight, Globe, Sparkles } from "lucide-react";
