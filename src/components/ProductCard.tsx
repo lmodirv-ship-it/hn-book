@@ -1,6 +1,7 @@
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpRight, Lock, Eye } from "lucide-react";
+import { ArrowUpRight, Lock, Eye, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Product } from "@/lib/products";
 import BookCover from "@/components/BookCover";
@@ -14,6 +15,15 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
   const discount = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
+
+  // Generate consistent star rating (2-5) based on product id
+  const starRating = useMemo(() => {
+    let hash = 0;
+    for (let i = 0; i < product.id.length; i++) {
+      hash = product.id.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return (Math.abs(hash) % 4) + 2; // 2 to 5
+  }, [product.id]);
 
   return (
     <motion.div
@@ -136,9 +146,14 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
                     <span className="text-base font-bold text-accent">مجاني</span>
                   )}
                 </div>
-                <span className="text-[10px] font-mono text-muted-foreground/50 tracking-wide">
-                  {product.referenceCode || product.id.slice(0, 6).toUpperCase()}
-                </span>
+                <div className="flex gap-0.5">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`h-3 w-3 ${i < starRating ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/20'}`}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           </div>
