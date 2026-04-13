@@ -116,7 +116,7 @@ const Navbar = () => {
           <Button
             size="sm"
             className="h-8 gap-1 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 border-0 px-3"
-            onClick={() => navigate("/admin/login")}
+            onClick={() => navigate("/auth")}
           >
             {t("nav.getStarted")}
             <ArrowRight className="h-3 w-3" />
@@ -170,7 +170,7 @@ const Navbar = () => {
                   </button>
                 ))}
               </div>
-              <Button size="sm" className="mt-2 w-full gap-1 rounded-md bg-primary text-primary-foreground border-0 text-xs" onClick={() => { navigate("/admin/login"); setMobileOpen(false); }}>
+              <Button size="sm" className="mt-2 w-full gap-1 rounded-md bg-primary text-primary-foreground border-0 text-xs" onClick={() => { navigate("/auth"); setMobileOpen(false); }}>
                 {t("nav.getStarted")} <ArrowRight className="h-3 w-3" />
               </Button>
             </nav>
