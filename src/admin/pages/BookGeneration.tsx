@@ -9,7 +9,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -290,7 +291,17 @@ const BookGeneration = () => {
         ))}
       </div>
 
-      {/* Drop zone */}
+      {/* Auto-save toggle */}
+      <div className="flex items-center gap-3 max-w-3xl">
+        <Switch id="auto-save" checked={autoSave} onCheckedChange={setAutoSave} />
+        <Label htmlFor="auto-save" className="text-sm text-foreground cursor-pointer">
+          حفظ تلقائي
+        </Label>
+        <span className="text-xs text-muted-foreground">
+          {autoSave ? "يحلل ويحفظ مباشرة بدون مراجعة" : "يحلل أولاً ثم تراجع وتحفظ يدوياً"}
+        </span>
+      </div>
+
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl">
         <button
           onClick={() => fileInputRef.current?.click()}
