@@ -22,7 +22,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "hero.statAccess": "Instant Access",
     // Products section
     "products.search": "Search books...",
-    "products.all": "All",
+    "products.all": "Effects",
     "products.loadMore": "Load More",
     "products.empty": "No books found.",
     // Features
@@ -155,7 +155,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "hero.statRights": "حقوق كاملة",
     "hero.statAccess": "وصول فوري",
     "products.search": "ابحث عن كتب...",
-    "products.all": "الكل",
+    "products.all": "المؤثرات",
     "products.loadMore": "تحميل المزيد",
     "products.empty": "لم يتم العثور على كتب.",
     "features.tag": "لماذا تختارنا",
@@ -285,7 +285,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "hero.statRights": "Droits complets",
     "hero.statAccess": "Accès instantané",
     "products.search": "Rechercher des livres...",
-    "products.all": "Tous",
+    "products.all": "Effets",
     "products.loadMore": "Charger plus",
     "products.empty": "Aucun produit trouvé.",
     "features.tag": "Pourquoi nous choisir",
