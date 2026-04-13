@@ -1,9 +1,9 @@
 import { useState, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
-  Upload, Loader2, CheckCircle2, XCircle, FileText, Image, FileSpreadsheet,
-  Presentation, Archive, Palette, File, Sparkles, BookOpen, CreditCard,
-  Layout, ImageIcon, FileCheck, MonitorPlay, HelpCircle
+  Upload, Loader2, CheckCircle2, XCircle, FileText,
+  BookOpen, CreditCard, Layout, ImageIcon, FileCheck,
+  MonitorPlay, HelpCircle, Download, ExternalLink, Save
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -12,6 +12,7 @@ import { toast } from "sonner";
 
 interface ProcessResult {
   success: boolean;
+  id?: string;
   code: string;
   category: string;
   name: string;
@@ -30,8 +31,6 @@ const CATEGORY_ICONS: Record<string, any> = {
   "عروض": MonitorPlay,
   "أخرى": HelpCircle,
 };
-
-const ACCEPTED_TYPES = "*/*";
 
 const BookGeneration = () => {
   const [processing, setProcessing] = useState(false);
@@ -67,6 +66,7 @@ const BookGeneration = () => {
 
       return {
         success: true,
+        id: data.id,
         code: data.code,
         category: data.category,
         name: data.name,
@@ -83,7 +83,6 @@ const BookGeneration = () => {
     const fileArray = Array.from(files);
     if (fileArray.length === 0) return;
 
-    // Validate sizes
     const maxSize = 20 * 1024 * 1024;
     const oversized = fileArray.filter(f => f.size > maxSize);
     if (oversized.length > 0) {
@@ -113,7 +112,7 @@ const BookGeneration = () => {
 
     const successCount = allResults.filter(r => r.success).length;
     if (successCount > 0) {
-      toast.success(`تم معالجة ${successCount} من ${fileArray.length} ملف بنجاح`);
+      toast.success(`✅ تم حفظ ${successCount} من ${fileArray.length} ملف في قاعدة البيانات`);
     }
     if (successCount < fileArray.length) {
       toast.error(`فشل في معالجة ${fileArray.length - successCount} ملف`);
@@ -131,7 +130,6 @@ const BookGeneration = () => {
   const successCount = results.filter(r => r.success).length;
   const failCount = results.filter(r => !r.success).length;
 
-  // Group results by category
   const grouped = results.filter(r => r.success).reduce((acc, r) => {
     const cat = r.category || "أخرى";
     if (!acc[cat]) acc[cat] = [];
@@ -144,7 +142,7 @@ const BookGeneration = () => {
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl font-extrabold text-foreground">🗂️ نظام الاستيراد الذكي</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          ارفع أي ملف — النظام يحلله ويصنفه ويرقمه تلقائياً (كتب، بطاقات، قوالب، صور، وثائق...)
+          ارفع أي ملف — النظام يحلله ويصنفه ويرقمه ويحفظه تلقائياً في قاعدة البيانات
         </p>
       </motion.div>
 
@@ -159,11 +157,7 @@ const BookGeneration = () => {
       </div>
 
       {/* Drop zone */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-3xl"
-      >
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl">
         <button
           onClick={() => fileInputRef.current?.click()}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -182,7 +176,7 @@ const BookGeneration = () => {
             <>
               <Loader2 className="w-10 h-10 text-primary animate-spin" />
               <div className="text-center">
-                <p className="text-sm font-semibold text-foreground">جاري المعالجة...</p>
+                <p className="text-sm font-semibold text-foreground">جاري المعالجة والحفظ...</p>
                 {currentFile && (
                   <p className="text-xs text-muted-foreground mt-1 truncate max-w-xs">{currentFile}</p>
                 )}
@@ -203,7 +197,7 @@ const BookGeneration = () => {
                   PDF · صور · Word · PowerPoint · Excel · ZIP · SVG · وأكثر
                 </p>
                 <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-                  يدعم ملفات متعددة · حتى 20MB لكل ملف · تصنيف وترقيم تلقائي بالذكاء الاصطناعي
+                  يدعم ملفات متعددة · حتى 20MB لكل ملف · حفظ تلقائي مع ترقيم وتصنيف بالذكاء الاصطناعي
                 </p>
               </div>
             </>
@@ -213,26 +207,49 @@ const BookGeneration = () => {
         <input
           ref={fileInputRef}
           type="file"
-          accept={ACCEPTED_TYPES}
+          accept="*/*"
           multiple
           onChange={(e) => e.target.files && handleFiles(e.target.files)}
           className="hidden"
         />
       </motion.div>
 
-      {/* Results summary */}
+      {/* Results */}
       {results.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="max-w-3xl space-y-4"
-        >
-          {/* Stats */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl space-y-4">
+          {/* Stats bar */}
           <div className="flex items-center gap-4 text-sm px-1">
             <span className="text-muted-foreground">المجموع: <strong className="text-foreground">{results.length}</strong></span>
-            {successCount > 0 && <span className="text-green-400">✅ نجح: <strong>{successCount}</strong></span>}
+            {successCount > 0 && (
+              <span className="flex items-center gap-1 text-green-400">
+                <Save className="w-3.5 h-3.5" /> محفوظ: <strong>{successCount}</strong>
+              </span>
+            )}
             {failCount > 0 && <span className="text-red-400">❌ فشل: <strong>{failCount}</strong></span>}
           </div>
+
+          {/* Saved confirmation banner */}
+          {!processing && successCount > 0 && (
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-green-500/10 border border-green-500/20">
+              <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-green-400">
+                  تم الحفظ بنجاح — {successCount} عنصر في قاعدة البيانات
+                </p>
+                <p className="text-xs text-green-400/70 mt-0.5">
+                  الصور في ملف الصور · PDF في ملف الكتب · كل عنصر برقم تعريف فريد
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0 border-green-500/30 text-green-400 hover:bg-green-500/10"
+                onClick={() => window.location.href = "/admin/products"}
+              >
+                عرض المنتجات
+              </Button>
+            </div>
+          )}
 
           {/* Grouped results */}
           {Object.entries(grouped).map(([cat, items]) => {
@@ -259,6 +276,28 @@ const BookGeneration = () => {
                         <p className="text-[11px] text-muted-foreground">{r.fileName}</p>
                       </div>
                       <span className="text-xs font-mono text-primary bg-primary/10 px-2 py-1 rounded-md">{r.code}</span>
+                      {r.file_url && (
+                        <a
+                          href={r.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors"
+                          title="تحميل الملف"
+                        >
+                          <Download className="w-4 h-4" />
+                        </a>
+                      )}
+                      {r.id && (
+                        <a
+                          href={`/product/${r.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors"
+                          title="عرض المنتج"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      )}
                       <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />
                     </div>
                   ))}
