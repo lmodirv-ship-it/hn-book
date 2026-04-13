@@ -33,7 +33,7 @@ serve(async (req) => {
       // If API key is blocked (403), retry without key
       if (!gbResp.ok && GOOGLE_BOOKS_API_KEY) {
         console.log("Google Books: API key blocked, retrying without key...");
-        gbUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&filter=free-ebooks&maxResults=${Math.min(bookCount, 10)}&orderBy=relevance`;
+        gbUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=${Math.min(bookCount, 40)}&orderBy=relevance`;
         gbResp = await fetch(gbUrl);
       }
       console.log("Google Books status:", gbResp.status);
