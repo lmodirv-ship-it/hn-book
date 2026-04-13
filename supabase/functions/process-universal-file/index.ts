@@ -317,14 +317,21 @@ serve(async (req) => {
       console.log(`🔍 [${i+1}/${rawItems.length}] ${item.fileName}`);
 
       try {
+        // Folder-based category hint (from ZIP structure)
+        const folderHint = item.folderPath ? getCategoryFromFolderPath(item.folderPath) : null;
+        if (folderHint) {
+          console.log(`📁 Folder hint for ${item.fileName}: ${folderHint} (from ${item.folderPath})`);
+        }
+
         // AI Classification
         const cls = await classifyAI(item.fileBytes, item.fileName, item.mimeType, item.mimeCategory) || {
-          type: "أخرى", name_ar: item.fileName.replace(/\.[^.]+$/, ""),
+          type: folderHint || "أخرى", name_ar: item.fileName.replace(/\.[^.]+$/, ""),
           name_en: item.fileName.replace(/\.[^.]+$/, ""),
           description_ar: `ملف ${item.fileName}`, author: "", tags: [], suggested_price: 0,
         };
 
-        const categoryType = cls.type || "أخرى";
+        // If AI couldn't determine type well but folder structure gives a hint, prefer folder hint
+        const categoryType = folderHint || cls.type || "أخرى";
         const prefix = CATEGORY_PREFIXES[categoryType] || "HNX";
 
         // Generate unique code
