@@ -73,6 +73,7 @@ const BookGeneration = () => {
   const [pendingTotalSize, setPendingTotalSize] = useState(0);
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
   const FILE_FILTERS: { key: string; label: string; icon: any; exts: string[] }[] = [
     { key: "pdf", label: "PDF", icon: BookOpen, exts: ["pdf"] },
