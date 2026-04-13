@@ -4,7 +4,7 @@ export const translations: Record<Locale, Record<string, string>> = {
   en: {
     // Navbar
     "nav.products": "Books",
-    "nav.features": "Features",
+    "nav.features": "Cards",
     "nav.pricing": "Pricing",
     "nav.getStarted": "Get Started",
     // Hero
@@ -139,7 +139,7 @@ export const translations: Record<Locale, Record<string, string>> = {
   },
   ar: {
     "nav.products": "الكتب",
-    "nav.features": "المميزات",
+    "nav.features": "بطاقات",
     "nav.pricing": "الأسعار",
     "nav.getStarted": "ابدأ الآن",
     "hero.badge": "كتاب رقمي متوفر",
@@ -269,7 +269,7 @@ export const translations: Record<Locale, Record<string, string>> = {
   },
   fr: {
     "nav.products": "Livres",
-    "nav.features": "Fonctionnalités",
+    "nav.features": "Cartes",
     "nav.pricing": "Tarifs",
     "nav.getStarted": "Commencer",
     "hero.badge": "Livres numériques disponibles",
