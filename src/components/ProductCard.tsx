@@ -1,7 +1,7 @@
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Zap } from "lucide-react";
+import { ShoppingCart, Zap, Flame } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Product } from "@/lib/products";
 import { useRef } from "react";
@@ -43,7 +43,7 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
       whileInView={{ opacity: 1, y: 0, scale: 1 }}
       transition={{
         duration: 0.6,
-        delay: index * 0.12,
+        delay: index * 0.08,
         type: "spring",
         stiffness: 100,
       }}
@@ -78,7 +78,7 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
             />
 
             {/* Image */}
-            <div className="relative aspect-[3/2] overflow-hidden">
+            <div className="relative aspect-[3/2] overflow-hidden bg-muted">
               <motion.img
                 src={product.image}
                 alt={product.name}
@@ -93,7 +93,7 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
               {/* Flash overlay on hover */}
               <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
-              {/* Badges with pulse animation */}
+              {/* Badges */}
               {product.badge && (
                 <motion.div
                   className="absolute left-3 top-3"
@@ -120,18 +120,22 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
                 </motion.div>
               )}
 
-              {/* Hover price flash */}
+              {/* Flash-style price on hover */}
               <motion.div
                 className="absolute bottom-3 left-3 right-3 flex items-end justify-between opacity-0 transition-all duration-500 group-hover:opacity-100"
               >
-                <span className="text-3xl font-bold text-primary-foreground drop-shadow-lg">
-                  ${product.price}
-                </span>
-                <Button
-                  size="sm"
-                  className="gap-1.5 shadow-xl"
-                >
-                  <ShoppingCart className="h-4 w-4" /> Buy Now
+                <div className="flex items-center gap-2">
+                  <motion.span
+                    className="text-3xl font-black text-primary-foreground drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]"
+                    animate={{ textShadow: ["0 0 10px rgba(255,255,255,0.3)", "0 0 25px rgba(255,255,255,0.8)", "0 0 10px rgba(255,255,255,0.3)"] }}
+                    transition={{ repeat: Infinity, duration: 1.5 }}
+                  >
+                    ${product.price}
+                  </motion.span>
+                  <Flame className="h-5 w-5 text-orange-400 animate-pulse" />
+                </div>
+                <Button size="sm" className="gap-1.5 shadow-xl">
+                  <ShoppingCart className="h-4 w-4" /> Buy
                 </Button>
               </motion.div>
             </div>
@@ -142,13 +146,13 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
                 className="text-xs font-bold uppercase tracking-widest text-primary"
                 initial={{ width: 0 }}
                 whileInView={{ width: "100%" }}
-                transition={{ duration: 0.8, delay: index * 0.1 + 0.3 }}
+                transition={{ duration: 0.8, delay: index * 0.05 + 0.3 }}
                 viewport={{ once: true }}
               >
                 {product.category}
               </motion.p>
 
-              <h3 className="mt-2 text-lg font-bold leading-tight transition-colors group-hover:text-primary">
+              <h3 className="mt-2 text-lg font-bold leading-tight transition-colors group-hover:text-primary line-clamp-1">
                 {product.name}
               </h3>
 
@@ -156,9 +160,22 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
                 {product.shortDescription}
               </p>
 
+              {/* Flash-style price section */}
               <div className="mt-4 flex items-center justify-between border-t pt-3">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black">${product.price}</span>
+                <div className="relative flex items-baseline gap-2">
+                  <motion.span
+                    className="relative text-2xl font-black text-primary"
+                    animate={{
+                      textShadow: [
+                        "0 0 0px hsl(var(--primary))",
+                        "0 0 12px hsl(var(--primary))",
+                        "0 0 0px hsl(var(--primary))",
+                      ],
+                    }}
+                    transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                  >
+                    ${product.price}
+                  </motion.span>
                   {product.originalPrice && (
                     <span className="text-sm text-muted-foreground line-through">
                       ${product.originalPrice}
@@ -167,7 +184,7 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
                 </div>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <div className="h-2 w-2 animate-pulse rounded-full bg-accent" />
-                  Instant Download
+                  Instant
                 </div>
               </div>
             </div>
