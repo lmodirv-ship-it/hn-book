@@ -88,31 +88,35 @@ serve(async (req) => {
 
     // Step 1b: Use Gemini to search for more free books from other platforms
     const remainingCount = Math.max(bookCount - googleBooksResults.length, 2);
-    const searchPrompt = `Search for ${remainingCount} books about "${query}" available on these platforms:
+    const searchPrompt = `Search for ${remainingCount} free downloadable resources about "${query}" available on the internet.
+Look on these platforms and any other relevant open sources:
 - Internet Archive (archive.org)
 - OpenLibrary (openlibrary.org)
 - Project Gutenberg (gutenberg.org)
-- Standard Ebooks (standardebooks.org)
-- ManyBooks (manybooks.net)
+- Freepik, Canva free templates
+- Wikimedia Commons
+- Unsplash, Pexels (for images/designs)
+- Any other legitimate free resource platforms
 
-Do NOT include Google Books results. Only include books from the platforms listed above.
-For each book provide REAL, VERIFIED information. Only include books that are actually freely available.
-For download URLs, use the actual archive.org or gutenberg.org download links.
-For cover images, use the Open Library Covers API: https://covers.openlibrary.org/b/isbn/{ISBN}-L.jpg or archive.org thumbnails.
+The search query is: "${query}"
+This could be books, templates (carte visite, logos, flyers), magazines, paintings, designs, images, or any digital content.
 
-Return the result as a JSON object with a "books" array. Each book object must have:
+Do NOT include Google Books results. Only include resources from other platforms.
+For each resource provide REAL, VERIFIED information. Only include items that are actually freely available.
+
+Return the result as a JSON object with a "books" array. Each item object must have:
 - title (string)
-- author (string)
+- author (string, or creator/designer name)
 - description (string, in Arabic)
-- category (string)
+- category (string, e.g. "كتب", "قوالب", "تصاميم", "لوحات", "مجلات", "شعارات")
 - language (string, e.g. "en", "ar", "fr")
-- year (number)
-- pages (number)
+- year (number or null)
+- pages (number or null)
 - source (string, platform name)
-- source_url (string, URL to book page)
-- download_url (string, direct PDF download URL)
-- cover_url (string, cover image URL)
-- isbn (string, if available)
+- source_url (string, URL to resource page)
+- download_url (string, direct download URL)
+- cover_url (string, preview/thumbnail image URL)
+- isbn (string, if available, empty string if not)
 
 IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks.`;
 
