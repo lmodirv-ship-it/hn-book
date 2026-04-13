@@ -8,6 +8,7 @@ import Index from "./pages/Index.tsx";
 import ProductDetail from "./pages/ProductDetail.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import CustomerAuth from "./pages/CustomerAuth.tsx";
+import Profile from "./pages/Profile.tsx";
 import AdminLayout from "./admin/layouts/AdminLayout.tsx";
 import AdminDashboard from "./admin/pages/Dashboard.tsx";
 import AdminProducts from "./admin/pages/Products.tsx";
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/auth" element={<CustomerAuth />} />
+            <Route path="/profile" element={<Profile />} />
             
             {/* Admin Login */}
             <Route path="/admin/login" element={<AdminLogin />} />

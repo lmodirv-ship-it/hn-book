@@ -24,7 +24,7 @@ const CustomerAuth = () => {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate("/");
+        navigate("/profile");
       } else {
         const { error } = await supabase.auth.signUp({
           email,
