@@ -49,6 +49,7 @@ const Index = () => {
           badge: p.badge || undefined,
           isFlashDeal: p.is_flash_deal || false,
           dealEndsIn: p.deal_ends_in || undefined,
+          referenceCode: (p as any).reference_code || undefined,
         }));
         setProducts(mapped);
       }

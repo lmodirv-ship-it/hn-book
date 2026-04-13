@@ -11,7 +11,8 @@ export interface Product {
   features: string[];
   badge?: string;
   isFlashDeal?: boolean;
-  dealEndsIn?: number; // hours remaining
+  dealEndsIn?: number;
+  referenceCode?: string;
 }
 
 function seededRandom(seed: number) {
