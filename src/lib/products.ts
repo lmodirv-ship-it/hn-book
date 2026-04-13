@@ -143,7 +143,7 @@ function generateProducts(): Product[] {
         price,
         originalPrice: origPrice,
         category: cat.category,
-        image: cat.image,
+        image: `https://picsum.photos/seed/${idx + 100}/800/544`,
         features: tmpl.features.map((f) => f.replace("{count}", String(count))),
         badge,
       });
