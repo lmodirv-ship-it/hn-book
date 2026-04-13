@@ -354,7 +354,6 @@ const BookGeneration = () => {
         for await (const entry of handle.values()) {
           if (entry.kind === "file") {
             const file = await entry.getFile();
-            // Skip hidden/system files
             if (!file.name.startsWith(".") && file.size > 512) {
               files.push(file);
             }
@@ -371,14 +370,28 @@ const BookGeneration = () => {
         return;
       }
       
-      toast.info(`تم اكتشاف ${files.length} ملف — جاري المعالجة...`);
-      handleFiles(files);
+      const totalSize = files.reduce((sum, f) => sum + f.size, 0);
+      setPendingFiles(files);
+      setPendingTotalSize(totalSize);
     } catch (err: any) {
       if (err.name !== "AbortError") {
         toast.error("فشل في فتح المجلد");
       }
     }
-  }, [handleFiles]);
+  }, []);
+
+  const confirmPendingFiles = useCallback(() => {
+    if (pendingFiles) {
+      handleFiles(pendingFiles);
+      setPendingFiles(null);
+      setPendingTotalSize(0);
+    }
+  }, [pendingFiles, handleFiles]);
+
+  const cancelPendingFiles = useCallback(() => {
+    setPendingFiles(null);
+    setPendingTotalSize(0);
+  }, []);
 
   const successCount = results.filter(r => r.success).length;
   const failCount = results.filter(r => !r.success).length;
