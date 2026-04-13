@@ -1,249 +1,304 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Wand2, PenLine, Loader2, Plus, Sparkles, Upload, BookOpen } from "lucide-react";
+import {
+  Upload, Loader2, CheckCircle2, XCircle, FileText, Image, FileSpreadsheet,
+  Presentation, Archive, Palette, File, Sparkles, BookOpen, CreditCard,
+  Layout, ImageIcon, FileCheck, MonitorPlay, HelpCircle
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { BookCatalogUpload } from "@/admin/components/BookCatalogUpload";
 
-const CATEGORIES = [
-  "كتب عامة",
-  "تطوير الذات",
-  "الصحة واللياقة",
-  "الأعمال والتسويق",
-  "المالية والاستثمار",
-  "التقنية والبرمجة",
-  "الطبخ والتغذية",
-  "الأدب والروايات",
-  "التعليم والدراسة",
-  "eBooks & PLR",
-  "Design Templates",
-  "Online Courses",
-  "AI Tools",
-];
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="text-xs font-medium text-foreground mb-1 block">{label}</label>
-      {children}
-    </div>
-  );
+interface ProcessResult {
+  success: boolean;
+  code: string;
+  category: string;
+  name: string;
+  cover?: string;
+  file_url?: string;
+  error?: string;
+  fileName: string;
 }
 
+const CATEGORY_ICONS: Record<string, any> = {
+  "كتب": BookOpen,
+  "بطاقات": CreditCard,
+  "قوالب": Layout,
+  "صور": ImageIcon,
+  "وثائق": FileCheck,
+  "عروض": MonitorPlay,
+  "أخرى": HelpCircle,
+};
+
+const ACCEPTED_TYPES = [
+  "application/pdf",
+  "image/*",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "text/csv",
+  "application/zip",
+  "application/x-rar-compressed",
+  "image/svg+xml",
+  "application/postscript",
+].join(",");
+
 const BookGeneration = () => {
-  const [activeTab, setActiveTab] = useState<"ai" | "manual" | "catalog">("ai");
+  const [processing, setProcessing] = useState(false);
+  const [currentFile, setCurrentFile] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [results, setResults] = useState<ProcessResult[]>([]);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // AI generation state
-  const [autoCategory, setAutoCategory] = useState(CATEGORIES[0]);
-  const [autoCount, setAutoCount] = useState("5");
-  const [generating, setGenerating] = useState(false);
-  const [generatedBooks, setGeneratedBooks] = useState<any[]>([]);
-
-  // Manual form state
-  const [saving, setSaving] = useState(false);
-  const [name, setName] = useState("");
-  const [shortDesc, setShortDesc] = useState("");
-  const [description, setDescription] = useState("");
-  const [author, setAuthor] = useState("");
-  const [pages, setPages] = useState("");
-  const [price, setPrice] = useState("");
-  const [originalPrice, setOriginalPrice] = useState("");
-  const [category, setCategory] = useState(CATEGORIES[0]);
-  const [badge, setBadge] = useState("");
-  const [features, setFeatures] = useState("");
-
-  const handleAIGenerate = async () => {
-    const count = Math.min(Math.max(parseInt(autoCount) || 1, 1), 20);
-    setGenerating(true);
-    setGeneratedBooks([]);
-
+  const processFile = async (file: File): Promise<ProcessResult> => {
     try {
-      const { data, error } = await supabase.functions.invoke("generate-books", {
-        body: { category: autoCategory, count, language: "ar" },
-      });
+      const formData = new FormData();
+      formData.append("file", file);
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
 
-      setGeneratedBooks(data.books || []);
-      toast.success(`تم توليد ${data.count} كتاب بالذكاء الاصطناعي`);
-    } catch (e: any) {
-      toast.error(e.message || "فشل في توليد الكتب");
-    } finally {
-      setGenerating(false);
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/process-universal-file`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { success: false, code: "", category: "", name: "", error: data.error || "فشل", fileName: file.name };
+      }
+
+      return {
+        success: true,
+        code: data.code,
+        category: data.category,
+        name: data.name,
+        cover: data.cover,
+        file_url: data.file_url,
+        fileName: file.name,
+      };
+    } catch (err: any) {
+      return { success: false, code: "", category: "", name: "", error: err.message, fileName: file.name };
     }
   };
 
-  const handleManualSave = async () => {
-    if (!name.trim() || !price) {
-      toast.error("يرجى ملء الاسم والسعر");
+  const handleFiles = useCallback(async (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    if (fileArray.length === 0) return;
+
+    // Validate sizes
+    const maxSize = 20 * 1024 * 1024;
+    const oversized = fileArray.filter(f => f.size > maxSize);
+    if (oversized.length > 0) {
+      toast.error(`${oversized.length} ملف(ات) تتجاوز 20MB`);
       return;
     }
-    setSaving(true);
-    const desc = [description, author && `المؤلف: ${author}`, pages && `عدد الصفحات: ${pages}`].filter(Boolean).join("\n");
-    const featureList = features.split("\n").map(f => f.trim()).filter(Boolean);
 
-    const { error } = await supabase.from("products").insert({
-      name: name.trim(),
-      short_description: shortDesc.trim() || null,
-      description: desc || null,
-      price: Number(price),
-      original_price: originalPrice ? Number(originalPrice) : null,
-      category,
-      badge: badge.trim() || null,
-      features: featureList.length > 0 ? featureList : null,
-      is_active: true,
-    });
-    setSaving(false);
-    if (error) { toast.error("فشل في إضافة المنتج"); return; }
-    toast.success("تم إضافة المنتج بنجاح");
-    setName(""); setShortDesc(""); setDescription(""); setAuthor(""); setPages("");
-    setPrice(""); setOriginalPrice(""); setBadge(""); setFeatures("");
-  };
+    setProcessing(true);
+    setResults([]);
+    setProgress(0);
 
-  const tabs = [
-    { id: "ai" as const, icon: Wand2, label: "توليد بالذكاء الاصطناعي" },
-    { id: "manual" as const, icon: PenLine, label: "إضافة يدوية" },
-    { id: "catalog" as const, icon: Upload, label: "استيراد كتالوج PDF" },
-  ];
+    const allResults: ProcessResult[] = [];
+
+    for (let i = 0; i < fileArray.length; i++) {
+      const file = fileArray[i];
+      setCurrentFile(file.name);
+      setProgress(Math.round(((i) / fileArray.length) * 100));
+
+      const result = await processFile(file);
+      allResults.push(result);
+      setResults([...allResults]);
+    }
+
+    setProgress(100);
+    setCurrentFile(null);
+    setProcessing(false);
+
+    const successCount = allResults.filter(r => r.success).length;
+    if (successCount > 0) {
+      toast.success(`تم معالجة ${successCount} من ${fileArray.length} ملف بنجاح`);
+    }
+    if (successCount < fileArray.length) {
+      toast.error(`فشل في معالجة ${fileArray.length - successCount} ملف`);
+    }
+
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    handleFiles(e.dataTransfer.files);
+  }, [handleFiles]);
+
+  const successCount = results.filter(r => r.success).length;
+  const failCount = results.filter(r => !r.success).length;
+
+  // Group results by category
+  const grouped = results.filter(r => r.success).reduce((acc, r) => {
+    const cat = r.category || "أخرى";
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(r);
+    return acc;
+  }, {} as Record<string, ProcessResult[]>);
 
   return (
     <div className="space-y-6" dir="rtl">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-extrabold text-foreground">📚 توليد وإضافة الكتب</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">أضف كتباً يدوياً أو ولّدها بالذكاء الاصطناعي أو استوردها من كتالوج PDF</p>
+        <h1 className="text-2xl font-extrabold text-foreground">🗂️ نظام الاستيراد الذكي</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          ارفع أي ملف — النظام يحلله ويصنفه ويرقمه تلقائياً (كتب، بطاقات، قوالب، صور، وثائق...)
+        </p>
       </motion.div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 whitespace-nowrap px-4 py-2.5 rounded-xl text-sm transition-all ${
-              activeTab === tab.id
-                ? "bg-primary text-primary-foreground font-semibold"
-                : "bg-card border border-border text-muted-foreground hover:text-foreground hover:border-primary/30"
-            }`}
-          >
-            <tab.icon className="w-4 h-4" />
-            {tab.label}
-          </button>
+      {/* Category legend */}
+      <div className="flex flex-wrap gap-2">
+        {Object.entries(CATEGORY_ICONS).map(([cat, Icon]) => (
+          <div key={cat} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border text-xs text-muted-foreground">
+            <Icon className="w-3.5 h-3.5" />
+            <span>{cat}</span>
+          </div>
         ))}
       </div>
 
-      {/* AI Generation */}
-      {activeTab === "ai" && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-border bg-card p-6 space-y-5 max-w-2xl">
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20">
-            <Sparkles className="w-4 h-4 text-primary shrink-0" />
-            <p className="text-xs text-primary">يستخدم الذكاء الاصطناعي لتوليد كتب عربية بأسماء وأوصاف ومؤلفين واقعيين بـ 3 لغات</p>
+      {/* Drop zone */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-3xl"
+      >
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+          disabled={processing}
+          className={`w-full py-12 rounded-2xl border-2 border-dashed transition-all flex flex-col items-center justify-center gap-4 ${
+            dragOver
+              ? "border-primary bg-primary/10 scale-[1.01]"
+              : processing
+              ? "border-border bg-secondary/10 cursor-wait"
+              : "border-border hover:border-primary/50 bg-card hover:bg-secondary/10"
+          }`}
+        >
+          {processing ? (
+            <>
+              <Loader2 className="w-10 h-10 text-primary animate-spin" />
+              <div className="text-center">
+                <p className="text-sm font-semibold text-foreground">جاري المعالجة...</p>
+                {currentFile && (
+                  <p className="text-xs text-muted-foreground mt-1 truncate max-w-xs">{currentFile}</p>
+                )}
+              </div>
+              <Progress value={progress} className="w-56 h-2" />
+              <p className="text-[10px] text-muted-foreground">
+                {results.length} / {results.length + 1} ملف
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <Upload className="w-8 h-8 text-primary" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-foreground">اسحب الملفات هنا أو اضغط للاختيار</p>
+                <p className="text-[11px] text-muted-foreground mt-1.5">
+                  PDF · صور · Word · PowerPoint · Excel · ZIP · SVG · وأكثر
+                </p>
+                <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                  يدعم ملفات متعددة · حتى 20MB لكل ملف · تصنيف وترقيم تلقائي بالذكاء الاصطناعي
+                </p>
+              </div>
+            </>
+          )}
+        </button>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={ACCEPTED_TYPES}
+          multiple
+          onChange={(e) => e.target.files && handleFiles(e.target.files)}
+          className="hidden"
+        />
+      </motion.div>
+
+      {/* Results summary */}
+      {results.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-3xl space-y-4"
+        >
+          {/* Stats */}
+          <div className="flex items-center gap-4 text-sm px-1">
+            <span className="text-muted-foreground">المجموع: <strong className="text-foreground">{results.length}</strong></span>
+            {successCount > 0 && <span className="text-green-400">✅ نجح: <strong>{successCount}</strong></span>}
+            {failCount > 0 && <span className="text-red-400">❌ فشل: <strong>{failCount}</strong></span>}
           </div>
 
-          <Field label="التصنيف">
-            <select value={autoCategory} onChange={(e) => { setAutoCategory(e.target.value); setGeneratedBooks([]); }}
-              className="w-full h-10 rounded-md border border-input bg-card px-3 text-sm text-foreground">
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </Field>
-
-          <Field label="عدد الكتب (1-20)">
-            <Input type="number" min={1} max={20} value={autoCount} onChange={(e) => setAutoCount(e.target.value)} className="bg-card" />
-          </Field>
-
-          <Button onClick={handleAIGenerate} className="w-full gap-1.5" disabled={generating}>
-            {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-            {generating ? "جاري التوليد بالذكاء الاصطناعي..." : "توليد الكتب"}
-          </Button>
-
-          {generatedBooks.length > 0 && (
-            <div className="space-y-2 max-h-80 overflow-y-auto border border-border rounded-xl p-3">
-              {generatedBooks.map((b, i) => {
-                const ml = b._multilingual;
-                return (
-                  <div key={i} className="p-3 rounded-lg bg-secondary/30 text-xs space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-foreground">{b.badge}</span>
-                      <span className="text-primary font-semibold">${b.price}</span>
-                    </div>
-                    {ml ? (
-                      <div className="space-y-0.5">
-                        <p className="text-foreground">🇸🇦 {ml.ar.name}</p>
-                        <p className="text-muted-foreground">🇫🇷 {ml.fr.name}</p>
-                        <p className="text-muted-foreground">🇬🇧 {ml.en.name}</p>
+          {/* Grouped results */}
+          {Object.entries(grouped).map(([cat, items]) => {
+            const Icon = CATEGORY_ICONS[cat] || HelpCircle;
+            return (
+              <div key={cat} className="rounded-2xl border border-border bg-card overflow-hidden">
+                <div className="flex items-center gap-2 px-4 py-3 bg-secondary/30 border-b border-border">
+                  <Icon className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-semibold text-foreground">{cat}</span>
+                  <span className="text-xs text-muted-foreground mr-auto">({items.length})</span>
+                </div>
+                <div className="divide-y divide-border">
+                  {items.map((r, i) => (
+                    <div key={i} className="flex items-center gap-3 px-4 py-3">
+                      {r.cover ? (
+                        <img src={r.cover} alt="" className="w-10 h-12 rounded-lg object-cover bg-secondary" />
+                      ) : (
+                        <div className="w-10 h-12 rounded-lg bg-secondary/50 flex items-center justify-center">
+                          <FileText className="w-5 h-5 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{r.name}</p>
+                        <p className="text-[11px] text-muted-foreground">{r.fileName}</p>
                       </div>
-                    ) : (
-                      <p className="text-foreground truncate">{b.name}</p>
-                    )}
+                      <span className="text-xs font-mono text-primary bg-primary/10 px-2 py-1 rounded-md">{r.code}</span>
+                      <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Failed items */}
+          {failCount > 0 && (
+            <div className="rounded-2xl border border-red-500/20 bg-card overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-3 bg-red-500/5 border-b border-red-500/20">
+                <XCircle className="w-4 h-4 text-red-400" />
+                <span className="text-sm font-semibold text-red-400">فشل في المعالجة</span>
+              </div>
+              <div className="divide-y divide-border">
+                {results.filter(r => !r.success).map((r, i) => (
+                  <div key={i} className="flex items-center gap-3 px-4 py-3">
+                    <XCircle className="w-4 h-4 text-red-400 shrink-0" />
+                    <span className="text-sm text-foreground truncate">{r.fileName}</span>
+                    <span className="text-xs text-red-400 mr-auto truncate">({r.error})</span>
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </div>
           )}
-
-          {generatedBooks.length > 0 && (
-            <p className="text-xs text-muted-foreground text-center">✅ تم حفظ {generatedBooks.length} كتاب بـ 3 لغات (عربي، فرنسي، إنجليزي)</p>
-          )}
-        </motion.div>
-      )}
-
-      {/* Manual Add */}
-      {activeTab === "manual" && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-border bg-card p-6 space-y-4 max-w-2xl">
-          <Field label="اسم الكتاب *">
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="مثال: فن الإدارة الحديثة" className="bg-card" />
-          </Field>
-          <Field label="وصف قصير">
-            <Input value={shortDesc} onChange={(e) => setShortDesc(e.target.value)} placeholder="وصف مختصر سطر واحد" className="bg-card" />
-          </Field>
-          <Field label="الوصف المفصل">
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="وصف تفصيلي للكتاب..." className="bg-card min-h-[80px]" />
-          </Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="المؤلف">
-              <Input value={author} onChange={(e) => setAuthor(e.target.value)} placeholder="اسم المؤلف" className="bg-card" />
-            </Field>
-            <Field label="عدد الصفحات">
-              <Input type="number" value={pages} onChange={(e) => setPages(e.target.value)} placeholder="250" className="bg-card" />
-            </Field>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="السعر *">
-              <Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="29" className="bg-card" />
-            </Field>
-            <Field label="السعر الأصلي">
-              <Input type="number" value={originalPrice} onChange={(e) => setOriginalPrice(e.target.value)} placeholder="59" className="bg-card" />
-            </Field>
-          </div>
-          <Field label="التصنيف">
-            <select value={category} onChange={(e) => setCategory(e.target.value)}
-              className="w-full h-10 rounded-md border border-input bg-card px-3 text-sm text-foreground">
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </Field>
-          <Field label="المميزات (سطر لكل ميزة)">
-            <Textarea value={features} onChange={(e) => setFeatures(e.target.value)} placeholder={"PDF عالي الجودة\nقابل للطباعة\nتحديثات مجانية"} className="bg-card min-h-[60px]" />
-          </Field>
-          <Field label="الرمز (اختياري)">
-            <Input value={badge} onChange={(e) => setBadge(e.target.value)} placeholder="مثال: جديد، خصم" className="bg-card" />
-          </Field>
-          <Button onClick={handleManualSave} disabled={saving} className="w-full gap-1.5">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-            حفظ الكتاب
-          </Button>
-        </motion.div>
-      )}
-
-      {/* Catalog Import */}
-      {activeTab === "catalog" && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-border bg-card p-6 max-w-2xl">
-          <BookCatalogUpload onComplete={() => toast.success("تم تحديث قائمة الكتب")} />
         </motion.div>
       )}
     </div>
