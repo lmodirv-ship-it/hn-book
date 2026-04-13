@@ -1,11 +1,3 @@
-import ebooksImg from "@/assets/products/ebooks.jpg";
-import designTemplatesImg from "@/assets/products/design-templates.jpg";
-import onlineCoursesImg from "@/assets/products/online-courses.jpg";
-import aiToolsImg from "@/assets/products/ai-tools.jpg";
-import designAssetsImg from "@/assets/products/design-assets.jpg";
-import businessCoursesImg from "@/assets/products/business-courses.jpg";
-import videoCoursesImg from "@/assets/products/video-courses.jpg";
-import languageCoursesImg from "@/assets/products/language-courses.jpg";
 
 export interface Product {
   id: string;
@@ -27,15 +19,16 @@ function seededRandom(seed: number) {
   return x - Math.floor(x);
 }
 
-const categoryImages: Record<string, string> = {
-  "eBooks & PLR": ebooksImg,
-  "Design Templates": designTemplatesImg,
-  "Online Courses": onlineCoursesImg,
-  "AI Tools": aiToolsImg,
-  "Design Assets": designAssetsImg,
-  "Business Courses": businessCoursesImg,
-  "Video Courses": videoCoursesImg,
-  "Language Courses": languageCoursesImg,
+// Category-specific Unsplash search terms for unique product images
+const categoryKeywords: Record<string, string> = {
+  "eBooks & PLR": "ebook",
+  "Design Templates": "web-design",
+  "Online Courses": "online-learning",
+  "AI Tools": "artificial-intelligence",
+  "Design Assets": "graphic-design",
+  "Business Courses": "business-analytics",
+  "Video Courses": "video-editing",
+  "Language Courses": "language-study",
 };
 
 interface CatTemplate {
@@ -141,7 +134,7 @@ function generateProducts(): Product[] {
   const badges = ["🔥 Best Seller", "⭐ Popular", "🏆 Top Rated", "🆕 New", "💎 Premium", "⚡ Flash Deal", undefined, undefined, undefined, undefined];
 
   for (const cat of categoryData) {
-    const image = categoryImages[cat.category] || categoryImages["Online Courses"];
+    const keyword = categoryKeywords[cat.category] || "digital";
     const tier = priceTiers[cat.category] || { min: 9, max: 49 };
 
     for (let ti = 0; ti < cat.topics.length; ti++) {
@@ -164,7 +157,7 @@ function generateProducts(): Product[] {
       const isFlash = seededRandom(idx + 200) < 0.15;
       const dealHours = isFlash ? Math.floor(seededRandom(idx + 201) * 72 + 1) : undefined;
 
-      const imageUrl = image;
+      const imageUrl = `https://source.unsplash.com/800x544/?${keyword}&sig=${idx}`;
 
       all.push({
         id: `p-${idx}`,
