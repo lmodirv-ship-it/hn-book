@@ -5,7 +5,25 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useI18n, locales } from "@/lib/i18n";
 
-const Navbar = () => {
+interface NavbarProps {
+  categories?: string[];
+  activeCategory?: string;
+  onCategorySelect?: (cat: string) => void;
+  productCounts?: Record<string, number>;
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+  "All": "الكل",
+  "كتب": "كتب",
+  "بطاقات": "بطاقات",
+  "قوالب": "نماذج",
+  "صور": "صور",
+  "وثائق": "وثائق",
+  "عروض": "عروض",
+  "أخرى": "أخرى",
+};
+
+const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }: NavbarProps) => {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -35,6 +53,8 @@ const Navbar = () => {
     { href: "#pricing", label: t("nav.pricing") },
   ];
 
+  const allCategories = categories ? ["All", ...categories] : [];
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
@@ -44,9 +64,10 @@ const Navbar = () => {
       }`}
       style={{ borderBottom: scrolled ? undefined : 'none' }}
     >
+      {/* Main navbar row */}
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5 group">
+        <Link to="/" className="flex items-center gap-2.5 group shrink-0">
           <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-accent/80 shadow-glow-accent transition-transform duration-300 group-hover:scale-105">
             <span className="text-[10px] font-black text-accent-foreground tracking-tighter">HN</span>
           </div>
@@ -58,7 +79,7 @@ const Navbar = () => {
           </div>
         </Link>
 
-        {/* Desktop nav */}
+        {/* Desktop nav links */}
         <nav className="hidden items-center gap-1 md:flex absolute left-1/2 -translate-x-1/2">
           <div className="flex items-center gap-1 rounded-full px-1.5 py-1 glass-glow">
             {navLinks.map((link) => (
@@ -74,7 +95,7 @@ const Navbar = () => {
         </nav>
 
         {/* Desktop actions */}
-        <div className="hidden items-center gap-2.5 md:flex">
+        <div className="hidden items-center gap-2.5 md:flex shrink-0">
           {/* Language switcher */}
           <div className="relative" ref={langRef}>
             <Button
@@ -139,6 +160,42 @@ const Navbar = () => {
         </Button>
       </div>
 
+      {/* Category bar row (desktop) */}
+      {allCategories.length > 0 && (
+        <div className="hidden md:block border-t border-border/10">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center gap-1.5 py-2 overflow-x-auto scrollbar-hide">
+              {allCategories.map((cat) => {
+                const isActive = activeCategory === cat;
+                const label = CATEGORY_LABELS[cat] || cat;
+                const count = cat === "All" ? undefined : productCounts?.[cat];
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => onCategorySelect?.(cat)}
+                    className={`shrink-0 flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium transition-all duration-200 ${
+                      isActive
+                        ? "bg-primary/15 text-primary border border-primary/25 shadow-glow"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/30 border border-transparent"
+                    }`}
+                  >
+                    <span>{label}</span>
+                    {count !== undefined && count > 0 && (
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
+                        isActive ? "bg-primary/20 text-primary" : "bg-muted/40 text-muted-foreground"
+                      }`}>
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile menu */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
@@ -160,6 +217,30 @@ const Navbar = () => {
                   {link.label}
                 </a>
               ))}
+
+              {/* Mobile categories */}
+              {allCategories.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2 px-1">
+                  {allCategories.map((cat) => {
+                    const isActive = activeCategory === cat;
+                    const label = CATEGORY_LABELS[cat] || cat;
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => { onCategorySelect?.(cat); setMobileOpen(false); }}
+                        className={`rounded-full px-3 py-1.5 text-xs transition-colors ${
+                          isActive
+                            ? "bg-primary/15 text-primary font-medium border border-primary/25"
+                            : "text-muted-foreground hover:bg-muted/30"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
               <div className="flex gap-1 mt-2 px-1">
                 {locales.map((l) => (
                   <button
