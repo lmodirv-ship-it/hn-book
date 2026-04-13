@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { getProduct } from "@/lib/products";
+import BookCover from "@/components/BookCover";
+import { getProduct, products } from "@/lib/products";
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -50,11 +51,14 @@ const ProductDetail = () => {
             transition={{ duration: 0.5 }}
             className="overflow-hidden rounded-2xl border"
           >
-            <img
-              src={product.image}
-              alt={product.name}
-              className="h-full w-full object-cover"
-            />
+            <div className="aspect-[4/3]">
+              <BookCover
+                title={product.name}
+                category={product.category}
+                index={products.indexOf(product)}
+                className="h-full w-full rounded-2xl"
+              />
+            </div>
           </motion.div>
 
           {/* Details */}
