@@ -111,10 +111,10 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
             <span
               className="relative text-base font-black tracking-[0.2em] leading-none"
               style={{
-                background: "linear-gradient(180deg, #ffffff 0%, #93c5fd 30%, #3b82f6 70%, #60a5fa 100%)",
+                background: "linear-gradient(135deg, #ffd700 0%, #f0c040 20%, #fff8dc 40%, #daa520 60%, #ffd700 80%, #f5d060 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
-                filter: "drop-shadow(0 0 8px hsl(199,89%,48%,0.6))",
+                filter: "drop-shadow(0 0 8px rgba(255,215,0,0.5))",
                 textShadow: "0 2px 4px rgba(0,0,0,0.3), 0 4px 8px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.3)",
                 transform: "translateZ(20px)",
               }}
