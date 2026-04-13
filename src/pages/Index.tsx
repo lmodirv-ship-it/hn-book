@@ -166,7 +166,7 @@ const Index = () => {
         <section id="pricing" className="relative py-20">
           <div className="container mx-auto px-4">
             <motion.div
-              className="mx-auto max-w-2xl rounded-2xl border border-border/30 bg-card/50 p-10 text-center md:p-14"
+              className="mx-auto max-w-2xl rounded-2xl bg-card/50 p-10 text-center md:p-14 border-glow"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
@@ -192,7 +192,7 @@ const Index = () => {
 
               <Button
                 size="lg"
-                className="mt-8 gap-2 rounded-xl px-10 py-6 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-glow border-0"
+                className="mt-8 gap-2 rounded-xl px-10 py-6 text-base font-bold bg-accent text-accent-foreground hover:bg-accent/90 shadow-glow-accent border-0"
                 asChild
               >
                 <a href="#products">

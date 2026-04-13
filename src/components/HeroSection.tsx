@@ -29,7 +29,7 @@ const HeroSection = () => {
             transition={{ duration: 0.5 }}
             className="mb-8"
           >
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-medium text-primary">
+            <span className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-primary border-glow">
               <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
               {products.length.toLocaleString()}+ {t("hero.badge")}
             </span>
@@ -63,7 +63,7 @@ const HeroSection = () => {
           >
             <Button
               size="lg"
-              className="gap-2 rounded-xl px-8 py-6 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-glow border-0"
+              className="gap-2 rounded-xl px-8 py-6 text-base font-bold bg-accent text-accent-foreground hover:bg-accent/90 shadow-glow-accent border-0"
               asChild
             >
               <a href="#products">
@@ -73,7 +73,7 @@ const HeroSection = () => {
             <Button
               variant="ghost"
               size="lg"
-              className="gap-2 rounded-xl px-8 py-6 text-base text-muted-foreground hover:text-foreground"
+              className="gap-2 rounded-xl px-8 py-6 text-base text-muted-foreground hover:text-foreground border-glow"
               asChild
             >
               <a href="#features">
@@ -98,10 +98,11 @@ const HeroSection = () => {
           </motion.div>
 
           <motion.div
-            className="mt-16 grid grid-cols-3 gap-px overflow-hidden rounded-2xl border border-border/50 bg-border/50"
+            className="mt-16 grid grid-cols-3 gap-px overflow-hidden rounded-2xl bg-border/50"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
+            style={{ border: '1px solid hsl(190 90% 50% / 0.2)' }}
           >
             {[
               { value: `${products.length.toLocaleString()}+`, label: t("hero.statProducts") },
@@ -109,7 +110,7 @@ const HeroSection = () => {
               { value: "24/7", label: t("hero.statAccess") },
             ].map((stat) => (
               <div key={stat.label} className="bg-card/80 px-6 py-5 text-center">
-                <div className="text-2xl font-bold text-foreground md:text-3xl">{stat.value}</div>
+                <div className="text-2xl font-bold text-primary md:text-3xl">{stat.value}</div>
                 <div className="mt-1 text-xs text-muted-foreground">{stat.label}</div>
               </div>
             ))}

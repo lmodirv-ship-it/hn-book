@@ -4,26 +4,25 @@ import { ExternalLink } from "lucide-react";
 const hnSites = [
   { name: "HN Book", href: "#", current: true },
   { name: "Souk HN", href: "https://souk-hn.lovable.app" },
-  { name: "HN Driver", href: "https://hn-driver.lovable.app" },
+  { name: "HN Driver", href: "https://hn-driver.com" },
 ];
 
 const Footer = () => {
   const { t } = useI18n();
 
   return (
-    <footer className="border-t border-border/30 py-10">
+    <footer className="py-10" style={{ borderTop: '1px solid hsl(190 90% 50% / 0.12)' }}>
       <div className="container mx-auto px-4">
         <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary">
-              <span className="text-xs font-bold text-primary-foreground">HN</span>
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-accent shadow-glow-accent">
+              <span className="text-xs font-bold text-accent-foreground">HN</span>
             </div>
-            <span className="text-sm font-semibold text-foreground">
-              HN<span className="text-primary"> Book</span>
+            <span className="text-sm font-bold text-foreground">
+              HN <span className="text-primary">Book</span>
             </span>
           </div>
 
-          {/* HN Groupe Sites */}
           <div className="flex items-center gap-4">
             <span className="text-xs text-muted-foreground/60">مواقعنا:</span>
             {hnSites.map((site) => (
@@ -57,7 +56,7 @@ const Footer = () => {
           </nav>
         </div>
 
-        <div className="mt-8 border-t border-border/20 pt-6 text-center text-xs text-muted-foreground/50">
+        <div className="mt-8 pt-6 text-center text-xs text-muted-foreground/50" style={{ borderTop: '1px solid hsl(190 90% 50% / 0.08)' }}>
           © {new Date().getFullYear()} HN Book — HN Groupe. {t("footer.rights")}
         </div>
       </div>
