@@ -155,7 +155,7 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
               </div>
 
               {/* Read button */}
-              {hasPdf && (
+              {product.pdfUrl && (
                 <Link
                   to={`/read/${product.id}`}
                   onClick={(e) => e.stopPropagation()}
