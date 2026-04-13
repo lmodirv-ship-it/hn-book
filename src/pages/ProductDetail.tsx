@@ -331,6 +331,7 @@ const ProductDetail = () => {
                   </motion.button>
                 </div>
               </div>
+              </div>
             </div>
 
             {/* Thumbnail strip */}
