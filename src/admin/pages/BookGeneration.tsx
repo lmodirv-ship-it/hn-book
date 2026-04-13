@@ -54,10 +54,12 @@ const BookGeneration = () => {
   const [analyzing, setAnalyzing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [currentFile, setCurrentFile] = useState<string | null>(null);
+  const [statusText, setStatusText] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [items, setItems] = useState<AnalyzedItem[]>([]);
   const [sourceName, setSourceName] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [autoSave, setAutoSave] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const analyzeFile = async (file: File) => {
