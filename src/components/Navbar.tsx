@@ -95,7 +95,7 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
 
             {/* Categories box */}
             {allCategories.length > 0 && (
-              <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/5 border border-primary/15">
+              <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/8 border border-primary/20 shadow-[0_0_20px_-5px_hsl(199,89%,48%,0.1),inset_0_1px_0_0_hsl(199,89%,48%,0.06)]">
                 {allCategories.map((cat) => {
                   const isActive = activeCategory === cat;
                   const label = CATEGORY_LABELS[cat] || cat;
