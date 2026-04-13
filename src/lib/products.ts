@@ -28,23 +28,16 @@ function seededRandom(seed: number) {
 }
 
 // Category-specific Unsplash search terms for unique product images
-const categorySearchTerms: Record<string, string> = {
-  "eBooks & PLR": "ebook,digital-book,reading",
-  "Design Templates": "web-design,ui-template,mockup",
-  "Online Courses": "online-learning,education,laptop-study",
-  "AI Tools": "artificial-intelligence,technology,data",
-  "Design Assets": "graphic-design,icons,illustration",
-  "Business Courses": "business,finance,charts",
-  "Video Courses": "video-production,filmmaking,camera",
-  "Language Courses": "language-learning,education,books",
+const categoryKeywords: Record<string, string> = {
+  "eBooks & PLR": "ebook",
+  "Design Templates": "web-design",
+  "Online Courses": "online-learning",
+  "AI Tools": "artificial-intelligence",
+  "Design Assets": "graphic-design",
+  "Business Courses": "business-analytics",
+  "Video Courses": "video-editing",
+  "Language Courses": "language-study",
 };
-
-// Generate a unique image URL per product using Unsplash source with seed
-function getProductImage(category: string, idx: number): string {
-  const terms = categorySearchTerms[category] || "digital-product";
-  const term = terms.split(",")[idx % terms.split(",").length];
-  return `https://images.unsplash.com/photo-${1500000000000 + idx * 73 + seededRandom(idx + 500) * 99999 | 0}?w=800&h=544&fit=crop&q=80`;
-}
 
 interface CatTemplate {
   name: string;
@@ -149,7 +142,7 @@ function generateProducts(): Product[] {
   const badges = ["🔥 Best Seller", "⭐ Popular", "🏆 Top Rated", "🆕 New", "💎 Premium", "⚡ Flash Deal", undefined, undefined, undefined, undefined];
 
   for (const cat of categoryData) {
-    const _unused = cat.category;
+    const keyword = categoryKeywords[cat.category] || "digital";
     const tier = priceTiers[cat.category] || { min: 9, max: 49 };
 
     for (let ti = 0; ti < cat.topics.length; ti++) {
@@ -172,7 +165,7 @@ function generateProducts(): Product[] {
       const isFlash = seededRandom(idx + 200) < 0.15;
       const dealHours = isFlash ? Math.floor(seededRandom(idx + 201) * 72 + 1) : undefined;
 
-      const imageUrl = `https://images.unsplash.com/photo-${1500000000000 + idx * 131 + (seededRandom(idx + 500) * 99999 | 0)}?w=800&h=544&fit=crop&q=80`;
+      const imageUrl = `https://source.unsplash.com/800x544/?${keyword}&sig=${idx}`;
 
       all.push({
         id: `p-${idx}`,
