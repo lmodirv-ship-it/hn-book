@@ -247,13 +247,12 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                   </button>
                 ))}
               </div>
-              <Button
-                className="mt-3 w-full gap-1.5 rounded-xl bg-gradient-to-r from-accent to-accent/80 text-accent-foreground border-0 text-xs font-bold shadow-glow-accent"
+              <button
                 onClick={() => { navigate("/auth"); setMobileOpen(false); }}
+                className="mt-1 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white transition-all duration-300 bg-primary/10 border border-primary/20 hover:bg-primary/25 hover:border-primary/40 hover:shadow-[0_0_15px_-3px_hsl(199,89%,48%,0.3)] backdrop-blur-sm"
               >
-                <ArrowRight className="h-3.5 w-3.5" />
-                تسجيل الدخول
-              </Button>
+                {t("nav.getStarted")}
+              </button>
             </nav>
           </motion.div>
         )}
