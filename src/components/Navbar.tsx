@@ -80,14 +80,14 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
 
         {/* Desktop nav: nested box buttons */}
         <nav className="hidden items-center md:flex absolute left-1/2 -translate-x-1/2">
-          <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5 bg-black/80 backdrop-blur-xl border border-white/5 shadow-[0_4px_30px_-5px_rgba(0,0,0,0.7)]">
+          <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5 bg-black/80 backdrop-blur-xl border border-primary/20 shadow-[0_4px_30px_-5px_rgba(0,0,0,0.7),0_0_25px_-5px_hsl(199,89%,48%,0.15)]">
             {/* Pages box */}
-            <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/8 border border-primary/20 shadow-[0_0_20px_-5px_hsl(199,89%,48%,0.12),inset_0_1px_0_0_hsl(199,89%,48%,0.06)]">
+            <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/10 border border-primary/30 shadow-[0_0_25px_-3px_hsl(199,89%,48%,0.2),inset_0_0_15px_-3px_hsl(199,89%,48%,0.1)]">
               {navLinks.map((link, idx) => (
                 <React.Fragment key={link.href}>
                   <a
                     href={link.href}
-                    className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white transition-all duration-300 bg-gradient-to-b from-primary/20 via-primary/10 to-primary/5 border border-primary/30 shadow-[inset_0_1px_8px_-1px_hsl(199,89%,48%,0.25),0_0_10px_-3px_hsl(199,89%,48%,0.2)] hover:from-primary/30 hover:via-primary/15 hover:to-primary/8 hover:border-primary/50 hover:shadow-[inset_0_1px_12px_-1px_hsl(199,89%,48%,0.4),0_0_18px_-3px_hsl(199,89%,48%,0.35)]"
+                    className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-primary-foreground transition-all duration-300 bg-gradient-to-b from-primary/40 via-primary/25 to-primary/15 border border-primary/50 shadow-[inset_0_0_12px_-2px_hsl(199,89%,48%,0.5),0_0_15px_-2px_hsl(199,89%,48%,0.35)] hover:from-primary/55 hover:via-primary/35 hover:to-primary/20 hover:border-primary/70 hover:shadow-[inset_0_0_18px_-2px_hsl(199,89%,48%,0.65),0_0_25px_-3px_hsl(199,89%,48%,0.5)]"
                   >
                     {link.label}
                   </a>
@@ -96,7 +96,7 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                     <div className="relative" ref={langRef}>
                       <button
                         onClick={() => setLangOpen(!langOpen)}
-                        className="rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-white transition-all duration-300 bg-gradient-to-b from-primary/20 via-primary/10 to-primary/5 border border-primary/30 shadow-[inset_0_1px_8px_-1px_hsl(199,89%,48%,0.25),0_0_10px_-3px_hsl(199,89%,48%,0.2)] hover:from-primary/30 hover:via-primary/15 hover:to-primary/8 hover:border-primary/50 hover:shadow-[inset_0_1px_12px_-1px_hsl(199,89%,48%,0.4),0_0_18px_-3px_hsl(199,89%,48%,0.35)] flex items-center gap-1"
+                        className="rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-primary-foreground transition-all duration-300 bg-gradient-to-b from-primary/40 via-primary/25 to-primary/15 border border-primary/50 shadow-[inset_0_0_12px_-2px_hsl(199,89%,48%,0.5),0_0_15px_-2px_hsl(199,89%,48%,0.35)] hover:from-primary/55 hover:via-primary/35 hover:to-primary/20 hover:border-primary/70 hover:shadow-[inset_0_0_18px_-2px_hsl(199,89%,48%,0.65),0_0_25px_-3px_hsl(199,89%,48%,0.5)] flex items-center gap-1"
                       >
                         <Globe className="h-3 w-3" />
                         {locales.find(l => l.code === locale)?.flag}
@@ -131,7 +131,7 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
               ))}
               <button
                 onClick={() => navigate("/auth")}
-                className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white transition-all duration-300 bg-gradient-to-b from-primary/20 via-primary/10 to-primary/5 border border-primary/30 shadow-[inset_0_1px_8px_-1px_hsl(199,89%,48%,0.25),0_0_10px_-3px_hsl(199,89%,48%,0.2)] hover:from-primary/30 hover:via-primary/15 hover:to-primary/8 hover:border-primary/50 hover:shadow-[inset_0_1px_12px_-1px_hsl(199,89%,48%,0.4),0_0_18px_-3px_hsl(199,89%,48%,0.35)]"
+                className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-primary-foreground transition-all duration-300 bg-gradient-to-b from-primary/40 via-primary/25 to-primary/15 border border-primary/50 shadow-[inset_0_0_12px_-2px_hsl(199,89%,48%,0.5),0_0_15px_-2px_hsl(199,89%,48%,0.35)] hover:from-primary/55 hover:via-primary/35 hover:to-primary/20 hover:border-primary/70 hover:shadow-[inset_0_0_18px_-2px_hsl(199,89%,48%,0.65),0_0_25px_-3px_hsl(199,89%,48%,0.5)]"
               >
                 {t("nav.getStarted")}
               </button>
@@ -139,7 +139,7 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
 
             {/* Categories box */}
             {allCategories.length > 0 && (
-              <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/8 border border-primary/20 shadow-[0_0_20px_-5px_hsl(199,89%,48%,0.1),inset_0_1px_0_0_hsl(199,89%,48%,0.06)]">
+              <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/10 border border-primary/30 shadow-[0_0_25px_-3px_hsl(199,89%,48%,0.2),inset_0_0_15px_-3px_hsl(199,89%,48%,0.1)]">
                 {allCategories.map((cat) => {
                   const isActive = activeCategory === cat;
                   const label = CATEGORY_LABELS[cat] || cat;
@@ -149,8 +149,8 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                       onClick={() => onCategorySelect?.(cat)}
                       className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all duration-300 ${
                         isActive
-                          ? "bg-gradient-to-b from-primary/35 via-primary/20 to-primary/10 text-white border border-primary/55 shadow-[inset_0_1px_12px_-1px_hsl(199,89%,48%,0.45),0_0_20px_-3px_hsl(199,89%,48%,0.4)]"
-                          : "bg-gradient-to-b from-primary/20 via-primary/10 to-primary/5 text-white border border-primary/30 shadow-[inset_0_1px_8px_-1px_hsl(199,89%,48%,0.25),0_0_10px_-3px_hsl(199,89%,48%,0.2)] hover:from-primary/30 hover:via-primary/15 hover:to-primary/8 hover:border-primary/50 hover:shadow-[inset_0_1px_12px_-1px_hsl(199,89%,48%,0.4),0_0_18px_-3px_hsl(199,89%,48%,0.35)]"
+                          ? "bg-gradient-to-b from-primary/55 via-primary/35 to-primary/20 text-primary-foreground border border-primary/70 shadow-[inset_0_0_18px_-2px_hsl(199,89%,48%,0.65),0_0_25px_-3px_hsl(199,89%,48%,0.5)]"
+                          : "bg-gradient-to-b from-primary/40 via-primary/25 to-primary/15 text-primary-foreground border border-primary/50 shadow-[inset_0_0_12px_-2px_hsl(199,89%,48%,0.5),0_0_15px_-2px_hsl(199,89%,48%,0.35)] hover:from-primary/55 hover:via-primary/35 hover:to-primary/20 hover:border-primary/70 hover:shadow-[inset_0_0_18px_-2px_hsl(199,89%,48%,0.65),0_0_25px_-3px_hsl(199,89%,48%,0.5)]"
                       }`}
                     >
                       {label}
