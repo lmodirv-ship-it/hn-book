@@ -48,10 +48,10 @@ const Navbar = () => {
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary">
-            <span className="text-[10px] font-bold text-primary-foreground">TV</span>
+            <span className="text-[10px] font-bold text-primary-foreground">HN</span>
           </div>
           <span className="text-sm font-semibold tracking-tight text-foreground">
-            Template<span className="text-primary">Vault</span>
+            HN<span className="text-primary"> Book</span>
           </span>
         </Link>
 
