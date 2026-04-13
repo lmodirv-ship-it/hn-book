@@ -79,18 +79,40 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
           </div>
         </Link>
 
-        {/* Desktop nav links */}
+        {/* Desktop nav: pages + categories in one pill */}
         <nav className="hidden items-center gap-1 md:flex absolute left-1/2 -translate-x-1/2">
-          <div className="flex items-center gap-1 rounded-full px-1.5 py-1 glass-glow">
+          <div className="flex items-center gap-0.5 rounded-full px-1.5 py-1 glass-glow">
             {navLinks.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                className="rounded-full px-5 py-2 text-[13px] font-medium text-muted-foreground transition-all duration-200 hover:text-foreground hover:bg-muted/50"
+                className="rounded-full px-3.5 py-1.5 text-[12px] font-medium text-muted-foreground transition-all duration-200 hover:text-foreground hover:bg-muted/50"
               >
                 {link.label}
               </a>
             ))}
+            {allCategories.length > 0 && (
+              <>
+                <div className="h-4 w-px bg-border/30 mx-1" />
+                {allCategories.map((cat) => {
+                  const isActive = activeCategory === cat;
+                  const label = CATEGORY_LABELS[cat] || cat;
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => onCategorySelect?.(cat)}
+                      className={`rounded-full px-3 py-1.5 text-[11px] font-medium transition-all duration-200 ${
+                        isActive
+                          ? "bg-primary/15 text-primary"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </>
+            )}
           </div>
         </nav>
 
@@ -160,40 +182,6 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
         </Button>
       </div>
 
-      {/* Category bar row (desktop) */}
-      {allCategories.length > 0 && (
-        <div className="hidden md:block border-t border-border/10">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center gap-1.5 py-2 overflow-x-auto scrollbar-hide">
-              {allCategories.map((cat) => {
-                const isActive = activeCategory === cat;
-                const label = CATEGORY_LABELS[cat] || cat;
-                const count = cat === "All" ? undefined : productCounts?.[cat];
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => onCategorySelect?.(cat)}
-                    className={`shrink-0 flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium transition-all duration-200 ${
-                      isActive
-                        ? "bg-primary/15 text-primary border border-primary/25 shadow-glow"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/30 border border-transparent"
-                    }`}
-                  >
-                    <span>{label}</span>
-                    {count !== undefined && count > 0 && (
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
-                        isActive ? "bg-primary/20 text-primary" : "bg-muted/40 text-muted-foreground"
-                      }`}>
-                        {count}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Mobile menu */}
       <AnimatePresence>
