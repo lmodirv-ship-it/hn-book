@@ -176,6 +176,19 @@ const ProductDetail = () => {
                 Buy Now — ${product.price}
               </Button>
 
+              {/* Read Online button */}
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="mt-3 w-full gap-2.5 text-base font-semibold h-12 rounded-xl border-primary/30 text-primary hover:bg-primary/10 transition-all"
+              >
+                <Link to={`/read/${product.id}`}>
+                  <BookOpen className="h-5 w-5" />
+                  📖 اقرأ الكتاب الآن
+                </Link>
+              </Button>
+
               {/* Sub-info */}
               <div className="mt-4 flex items-center justify-center gap-4 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1"><Shield className="h-3 w-3" /> Secure checkout</span>
