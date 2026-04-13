@@ -1,17 +1,53 @@
+import { useState, useMemo } from "react";
 import ParticleCanvas from "@/components/ParticleCanvas";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
 import ProductCard from "@/components/ProductCard";
 import FeaturesSection from "@/components/FeaturesSection";
 import Footer from "@/components/Footer";
-import { products } from "@/lib/products";
+import { products, categories } from "@/lib/products";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
-import { Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Zap, Search, ChevronDown, Package } from "lucide-react";
 
-const categories = [...new Set(products.map((p) => p.category))];
+const ITEMS_PER_PAGE = 24;
 
 const Index = () => {
+  const [activeCategory, setActiveCategory] = useState<string>("All");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+
+  const filteredProducts = useMemo(() => {
+    let filtered = products;
+    if (activeCategory !== "All") {
+      filtered = filtered.filter((p) => p.category === activeCategory);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.shortDescription.toLowerCase().includes(q) ||
+          p.category.toLowerCase().includes(q)
+      );
+    }
+    return filtered;
+  }, [activeCategory, searchQuery]);
+
+  const visibleProducts = filteredProducts.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredProducts.length;
+
+  const handleLoadMore = () => {
+    setVisibleCount((prev) => prev + ITEMS_PER_PAGE);
+  };
+
+  const handleCategoryChange = (cat: string) => {
+    setActiveCategory(cat);
+    setVisibleCount(ITEMS_PER_PAGE);
+  };
+
   return (
     <div className="relative min-h-screen">
       <ParticleCanvas />
@@ -32,10 +68,16 @@ const Index = () => {
             >
               <motion.div
                 className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary"
-                animate={{ boxShadow: ["0 0 15px rgba(139,92,246,0)", "0 0 15px rgba(139,92,246,0.2)", "0 0 15px rgba(139,92,246,0)"] }}
+                animate={{
+                  boxShadow: [
+                    "0 0 15px rgba(139,92,246,0)",
+                    "0 0 15px rgba(139,92,246,0.2)",
+                    "0 0 15px rgba(139,92,246,0)",
+                  ],
+                }}
                 transition={{ repeat: Infinity, duration: 3 }}
               >
-                <Zap className="h-4 w-4" /> Premium Collection
+                <Zap className="h-4 w-4" /> {products.length.toLocaleString()}+ Products
               </motion.div>
               <h2 className="text-4xl font-black md:text-5xl">
                 Our Digital{" "}
@@ -48,35 +90,92 @@ const Index = () => {
               </p>
             </motion.div>
 
-            {/* Category badges with animation */}
+            {/* Search */}
+            <div className="mx-auto mt-8 max-w-md">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search products..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setVisibleCount(ITEMS_PER_PAGE);
+                  }}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {/* Category filters */}
             <motion.div
-              className="mt-8 flex flex-wrap justify-center gap-2"
+              className="mt-6 flex flex-wrap justify-center gap-2"
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
               viewport={{ once: true }}
             >
-              {categories.map((cat, i) => (
-                <motion.div
-                  key={cat}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: i * 0.05 }}
-                  viewport={{ once: true }}
-                  whileHover={{ scale: 1.1 }}
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Badge
+                  variant={activeCategory === "All" ? "default" : "secondary"}
+                  className="cursor-pointer px-4 py-1.5 text-xs font-medium transition-all"
+                  onClick={() => handleCategoryChange("All")}
                 >
-                  <Badge variant="secondary" className="cursor-default px-4 py-1.5 text-xs font-medium backdrop-blur-sm">
-                    {cat}
-                  </Badge>
-                </motion.div>
-              ))}
+                  All ({products.length})
+                </Badge>
+              </motion.div>
+              {categories.map((cat) => {
+                const count = products.filter((p) => p.category === cat).length;
+                return (
+                  <motion.div key={cat} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Badge
+                      variant={activeCategory === cat ? "default" : "secondary"}
+                      className="cursor-pointer px-4 py-1.5 text-xs font-medium transition-all"
+                      onClick={() => handleCategoryChange(cat)}
+                    >
+                      {cat} ({count})
+                    </Badge>
+                  </motion.div>
+                );
+              })}
             </motion.div>
 
-            <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-              {products.map((product, i) => (
-                <ProductCard key={product.id} product={product} index={i} />
+            {/* Results count */}
+            <div className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Package className="h-4 w-4" />
+              Showing {visibleProducts.length} of {filteredProducts.length.toLocaleString()} products
+            </div>
+
+            {/* Product grid */}
+            <div className="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+              {visibleProducts.map((product, i) => (
+                <ProductCard key={product.id} product={product} index={i % ITEMS_PER_PAGE} />
               ))}
             </div>
+
+            {/* Load more */}
+            {hasMore && (
+              <motion.div
+                className="mt-12 text-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={handleLoadMore}
+                  className="gap-2 px-8"
+                >
+                  <ChevronDown className="h-4 w-4" />
+                  Load More ({(filteredProducts.length - visibleCount).toLocaleString()} remaining)
+                </Button>
+              </motion.div>
+            )}
+
+            {filteredProducts.length === 0 && (
+              <div className="mt-16 text-center">
+                <p className="text-lg text-muted-foreground">No products found. Try a different search.</p>
+              </div>
+            )}
           </div>
         </section>
 
@@ -94,10 +193,7 @@ const Index = () => {
               transition={{ duration: 0.6, type: "spring" }}
               viewport={{ once: true }}
             >
-              {/* Animated border glow */}
               <div className="absolute -inset-0.5 -z-10 rounded-3xl bg-gradient-to-r from-primary via-accent to-primary opacity-30 blur-sm" />
-
-              {/* Background orbs */}
               <motion.div
                 className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-primary/10 blur-3xl"
                 animate={{ scale: [1, 1.3, 1] }}
@@ -118,13 +214,13 @@ const Index = () => {
               </motion.div>
 
               <h2 className="text-3xl font-black md:text-4xl">
-                Get the{" "}
+                Get{" "}
                 <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  Complete Bundle
+                  Everything
                 </span>
               </h2>
               <p className="mt-4 text-lg text-muted-foreground">
-                All 8 product packs at a massive discount. 100M+ digital products with full resale rights.
+                All {products.length.toLocaleString()}+ products in one massive bundle. Full PLR/MRR resale rights included.
               </p>
 
               <motion.div
@@ -134,13 +230,15 @@ const Index = () => {
                 transition={{ type: "spring", delay: 0.3 }}
                 viewport={{ once: true }}
               >
-                <span className="text-5xl font-black text-primary md:text-6xl">$99</span>
-                <span className="text-xl text-muted-foreground line-through">$690</span>
+                <span className="text-5xl font-black text-primary md:text-6xl">$149</span>
+                <span className="text-xl text-muted-foreground line-through">$4,990</span>
                 <motion.div
                   animate={{ scale: [1, 1.1, 1] }}
                   transition={{ repeat: Infinity, duration: 2 }}
                 >
-                  <Badge variant="destructive" className="text-sm font-bold">Save 85%</Badge>
+                  <Badge variant="destructive" className="text-sm font-bold">
+                    Save 97%
+                  </Badge>
                 </motion.div>
               </motion.div>
 
