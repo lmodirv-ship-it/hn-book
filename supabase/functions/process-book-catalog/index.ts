@@ -1,3 +1,4 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
@@ -17,7 +18,7 @@ interface ExtractedBook {
   author?: string;
 }
 
-Deno.serve(async (req) => {
+serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -36,10 +37,17 @@ Deno.serve(async (req) => {
 
     // Convert PDF to base64 for AI processing
     const pdfBytes = await catalogFile.arrayBuffer();
-    const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBytes)));
+    // Chunk the conversion to avoid stack overflow
+    const bytes = new Uint8Array(pdfBytes);
+    let pdfBase64 = "";
+    const chunkSize = 8192;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      pdfBase64 += String.fromCharCode(...bytes.slice(i, i + chunkSize));
+    }
+    pdfBase64 = btoa(pdfBase64);
 
     // Use Gemini to extract book list from the PDF
-    const aiResponse = await fetch("https://ai-gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
