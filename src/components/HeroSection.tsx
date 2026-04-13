@@ -13,7 +13,7 @@ const HeroSection = () => {
 
   const stats = [
     { value: "100M+", label: "Digital Products" },
-    { value: "8", label: "Product Bundles" },
+    { value: `${products.length.toLocaleString()}+`, label: "Product Bundles" },
     { value: "PLR/MRR", label: "Full Rights" },
     { value: "24/7", label: "Instant Access" },
   ];
