@@ -182,40 +182,6 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
         </Button>
       </div>
 
-      {/* Category bar row (desktop) */}
-      {allCategories.length > 0 && (
-        <div className="hidden md:block border-t border-border/10">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center gap-1.5 py-2 overflow-x-auto scrollbar-hide">
-              {allCategories.map((cat) => {
-                const isActive = activeCategory === cat;
-                const label = CATEGORY_LABELS[cat] || cat;
-                const count = cat === "All" ? undefined : productCounts?.[cat];
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => onCategorySelect?.(cat)}
-                    className={`shrink-0 flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium transition-all duration-200 ${
-                      isActive
-                        ? "bg-primary/15 text-primary border border-primary/25 shadow-glow"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/30 border border-transparent"
-                    }`}
-                  >
-                    <span>{label}</span>
-                    {count !== undefined && count > 0 && (
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
-                        isActive ? "bg-primary/20 text-primary" : "bg-muted/40 text-muted-foreground"
-                      }`}>
-                        {count}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Mobile menu */}
       <AnimatePresence>
