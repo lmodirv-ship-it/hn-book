@@ -518,15 +518,17 @@ const ProductDetail = () => {
                 </Button>
               </motion.div>
 
-              {/* Preview button (no download) */}
+              {/* Read / Preview button */}
               <Button
                 variant="outline"
                 size="lg"
-                className="mt-3 w-full gap-2.5 text-base font-semibold h-12 rounded-xl border-border/40 text-muted-foreground"
-                disabled
+                className="mt-3 w-full gap-2.5 text-base font-semibold h-12 rounded-xl border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 transition-all"
+                asChild
               >
-                <Eye className="h-5 w-5" />
-                التحميل متاح بعد الشراء فقط
+                <Link to={`/read/${id}`}>
+                  <BookOpen className="h-5 w-5" />
+                  مطالعة الكتاب
+                </Link>
               </Button>
 
               {/* Sub-info */}
