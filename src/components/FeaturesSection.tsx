@@ -45,13 +45,13 @@ const FeaturesSection = () => {
           {features.map((feature, i) => (
             <motion.div
               key={feature.titleKey}
-              className="group relative rounded-2xl p-3 bg-black/95 border border-black/80 shadow-[0_4px_30px_-5px_rgba(0,0,0,0.9),inset_0_0_25px_-3px_hsl(199,89%,48%,0.25),inset_0_0_50px_-8px_hsl(199,89%,48%,0.1)]"
+              className="group relative rounded-2xl p-3 bg-black/95 border border-black/80 shadow-[0_4px_30px_-5px_rgba(0,0,0,0.9),inset_0_0_25px_-3px_hsl(42,75%,65%,0.25),inset_0_0_50px_-8px_hsl(42,75%,65%,0.1)]"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: i * 0.1 }}
               viewport={{ once: true }}
             >
-              <div className="relative rounded-xl p-7 bg-black/90 border border-primary/35 shadow-[0_0_25px_-2px_hsl(199,89%,48%,0.4),inset_0_0_20px_-3px_hsl(199,89%,48%,0.25)]">
+              <div className="relative rounded-xl p-7 bg-black/90 border border-[hsl(42,75%,65%,0.35)] shadow-[0_0_25px_-2px_hsl(42,75%,65%,0.4),inset_0_0_20px_-3px_hsl(42,75%,65%,0.25)]">
                 <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-b ${iconColors[i]} transition-transform duration-300 group-hover:scale-110`}>
                   <feature.icon className="h-5 w-5" />
                 </div>
