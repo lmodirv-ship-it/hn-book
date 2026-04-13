@@ -72,7 +72,7 @@ const BarChartPro = ({ data, color }: { data: { label: string; value: number }[]
   );
 };
 
-/* ── Stat Card ── */
+/* ── Stat Card (HN Driver style) ── */
 const StatCard = ({ icon: Icon, label, value, color, isCurrency, index, trend }: {
   icon: any; label: string; value: string | number; color: string; isCurrency?: boolean; index: number; trend?: number;
 }) => (
@@ -80,12 +80,22 @@ const StatCard = ({ icon: Icon, label, value, color, isCurrency, index, trend }:
     initial={{ opacity: 0, y: 24, scale: 0.95 }}
     animate={{ opacity: 1, y: 0, scale: 1 }}
     transition={{ delay: index * 0.06, type: "spring", stiffness: 300, damping: 24 }}
-    className="group relative glass-card rounded-2xl p-5 transition-all duration-300 hover:shadow-lg cursor-default overflow-hidden"
+    className="group relative rounded-2xl p-5 transition-all duration-300 hover:shadow-glow cursor-default overflow-hidden"
+    style={{
+      background: 'linear-gradient(135deg, hsl(190 90% 50% / 0.08), hsl(190 90% 50% / 0.03))',
+      border: '1px solid hsl(190 90% 50% / 0.25)',
+      boxShadow: 'inset 0 1px 0 0 hsl(190 90% 50% / 0.06)',
+    }}
   >
-    <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
     <div className="relative z-10">
-      <div className="flex items-center justify-between mb-4">
-        <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-secondary to-secondary/50 shadow-inner">
+      <div className="flex items-center justify-between mb-3">
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center"
+          style={{
+            background: 'hsl(190 90% 50% / 0.1)',
+            border: '1px solid hsl(190 90% 50% / 0.2)',
+          }}
+        >
           <Icon className={`w-5 h-5 ${color}`} />
         </div>
         {trend !== undefined && (
