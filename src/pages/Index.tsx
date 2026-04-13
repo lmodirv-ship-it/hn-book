@@ -127,7 +127,7 @@ const Index = () => {
               </div>
             ) : (
               <>
-                <div className="mt-8 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                <div className="mt-8 grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                   {visibleProducts.map((product, i) => (
                     <ProductCard key={product.id} product={product} index={i % ITEMS_PER_PAGE} />
                   ))}
