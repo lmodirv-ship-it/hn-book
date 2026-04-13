@@ -24,7 +24,9 @@ serve(async (req) => {
     // Step 1a: Search Google Books API directly (real results)
     const googleBooksResults: any[] = [];
     try {
-      const gbUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&filter=free-ebooks&maxResults=${Math.min(bookCount, 10)}&orderBy=relevance`;
+      const GOOGLE_BOOKS_API_KEY = Deno.env.get("GOOGLE_BOOKS_API_KEY") || "";
+      const gbKeyParam = GOOGLE_BOOKS_API_KEY ? `&key=${GOOGLE_BOOKS_API_KEY}` : "";
+      const gbUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&filter=free-ebooks&maxResults=${Math.min(bookCount, 10)}&orderBy=relevance${gbKeyParam}`;
       const gbResp = await fetch(gbUrl);
       if (gbResp.ok) {
         const gbData = await gbResp.json();
