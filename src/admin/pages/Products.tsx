@@ -282,6 +282,12 @@ const AdminProducts = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <ProductCreateDialog
+        open={showCreate}
+        onOpenChange={setShowCreate}
+        onProductCreated={fetchProducts}
+      />
     </div>
   );
 };
