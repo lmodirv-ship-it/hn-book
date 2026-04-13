@@ -245,8 +245,8 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                 className="mt-3 w-full gap-1.5 rounded-xl bg-gradient-to-r from-accent to-accent/80 text-accent-foreground border-0 text-xs font-bold shadow-glow-accent"
                 onClick={() => { navigate("/auth"); setMobileOpen(false); }}
               >
-                <Sparkles className="h-3.5 w-3.5" />
-                {t("nav.getStarted")} <ArrowRight className="h-3.5 w-3.5" />
+                <ArrowRight className="h-3.5 w-3.5" />
+                تسجيل الدخول
               </Button>
             </nav>
           </motion.div>
