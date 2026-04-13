@@ -1,11 +1,24 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Play, CheckCircle2, Zap } from "lucide-react";
-import { products } from "@/lib/products";
 import { useI18n } from "@/lib/i18n";
+import { supabase } from "@/integrations/supabase/client";
 
 const HeroSection = () => {
   const { t } = useI18n();
+  const [productCount, setProductCount] = useState(0);
+
+  useEffect(() => {
+    const fetchCount = async () => {
+      const { count } = await supabase
+        .from("products")
+        .select("*", { count: "exact", head: true })
+        .eq("is_active", true);
+      setProductCount(count || 0);
+    };
+    fetchCount();
+  }, []);
 
   return (
     <section className="relative min-h-[92vh] flex items-center overflow-hidden">
