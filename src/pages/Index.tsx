@@ -15,7 +15,7 @@ import CategoryBar from "@/components/CategoryBar";
 import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 
-const ITEMS_PER_PAGE = 60;
+const ITEMS_PER_PAGE = 100;
 
 const ALL_CATEGORIES = ["كتب", "بطاقات", "قوالب", "صور", "وثائق", "عروض", "أخرى"];
 
