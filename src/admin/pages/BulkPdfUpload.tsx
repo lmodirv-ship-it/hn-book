@@ -12,7 +12,7 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 interface PendingFile {
   file: File;
-  refCode: string; // extracted from filename
+  refCode: string;
   matchedProductId: string | null;
   matchedProductName: string | null;
   status: "pending" | "uploading" | "done" | "error" | "manual";
@@ -22,6 +22,7 @@ interface PendingFile {
 interface Product {
   id: string;
   name: string;
+  badge: string | null;
   reference_code: string | null;
   pdf_url: string | null;
 }
@@ -35,16 +36,29 @@ const BulkPdfUpload = () => {
   const [manualSearch, setManualSearch] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Fetch ALL products (paginated to bypass 1000 row limit)
   const loadProducts = useCallback(async () => {
     if (loaded) return products;
-    const { data } = await supabase
-      .from("products")
-      .select("id, name, reference_code, pdf_url")
-      .order("name");
-    const prods = (data || []) as Product[];
-    setProducts(prods);
+    const allProducts: Product[] = [];
+    let from = 0;
+    const pageSize = 1000;
+    let hasMore = true;
+
+    while (hasMore) {
+      const { data } = await supabase
+        .from("products")
+        .select("id, name, badge, reference_code, pdf_url")
+        .range(from, from + pageSize - 1)
+        .order("name");
+      const batch = (data || []) as Product[];
+      allProducts.push(...batch);
+      hasMore = batch.length === pageSize;
+      from += pageSize;
+    }
+
+    setProducts(allProducts);
     setLoaded(true);
-    return prods;
+    return allProducts;
   }, [loaded, products]);
 
   const matchFiles = async (selectedFiles: File[]) => {
@@ -53,15 +67,19 @@ const BulkPdfUpload = () => {
       .filter((f) => f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf"))
       .map((file) => {
         const baseName = file.name.replace(/\.pdf$/i, "").trim();
-        // Try matching by reference_code (case-insensitive)
-        const match = prods.find(
-          (p) => p.reference_code && p.reference_code.toLowerCase() === baseName.toLowerCase()
+        // Try matching by badge (e.g. HNB-0081)
+        const badgeMatch = prods.find(
+          (p) => p.badge && p.badge.toLowerCase() === baseName.toLowerCase()
         );
-        // Also try matching by product name
-        const nameMatch = !match
+        // Try matching by reference_code
+        const refMatch = !badgeMatch
+          ? prods.find((p) => p.reference_code && p.reference_code.toLowerCase() === baseName.toLowerCase())
+          : null;
+        // Try matching by product name
+        const nameMatch = !badgeMatch && !refMatch
           ? prods.find((p) => p.name.toLowerCase() === baseName.toLowerCase())
           : null;
-        const matched = match || nameMatch;
+        const matched = badgeMatch || refMatch || nameMatch;
         return {
           file,
           refCode: baseName,
@@ -101,6 +119,10 @@ const BulkPdfUpload = () => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const clearDone = () => {
+    setFiles((prev) => prev.filter((f) => f.status !== "done"));
+  };
+
   const uploadAll = async () => {
     const toUpload = files.filter((f) => f.status === "pending" && f.matchedProductId);
     if (!toUpload.length) {
@@ -131,7 +153,6 @@ const BulkPdfUpload = () => {
           .update({ pdf_url: publicUrl } as any)
           .eq("id", f.matchedProductId);
 
-        // Remove old file reference
         await supabase
           .from("product_files")
           .delete()
@@ -176,6 +197,7 @@ const BulkPdfUpload = () => {
     ? products.filter(
         (p) =>
           p.name.toLowerCase().includes(manualSearch.toLowerCase()) ||
+          (p.badge && p.badge.toLowerCase().includes(manualSearch.toLowerCase())) ||
           (p.reference_code && p.reference_code.toLowerCase().includes(manualSearch.toLowerCase()))
       )
     : products;
@@ -185,8 +207,13 @@ const BulkPdfUpload = () => {
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl font-extrabold text-foreground">📤 رفع PDF بالجملة</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          سمّ الملفات بالكود المرجعي (مثل HNB-0081.pdf) للربط التلقائي، أو اختر يدوياً
+          سمّ الملفات بالكود (مثل HNB-0081.pdf) للربط التلقائي، أو اختر المنتج يدوياً
         </p>
+        {loaded && (
+          <p className="text-xs text-muted-foreground mt-1">
+            تم تحميل {products.length} منتج من قاعدة البيانات
+          </p>
+        )}
       </motion.div>
 
       {/* Drop zone */}
@@ -211,7 +238,7 @@ const BulkPdfUpload = () => {
 
       {/* Stats bar */}
       {files.length > 0 && (
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs px-3 py-1.5 rounded-full bg-secondary text-muted-foreground">
             الكل: {stats.total}
           </span>
@@ -219,12 +246,12 @@ const BulkPdfUpload = () => {
             مطابق: {stats.matched}
           </span>
           {stats.manual > 0 && (
-            <span className="text-xs px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-500">
+            <span className="text-xs px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-400">
               يحتاج ربط: {stats.manual}
             </span>
           )}
           {stats.done > 0 && (
-            <span className="text-xs px-3 py-1.5 rounded-full bg-green-500/10 text-green-500">
+            <span className="text-xs px-3 py-1.5 rounded-full bg-green-500/10 text-green-400">
               تم: {stats.done}
             </span>
           )}
@@ -232,6 +259,11 @@ const BulkPdfUpload = () => {
             <span className="text-xs px-3 py-1.5 rounded-full bg-destructive/10 text-destructive">
               خطأ: {stats.errors}
             </span>
+          )}
+          {stats.done > 0 && (
+            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={clearDone}>
+              إزالة المكتملة
+            </Button>
           )}
         </div>
       )}
@@ -246,7 +278,7 @@ const BulkPdfUpload = () => {
                   {f.status === "uploading" ? (
                     <Loader2 className="w-4 h-4 text-primary animate-spin" />
                   ) : f.status === "done" ? (
-                    <Check className="w-4 h-4 text-green-500" />
+                    <Check className="w-4 h-4 text-green-400" />
                   ) : f.status === "error" ? (
                     <AlertCircle className="w-4 h-4 text-destructive" />
                   ) : (
@@ -257,15 +289,17 @@ const BulkPdfUpload = () => {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{f.file.name}</p>
                   <p className="text-[11px] text-muted-foreground">
-                    {f.status === "manual" ? (
-                      <span className="text-amber-500">لم يتم العثور على منتج مطابق — </span>
-                    ) : f.status === "error" ? (
+                    {f.status === "manual" && (
+                      <span className="text-amber-400">لم يتم العثور على منتج مطابق</span>
+                    )}
+                    {f.status === "error" && (
                       <span className="text-destructive">{f.error}</span>
-                    ) : f.status === "done" ? (
-                      <span className="text-green-500">✓ تم الرفع</span>
-                    ) : null}
+                    )}
+                    {f.status === "done" && (
+                      <span className="text-green-400">✓ تم الرفع بنجاح</span>
+                    )}
                     {f.matchedProductName && (
-                      <span className="text-primary">{f.matchedProductName}</span>
+                      <span className="text-primary"> ← {f.matchedProductName}</span>
                     )}
                   </p>
                 </div>
@@ -277,7 +311,10 @@ const BulkPdfUpload = () => {
                 )}
 
                 {(f.status === "pending" || f.status === "manual" || f.status === "error") && (
-                  <button onClick={() => removeFile(i)} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                  <button
+                    onClick={() => removeFile(i)}
+                    className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                  >
                     <X className="w-3.5 h-3.5" />
                   </button>
                 )}
@@ -287,19 +324,28 @@ const BulkPdfUpload = () => {
         </div>
       )}
 
-      {/* Upload button */}
-      {stats.matched > 0 && (
-        <Button onClick={uploadAll} disabled={uploading} className="gap-2">
-          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-          رفع {stats.matched} ملف مطابق
-        </Button>
-      )}
+      {/* Action buttons */}
+      <div className="flex gap-3">
+        {stats.matched > 0 && (
+          <Button onClick={uploadAll} disabled={uploading} className="gap-2">
+            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+            رفع {stats.matched} ملف مطابق
+          </Button>
+        )}
+        {files.length > 0 && !uploading && (
+          <Button variant="outline" onClick={() => setFiles([])}>
+            مسح الكل
+          </Button>
+        )}
+      </div>
 
       {/* Manual product picker dialog */}
-      <Dialog open={manualPickIndex !== null} onOpenChange={(open) => !open && setManualPickIndex(null)}>
+      <Dialog open={manualPickIndex !== null} onOpenChange={(open) => { if (!open) { setManualPickIndex(null); setManualSearch(""); } }}>
         <DialogContent className="max-w-md max-h-[80vh]" dir="rtl">
           <DialogHeader>
-            <DialogTitle>اختر المنتج لملف: {manualPickIndex !== null && files[manualPickIndex]?.file.name}</DialogTitle>
+            <DialogTitle className="text-sm">
+              اختر المنتج لملف: {manualPickIndex !== null && files[manualPickIndex]?.file.name}
+            </DialogTitle>
           </DialogHeader>
           <div className="relative">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -312,7 +358,7 @@ const BulkPdfUpload = () => {
           </div>
           <ScrollArea className="h-[350px]">
             <div className="space-y-1">
-              {filteredProducts.slice(0, 50).map((p) => (
+              {filteredProducts.slice(0, 100).map((p) => (
                 <button
                   key={p.id}
                   onClick={() => manualPickIndex !== null && assignProduct(manualPickIndex, p)}
@@ -321,11 +367,14 @@ const BulkPdfUpload = () => {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-foreground truncate">{p.name}</p>
                     <p className="text-[11px] text-muted-foreground">
-                      {p.reference_code || "—"} {p.pdf_url ? "· 📄 PDF موجود" : ""}
+                      {p.badge || p.reference_code || "—"} {p.pdf_url ? "· 📄 PDF موجود" : ""}
                     </p>
                   </div>
                 </button>
               ))}
+              {filteredProducts.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">لا توجد نتائج</p>
+              )}
             </div>
           </ScrollArea>
         </DialogContent>
