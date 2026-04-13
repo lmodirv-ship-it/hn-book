@@ -197,17 +197,37 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                   const isActive = activeCategory === cat;
                   const label = CATEGORY_LABELS[cat] || cat;
                   return (
-                    <button
+                    <motion.button
                       key={cat}
                       onClick={() => onCategorySelect?.(cat)}
-                      className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all duration-300 ${
-                        isActive
-                          ? "bg-gradient-to-b from-primary/55 via-primary/35 to-primary/20 text-primary-foreground border border-primary/70 shadow-[inset_0_0_18px_-2px_hsl(199,89%,48%,0.65),0_0_25px_-3px_hsl(199,89%,48%,0.5)]"
-                          : "bg-gradient-to-b from-primary/40 via-primary/25 to-primary/15 text-primary-foreground border border-primary/50 shadow-[inset_0_0_12px_-2px_hsl(199,89%,48%,0.5),0_0_15px_-2px_hsl(199,89%,48%,0.35)] hover:from-primary/55 hover:via-primary/35 hover:to-primary/20 hover:border-primary/70 hover:shadow-[inset_0_0_18px_-2px_hsl(199,89%,48%,0.65),0_0_25px_-3px_hsl(199,89%,48%,0.5)]"
+                      className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border bg-primary/20 backdrop-blur-sm ${
+                        isActive ? "border-primary/80" : "border-primary/50"
                       }`}
+                      animate={{
+                        boxShadow: isActive
+                          ? [
+                              "inset 0 0 15px -2px hsl(199,89%,48%,0.5), 0 0 20px -2px hsl(199,89%,48%,0.4)",
+                              "inset 0 0 25px -2px hsl(199,89%,48%,0.85), 0 0 35px -2px hsl(199,89%,48%,0.65)",
+                              "inset 0 0 15px -2px hsl(199,89%,48%,0.5), 0 0 20px -2px hsl(199,89%,48%,0.4)",
+                            ]
+                          : [
+                              "inset 0 0 8px -2px hsl(199,89%,48%,0.3), 0 0 10px -2px hsl(199,89%,48%,0.2)",
+                              "inset 0 0 20px -2px hsl(199,89%,48%,0.7), 0 0 25px -2px hsl(199,89%,48%,0.5)",
+                              "inset 0 0 8px -2px hsl(199,89%,48%,0.3), 0 0 10px -2px hsl(199,89%,48%,0.2)",
+                            ],
+                        borderColor: isActive
+                          ? ["hsl(199,89%,48%,0.7)", "hsl(199,89%,48%,1)", "hsl(199,89%,48%,0.7)"]
+                          : ["hsl(199,89%,48%,0.4)", "hsl(199,89%,48%,0.8)", "hsl(199,89%,48%,0.4)"],
+                      }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                      whileHover={{
+                        boxShadow: "inset 0 0 25px -2px hsl(199,89%,48%,0.85), 0 0 35px -2px hsl(199,89%,48%,0.6)",
+                        borderColor: "hsl(199,89%,48%,0.9)",
+                        scale: 1.05,
+                      }}
                     >
                       {label}
-                    </button>
+                    </motion.button>
                   );
                 })}
               </div>
