@@ -155,7 +155,8 @@ const Profile = () => {
           <p className="text-sm text-muted-foreground mt-1">{email}</p>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-6 space-y-6">
+        <div className="rounded-2xl p-3 bg-black/95 border border-black/80 shadow-[0_4px_30px_-5px_rgba(0,0,0,0.9),inset_0_0_25px_-3px_hsl(199,89%,48%,0.25),inset_0_0_50px_-8px_hsl(199,89%,48%,0.1)]">
+          <div className="rounded-xl border border-primary/35 bg-black/90 p-6 space-y-6 shadow-[0_0_25px_-2px_hsl(199,89%,48%,0.4),inset_0_0_20px_-3px_hsl(199,89%,48%,0.25)]">
           <form onSubmit={handleSave} className="space-y-4">
             <div>
               <label className="text-xs text-muted-foreground mb-1.5 block">الاسم</label>
@@ -223,6 +224,7 @@ const Profile = () => {
               <LogOut className="w-4 h-4" />
               تسجيل الخروج
             </Button>
+          </div>
           </div>
         </div>
 

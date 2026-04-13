@@ -100,7 +100,8 @@ const CustomerAuth = () => {
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl border border-border bg-card p-6 space-y-6">
+        <div className="rounded-2xl p-3 bg-black/95 border border-black/80 shadow-[0_4px_30px_-5px_rgba(0,0,0,0.9),inset_0_0_25px_-3px_hsl(199,89%,48%,0.25),inset_0_0_50px_-8px_hsl(199,89%,48%,0.1)]">
+          <div className="rounded-xl border border-primary/35 bg-black/90 p-6 space-y-6 shadow-[0_0_25px_-2px_hsl(199,89%,48%,0.4),inset_0_0_20px_-3px_hsl(199,89%,48%,0.25)]">
           {/* Tabs */}
           <div className="flex gap-1 p-1 rounded-xl bg-secondary/50">
             <button
@@ -226,6 +227,7 @@ const CustomerAuth = () => {
             )}
             الدخول بحساب Google
           </Button>
+          </div>
         </div>
 
         <p className="text-[10px] text-muted-foreground text-center mt-6">
