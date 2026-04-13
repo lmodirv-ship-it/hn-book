@@ -17,9 +17,7 @@ const Footer = () => {
       <div className="container mx-auto px-4 relative">
         <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-accent/80">
-              <span className="text-[9px] font-black text-accent-foreground">HN</span>
-            </div>
+            <img src={hnLogo} alt="HN Groupe" className="h-8 w-8 rounded-full object-cover" />
             <span className="text-sm font-bold text-foreground">
               HN <span className="text-primary">Book</span>
             </span>
