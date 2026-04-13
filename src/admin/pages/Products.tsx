@@ -298,7 +298,6 @@ const AdminProducts = () => {
       />
 
     </div>
-    </div>
   );
 };
 
