@@ -129,7 +129,7 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks.`;
         contents: [{ role: "user", parts: [{ text: searchPrompt }] }],
         generationConfig: { responseMimeType: "application/json", temperature: 0.3 },
         systemInstruction: {
-          parts: [{ text: "You are a librarian expert. You find real, freely available books from open-source platforms. Only return books that genuinely exist and are freely downloadable. Never invent fake URLs. Always respond with valid JSON only." }],
+          parts: [{ text: "You are a digital content expert. You find real, freely available resources from open-source platforms - including books, design templates, logos, business cards, magazines, paintings, and any digital content. Only return items that genuinely exist and are freely downloadable. Never invent fake URLs. Always respond with valid JSON only." }],
         },
       }),
     });
