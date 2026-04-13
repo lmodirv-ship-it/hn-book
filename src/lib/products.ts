@@ -157,7 +157,7 @@ function generateProducts(): Product[] {
       const isFlash = seededRandom(idx + 200) < 0.15;
       const dealHours = isFlash ? Math.floor(seededRandom(idx + 201) * 72 + 1) : undefined;
 
-      const imageUrl = `https://source.unsplash.com/800x544/?${keyword}&sig=${idx}`;
+      const imageUrl = `https://picsum.photos/seed/product${idx}/800/544`;
 
       all.push({
         id: `p-${idx}`,
