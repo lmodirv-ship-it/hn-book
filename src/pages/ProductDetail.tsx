@@ -190,8 +190,8 @@ const ProductDetail = () => {
             className="flex flex-col gap-4"
           >
             {/* Main Image Area */}
-            <div className="rounded-2xl p-3 bg-black/95 border border-black/80 shadow-[0_4px_30px_-5px_rgba(0,0,0,0.9),inset_0_0_25px_-3px_hsl(42,75%,65%,0.25),inset_0_0_50px_-8px_hsl(42,75%,65%,0.1)]">
-              <div className="relative overflow-hidden rounded-xl border border-[hsl(42,75%,65%,0.35)] bg-black/90 group shadow-[0_0_25px_-2px_hsl(42,75%,65%,0.4),inset_0_0_20px_-3px_hsl(42,75%,65%,0.25)]">
+            <div className="rounded-2xl p-3 bg-black/95 border border-black/80 shadow-[0_4px_30px_-5px_rgba(0,0,0,0.9),inset_0_0_25px_-3px_hsl(199,89%,68%,0.25),inset_0_0_50px_-8px_hsl(199,89%,68%,0.1)]">
+              <div className="relative overflow-hidden rounded-xl border border-[hsl(199,89%,68%,0.35)] bg-black/90 group shadow-[0_0_25px_-2px_hsl(199,89%,68%,0.4),inset_0_0_20px_-3px_hsl(199,89%,68%,0.25)]">
               <div className="aspect-[4/3] relative">
                 <AnimatePresence mode="wait">
                   {hasCarousel ? (

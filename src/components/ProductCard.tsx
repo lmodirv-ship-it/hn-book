@@ -24,9 +24,9 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
     >
       <Link to={`/product/${product.id}`}>
         {/* Outer box - black glossy */}
-        <div className="group relative rounded-2xl p-3 bg-black/95 border border-black/80 shadow-[0_4px_30px_-5px_rgba(0,0,0,0.9),inset_0_0_25px_-3px_hsl(42,75%,65%,0.25),inset_0_0_50px_-8px_hsl(42,75%,65%,0.1)]">
+        <div className="group relative rounded-2xl p-3 bg-black/95 border border-black/80 shadow-[0_4px_30px_-5px_rgba(0,0,0,0.9),inset_0_0_25px_-3px_hsl(199,89%,68%,0.25),inset_0_0_50px_-8px_hsl(199,89%,68%,0.1)]">
           {/* Inner box */}
-          <div className="relative overflow-hidden rounded-xl bg-black/90 border border-[hsl(42,75%,65%,0.5)] shadow-[0_0_35px_0px_hsl(42,75%,65%,0.55),0_0_60px_-5px_hsl(42,75%,65%,0.3),inset_0_0_25px_-2px_hsl(42,75%,65%,0.35)]">
+          <div className="relative overflow-hidden rounded-xl bg-black/90 border border-[hsl(199,89%,68%,0.5)] shadow-[0_0_35px_0px_hsl(199,89%,68%,0.55),0_0_60px_-5px_hsl(199,89%,68%,0.3),inset_0_0_25px_-2px_hsl(199,89%,68%,0.35)]">
             {/* Image */}
             <div className="relative aspect-[4/5] overflow-hidden bg-muted/20 p-3">
               {product.image ? (
