@@ -88,7 +88,7 @@ serve(async (req) => {
 
     // Step 1b: Use Gemini to search for more free books from other platforms
     const remainingCount = Math.max(bookCount - googleBooksResults.length, 2);
-    const searchPrompt = `Search for ${remainingCount} free PDF books about "${query}" available on these open-source platforms:
+    const searchPrompt = `Search for ${remainingCount} books about "${query}" available on these platforms:
 - Internet Archive (archive.org)
 - OpenLibrary (openlibrary.org)
 - Project Gutenberg (gutenberg.org)
