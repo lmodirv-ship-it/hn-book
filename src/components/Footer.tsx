@@ -1,4 +1,11 @@
 import { useI18n } from "@/lib/i18n";
+import { ExternalLink } from "lucide-react";
+
+const hnSites = [
+  { name: "HN Book", href: "#", current: true },
+  { name: "Souk HN", href: "https://souk-hn.lovable.app" },
+  { name: "HN Driver", href: "https://hn-driver.lovable.app" },
+];
 
 const Footer = () => {
   const { t } = useI18n();
@@ -9,11 +16,32 @@ const Footer = () => {
         <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
           <div className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary">
-              <span className="text-xs font-bold text-primary-foreground">TV</span>
+              <span className="text-xs font-bold text-primary-foreground">HN</span>
             </div>
             <span className="text-sm font-semibold text-foreground">
-              Template<span className="text-primary">Vault</span>
+              HN<span className="text-primary"> Book</span>
             </span>
+          </div>
+
+          {/* HN Groupe Sites */}
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-muted-foreground/60">مواقعنا:</span>
+            {hnSites.map((site) => (
+              <a
+                key={site.name}
+                href={site.href}
+                target={site.current ? undefined : "_blank"}
+                rel={site.current ? undefined : "noopener noreferrer"}
+                className={`flex items-center gap-1 text-xs transition-colors ${
+                  site.current
+                    ? "text-primary font-medium"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {site.name}
+                {!site.current && <ExternalLink className="h-3 w-3" />}
+              </a>
+            ))}
           </div>
 
           <nav className="flex gap-6 text-sm text-muted-foreground">
@@ -30,7 +58,7 @@ const Footer = () => {
         </div>
 
         <div className="mt-8 border-t border-border/20 pt-6 text-center text-xs text-muted-foreground/50">
-          © {new Date().getFullYear()} TemplateVault. {t("footer.rights")}
+          © {new Date().getFullYear()} HN Book — HN Groupe. {t("footer.rights")}
         </div>
       </div>
     </footer>
