@@ -1,9 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Package, Search, Plus, Edit, Trash2, Eye } from "lucide-react";
+import { Package, Search, Plus, Edit, Trash2, Eye, X, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ProductImageUpload } from "@/admin/components/ProductImageUpload";
+import { toast } from "sonner";
 
 interface Product {
   id: string;
@@ -21,6 +24,7 @@ const AdminProducts = () => {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [editProduct, setEditProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -51,6 +55,16 @@ const AdminProducts = () => {
   const handleDelete = async (id: string) => {
     await supabase.from("products").delete().eq("id", id);
     setProducts((prev) => prev.filter((p) => p.id !== id));
+    toast.success("تم حذف المنتج");
+  };
+
+  const handleImageUpdated = (productId: string, url: string) => {
+    setProducts((prev) =>
+      prev.map((p) => (p.id === productId ? { ...p, image: url || null } : p))
+    );
+    if (editProduct?.id === productId) {
+      setEditProduct((prev) => prev ? { ...prev, image: url || null } : null);
+    }
   };
 
   if (loading) {
@@ -119,7 +133,13 @@ const AdminProducts = () => {
                 <tr key={p.id} className="border-b border-border/50 last:border-0 hover:bg-secondary/20 transition-colors">
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-3">
-                      <img src={p.image || ""} alt={p.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                      {p.image ? (
+                        <img src={p.image} alt={p.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-secondary/50 flex items-center justify-center flex-shrink-0">
+                          <Upload className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                      )}
                       <span className="font-medium text-foreground truncate max-w-[180px]">{p.name}</span>
                     </div>
                   </td>
@@ -149,7 +169,10 @@ const AdminProducts = () => {
                       <button className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
                         <Eye className="w-3.5 h-3.5" />
                       </button>
-                      <button className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-primary transition-colors">
+                      <button
+                        onClick={() => setEditProduct(p)}
+                        className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
+                      >
                         <Edit className="w-3.5 h-3.5" />
                       </button>
                       <button
@@ -169,6 +192,28 @@ const AdminProducts = () => {
           <div className="p-8 text-center text-muted-foreground text-sm">لا توجد منتجات</div>
         )}
       </motion.div>
+
+      {/* Edit Product Dialog */}
+      <Dialog open={!!editProduct} onOpenChange={(open) => !open && setEditProduct(null)}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">تعديل صورة المنتج</DialogTitle>
+          </DialogHeader>
+          {editProduct && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium text-foreground">{editProduct.name}</p>
+                <p className="text-xs text-muted-foreground">{editProduct.category} · ${editProduct.price}</p>
+              </div>
+              <ProductImageUpload
+                productId={editProduct.id}
+                currentImage={editProduct.image}
+                onImageUpdated={(url) => handleImageUpdated(editProduct.id, url)}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
