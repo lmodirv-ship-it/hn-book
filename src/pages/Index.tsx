@@ -101,7 +101,16 @@ const Index = () => {
         {/* Products Section */}
         <section id="products" className="relative py-20">
           <div className="container mx-auto px-4">
-            <div className="relative w-full max-w-xs">
+            {/* Category Bar */}
+            <CategoryBar
+              categories={categories}
+              activeCategory={activeCategory}
+              onSelect={(cat) => { setActiveCategory(cat); setVisibleCount(ITEMS_PER_PAGE); }}
+              productCounts={productCounts}
+            />
+
+            {/* Search */}
+            <div className="mt-6 relative w-full max-w-xs">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder={t("products.search")}
@@ -112,26 +121,6 @@ const Index = () => {
                 }}
                 className="pl-10 rounded-lg bg-card/50 border-border/40"
               />
-            </div>
-
-            <div className="mt-6 flex flex-wrap gap-2">
-              <Badge
-                variant={activeCategory === "All" ? "default" : "secondary"}
-                className="cursor-pointer px-3 py-1 text-xs transition-all hover:bg-primary/10"
-                onClick={() => { setActiveCategory("All"); setVisibleCount(ITEMS_PER_PAGE); }}
-              >
-                {t("products.all")}
-              </Badge>
-              {categories.map((cat) => (
-                <Badge
-                  key={cat}
-                  variant={activeCategory === cat ? "default" : "secondary"}
-                  className="cursor-pointer px-3 py-1 text-xs transition-all hover:bg-primary/10"
-                  onClick={() => { setActiveCategory(cat); setVisibleCount(ITEMS_PER_PAGE); }}
-                >
-                  {cat}
-                </Badge>
-              ))}
             </div>
 
             {loading ? (
