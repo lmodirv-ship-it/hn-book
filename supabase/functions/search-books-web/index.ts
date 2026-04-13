@@ -183,7 +183,10 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks.`;
         continue;
       }
       try {
-        const headResp = await fetch(book.download_url, { method: "HEAD", redirect: "follow" });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+        const headResp = await fetch(book.download_url, { method: "HEAD", redirect: "follow", signal: controller.signal });
+        clearTimeout(timeoutId);
         book._verified = headResp.ok;
         book._content_type = headResp.headers.get("content-type") || "";
         book._file_size = parseInt(headResp.headers.get("content-length") || "0");
