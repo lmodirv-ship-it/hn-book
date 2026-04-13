@@ -252,34 +252,34 @@ const BookCover = ({ title, category, index, className = "" }: BookCoverProps) =
           )}
 
           {/* === CONTENT AREA === */}
-          <div className="absolute inset-0 flex flex-col items-center justify-between py-[10%] px-[12%]">
+          <div className="absolute inset-0 flex flex-col items-center justify-between py-[8%] px-[12%]">
 
-            {/* Logo at top */}
-            <div className="flex-shrink-0">
+            {/* Logo at top-right */}
+            <div className="flex-shrink-0 w-full flex justify-end">
               <img
                 src={hnLogo}
                 alt="HN Groupe"
-                className="w-[32px] h-[32px] rounded-full object-cover"
+                className="w-[36px] h-[36px] rounded-full object-cover"
                 style={{
-                  boxShadow: `0 2px 10px rgba(0,0,0,0.5), 0 0 12px ${accent}30`,
-                  border: `1.5px solid ${accent}45`,
+                  boxShadow: `0 2px 12px rgba(0,0,0,0.6), 0 0 15px ${accent}30`,
+                  border: `2px solid ${accent}50`,
                 }}
               />
             </div>
 
-            {/* Title centered */}
+            {/* Title centered - BOLD & PROMINENT */}
             <div className="flex-1 flex flex-col items-center justify-center w-full">
-              <div className="text-center">
+              <div className="text-center px-[4%]">
                 {lines.map((line, i) => (
                   <p
                     key={i}
-                    className="font-bold leading-[1.25]"
+                    className="font-extrabold leading-[1.2]"
                     style={{
-                      color: "#ffffffee",
-                      fontSize: lines.length > 2 ? "0.55em" : "0.65em",
-                      textShadow: "0 1px 4px rgba(0,0,0,0.7)",
-                      letterSpacing: "0.04em",
-                      fontFamily: "'Georgia', 'Times New Roman', serif",
+                      color: "#ffffff",
+                      fontSize: lines.length > 2 ? "0.72em" : lines.length > 1 ? "0.82em" : "0.95em",
+                      textShadow: `0 2px 8px rgba(0,0,0,0.8), 0 0 20px ${accent}25`,
+                      letterSpacing: "0.03em",
+                      fontFamily: "'Space Grotesk', 'Georgia', serif",
                     }}
                   >
                     {line}
@@ -288,37 +288,38 @@ const BookCover = ({ title, category, index, className = "" }: BookCoverProps) =
               </div>
 
               {/* Accent divider */}
-              <div className="mt-[8%] w-[50%] flex items-center gap-[4px]">
-                <div className="flex-1 h-[0.5px]" style={{ background: `linear-gradient(90deg, transparent, ${accent}80)` }} />
-                <div className="w-[4px] h-[4px] rotate-45" style={{ background: `${accent}90` }} />
-                <div className="flex-1 h-[0.5px]" style={{ background: `linear-gradient(270deg, transparent, ${accent}80)` }} />
+              <div className="mt-[8%] w-[55%] flex items-center gap-[4px]">
+                <div className="flex-1 h-[1px]" style={{ background: `linear-gradient(90deg, transparent, ${accent}90)` }} />
+                <div className="w-[5px] h-[5px] rotate-45" style={{ background: `${accent}`, boxShadow: `0 0 6px ${accent}80` }} />
+                <div className="flex-1 h-[1px]" style={{ background: `linear-gradient(270deg, transparent, ${accent}90)` }} />
               </div>
 
               {/* Category */}
               <p
-                className="mt-[5%] uppercase tracking-[0.18em] font-medium"
+                className="mt-[5%] uppercase tracking-[0.2em] font-semibold"
                 style={{
-                  color: `${accent}aa`,
-                  fontSize: "0.28em",
-                  fontFamily: "'Georgia', serif",
+                  color: `${accent}cc`,
+                  fontSize: "0.3em",
+                  fontFamily: "'Space Grotesk', sans-serif",
                 }}
               >
                 {category}
               </p>
             </div>
 
-            {/* Bottom: "من إنتاج HN Groupe" */}
-            <div className="flex-shrink-0 text-center">
+            {/* Bottom: HN-Groupe */}
+            <div className="flex-shrink-0 text-center w-full">
+              <div className="w-[40%] mx-auto h-[0.5px] mb-[6px]" style={{ background: `linear-gradient(90deg, transparent, ${accent}40, transparent)` }} />
               <p
-                className="uppercase tracking-[0.12em]"
+                className="uppercase tracking-[0.2em] font-bold"
                 style={{
-                  color: `${accent}70`,
-                  fontSize: "0.22em",
-                  fontFamily: "'Georgia', serif",
-                  letterSpacing: "0.1em",
+                  color: `${accent}90`,
+                  fontSize: "0.26em",
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  letterSpacing: "0.18em",
                 }}
               >
-                من إنتاج HN Groupe
+                HN-Groupe
               </p>
             </div>
           </div>
