@@ -1,3 +1,12 @@
+import ebooksImg from "@/assets/products/ebooks.jpg";
+import designTemplatesImg from "@/assets/products/design-templates.jpg";
+import onlineCoursesImg from "@/assets/products/online-courses.jpg";
+import aiToolsImg from "@/assets/products/ai-tools.jpg";
+import designAssetsImg from "@/assets/products/design-assets.jpg";
+import businessCoursesImg from "@/assets/products/business-courses.jpg";
+import videoCoursesImg from "@/assets/products/video-courses.jpg";
+import languageCoursesImg from "@/assets/products/language-courses.jpg";
+
 export interface Product {
   id: string;
   name: string;
@@ -18,104 +27,15 @@ function seededRandom(seed: number) {
   return x - Math.floor(x);
 }
 
-// Real category-specific images from Unsplash
-const categoryImages: Record<string, string[]> = {
-  "eBooks & PLR": [
-    "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1524578271613-d550eacf6090?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1553729459-afe8f2e2ed65?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1532012197267-da84d127e765?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=800&h=544&fit=crop",
-  ],
-  "Design Templates": [
-    "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1626785774573-4b799315345d?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1558655146-9f40138edfeb?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1609921212029-bb5a28e60960?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1572044162444-ad60f128bdea?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1586717799252-bd134571d662?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1545235617-7a424c1a60cc?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1634942537034-2531766767d1?w=800&h=544&fit=crop",
-  ],
-  "Online Courses": [
-    "https://images.unsplash.com/photo-1501504905252-473c47e087f8?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1551434678-e076c223a692?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&h=544&fit=crop",
-  ],
-  "AI Tools": [
-    "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1684369176170-463e84248b70?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1655720828018-edd2daec9349?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1676299081847-824916de030a?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1531746790095-e568fccfa14b?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1555255707-c07966088b7b?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1591696205602-2f950c417cb9?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1535378917042-10a22c95931a?w=800&h=544&fit=crop",
-  ],
-  "Design Assets": [
-    "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1609921212029-bb5a28e60960?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1613909207039-6b173b4df33e?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1626785774573-4b799315345d?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1572044162444-ad60f128bdea?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1545235617-7a424c1a60cc?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&h=544&fit=crop",
-  ],
-  "Business Courses": [
-    "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1553877522-43269d4ea984?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1591696205602-2f950c417cb9?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=800&h=544&fit=crop",
-  ],
-  "Video Courses": [
-    "https://images.unsplash.com/photo-1492619375914-88005aa9e8fb?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1536240478700-b869070f9279?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1516321497487-e288fb19713f?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1611162616475-46b635cb6868?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1524712245354-2c4e5e7121c0?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1579403124614-197f69d8187b?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1510915228340-29c85a43dcfe?w=800&h=544&fit=crop",
-  ],
-  "Language Courses": [
-    "https://images.unsplash.com/photo-1546410531-bb4caa6b3243?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1455849318743-b2233052fcff?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1488190211105-8b0e65b80b4e?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1416339306562-f3d12fefd36f?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1523050854058-8df90110c476?w=800&h=544&fit=crop",
-    "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800&h=544&fit=crop",
-  ],
+const categoryImages: Record<string, string> = {
+  "eBooks & PLR": ebooksImg,
+  "Design Templates": designTemplatesImg,
+  "Online Courses": onlineCoursesImg,
+  "AI Tools": aiToolsImg,
+  "Design Assets": designAssetsImg,
+  "Business Courses": businessCoursesImg,
+  "Video Courses": videoCoursesImg,
+  "Language Courses": languageCoursesImg,
 };
 
 interface CatTemplate {
@@ -221,7 +141,7 @@ function generateProducts(): Product[] {
   const badges = ["🔥 Best Seller", "⭐ Popular", "🏆 Top Rated", "🆕 New", "💎 Premium", "⚡ Flash Deal", undefined, undefined, undefined, undefined];
 
   for (const cat of categoryData) {
-    const images = categoryImages[cat.category] || categoryImages["Online Courses"];
+    const image = categoryImages[cat.category] || categoryImages["Online Courses"];
     const tier = priceTiers[cat.category] || { min: 9, max: 49 };
 
     for (let ti = 0; ti < cat.topics.length; ti++) {
@@ -244,8 +164,7 @@ function generateProducts(): Product[] {
       const isFlash = seededRandom(idx + 200) < 0.15;
       const dealHours = isFlash ? Math.floor(seededRandom(idx + 201) * 72 + 1) : undefined;
 
-      // Unique image per product using picsum with seed
-      const imageUrl = `https://picsum.photos/seed/prod${idx}/800/544`;
+      const imageUrl = image;
 
       all.push({
         id: `p-${idx}`,
