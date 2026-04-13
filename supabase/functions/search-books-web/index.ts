@@ -24,7 +24,7 @@ serve(async (req) => {
     // Step 1a: Search Google Books API directly (real results)
     const googleBooksResults: any[] = [];
     try {
-      const gbUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&filter=free-ebooks&maxResults=${Math.min(bookCount, 10)}&langRestrict=&orderBy=relevance`;
+      const gbUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&filter=free-ebooks&maxResults=${Math.min(bookCount, 10)}&orderBy=relevance`;
       const gbResp = await fetch(gbUrl);
       if (gbResp.ok) {
         const gbData = await gbResp.json();
@@ -183,7 +183,10 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks.`;
         continue;
       }
       try {
-        const headResp = await fetch(book.download_url, { method: "HEAD", redirect: "follow" });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+        const headResp = await fetch(book.download_url, { method: "HEAD", redirect: "follow", signal: controller.signal });
+        clearTimeout(timeoutId);
         book._verified = headResp.ok;
         book._content_type = headResp.headers.get("content-type") || "";
         book._file_size = parseInt(headResp.headers.get("content-length") || "0");
