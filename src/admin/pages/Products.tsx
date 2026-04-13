@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ProductImageUpload } from "@/admin/components/ProductImageUpload";
 import { BookPdfUpload } from "@/admin/components/BookPdfUpload";
+import { ProductCreateDialog } from "@/admin/components/ProductCreateDialog";
 import { toast } from "sonner";
 
 interface Product {
@@ -28,16 +29,18 @@ const AdminProducts = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [loading, setLoading] = useState(true);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+
+  const fetchProducts = async () => {
+    const { data } = await supabase
+      .from("products")
+      .select("id, name, short_description, price, original_price, category, image, is_active, badge, pdf_url")
+      .order("created_at", { ascending: false });
+    setProducts(data || []);
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      const { data } = await supabase
-        .from("products")
-        .select("id, name, short_description, price, original_price, category, image, is_active, badge, pdf_url")
-        .order("created_at", { ascending: false });
-      setProducts(data || []);
-      setLoading(false);
-    };
     fetchProducts();
   }, []);
 
@@ -94,7 +97,7 @@ const AdminProducts = () => {
           <h1 className="text-2xl font-extrabold text-foreground">📦 إدارة المنتجات</h1>
           <p className="text-sm text-muted-foreground mt-0.5">{filtered.length} منتج في قاعدة البيانات</p>
         </div>
-        <Button className="gap-1.5 text-xs">
+        <Button className="gap-1.5 text-xs" onClick={() => setShowCreate(true)}>
           <Plus className="w-3.5 h-3.5" />
           إضافة منتج
         </Button>
@@ -279,6 +282,12 @@ const AdminProducts = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <ProductCreateDialog
+        open={showCreate}
+        onOpenChange={setShowCreate}
+        onProductCreated={fetchProducts}
+      />
     </div>
   );
 };
