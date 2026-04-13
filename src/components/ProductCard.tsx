@@ -26,7 +26,7 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
         {/* Outer box - black glossy */}
         <div className="group relative rounded-2xl p-3 bg-black/80 border border-white/5 shadow-[0_4px_30px_-5px_rgba(0,0,0,0.7),0_0_20px_-5px_hsl(199,89%,48%,0.1)]">
           {/* Inner box - blue glass */}
-          <div className="relative overflow-hidden rounded-xl bg-primary/8 border border-primary/20 shadow-[0_0_20px_-5px_hsl(199,89%,48%,0.12),inset_0_1px_0_0_hsl(199,89%,48%,0.06)]">
+          <div className="relative overflow-hidden rounded-xl bg-primary/8 border border-primary/20 shadow-[0_0_15px_-2px_hsl(199,89%,48%,0.2),0_0_30px_-5px_hsl(199,89%,48%,0.1),inset_0_1px_0_0_hsl(199,89%,48%,0.06)]">
             {/* Image */}
             <div className="relative aspect-[4/3] overflow-hidden bg-muted/20">
               {product.image ? (
