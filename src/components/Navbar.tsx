@@ -194,12 +194,12 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
             className="overflow-hidden bg-background/95 backdrop-blur-2xl md:hidden"
             style={{ borderTop: '1px solid hsl(199 89% 48% / 0.08)' }}
           >
-            <nav className="flex flex-col gap-1 px-4 py-3">
+            <nav className="flex flex-col gap-1.5 px-4 py-3">
               {navLinks.map((link) => (
                 <a
                   key={link.href}
                   href={link.href}
-                  className="rounded-xl px-4 py-3 text-sm transition-colors hover:bg-muted/30"
+                  className="rounded-xl px-4 py-3 text-sm font-semibold text-white transition-all duration-300 bg-primary/10 border border-primary/20 hover:bg-primary/25 hover:border-primary/40 hover:shadow-[0_0_15px_-3px_hsl(199,89%,48%,0.3)] backdrop-blur-sm"
                   onClick={() => setMobileOpen(false)}
                 >
                   {link.label}
@@ -208,7 +208,7 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
 
               {/* Mobile categories */}
               {allCategories.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2 px-1">
+                <div className="flex flex-wrap gap-1.5 mt-1">
                   {allCategories.map((cat) => {
                     const isActive = activeCategory === cat;
                     const label = CATEGORY_LABELS[cat] || cat;
@@ -216,10 +216,10 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                       <button
                         key={cat}
                         onClick={() => { onCategorySelect?.(cat); setMobileOpen(false); }}
-                        className={`rounded-full px-3 py-1.5 text-xs transition-colors ${
+                        className={`rounded-xl px-3.5 py-2 text-xs font-semibold transition-all duration-300 backdrop-blur-sm ${
                           isActive
-                            ? "bg-primary/15 text-primary font-medium border border-primary/25"
-                            : "text-muted-foreground hover:bg-muted/30"
+                            ? "bg-primary/25 text-white border border-primary/50 shadow-[0_0_20px_-4px_hsl(199,89%,48%,0.4)]"
+                            : "bg-primary/8 text-white/80 border border-primary/15 hover:bg-primary/20 hover:text-white hover:border-primary/35"
                         }`}
                       >
                         {label}
@@ -229,15 +229,15 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                 </div>
               )}
 
-              <div className="flex gap-1 mt-2 px-1">
+              <div className="flex gap-1.5 mt-1">
                 {locales.map((l) => (
                   <button
                     key={l.code}
                     onClick={() => { setLocale(l.code); }}
-                    className={`rounded-lg px-3 py-1.5 text-xs transition-colors ${
+                    className={`rounded-xl px-3.5 py-2 text-xs font-semibold transition-all duration-300 backdrop-blur-sm ${
                       locale === l.code
-                        ? "bg-primary/10 text-primary font-medium border border-primary/20"
-                        : "text-muted-foreground hover:bg-muted/30"
+                        ? "bg-primary/25 text-white border border-primary/50 shadow-[0_0_15px_-3px_hsl(199,89%,48%,0.3)]"
+                        : "bg-primary/8 text-white/80 border border-primary/15 hover:bg-primary/20 hover:text-white"
                     }`}
                   >
                     {l.flag}
