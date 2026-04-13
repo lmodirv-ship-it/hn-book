@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart3, Package, Users, TrendingUp, Settings,
   Menu, X, Shield, BookOpen, Tag, LayoutDashboard,
-  ShoppingCart, FileText, LogOut, Ticket, Activity, ShieldCheck, FolderUp
+  ShoppingCart, FileText, LogOut, Ticket, Activity, ShieldCheck, FolderUp, Globe
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
