@@ -57,6 +57,9 @@ const BookCover = ({ title, category, index, className = "" }: BookCoverProps) =
   const lines = useMemo(() => splitTitle(title, 16), [title]);
   const decorPattern = useMemo(() => Math.floor(seededRandom(index + 77) * 5), [index]);
 
+  // Book pose: 0=standing 3D, 1=tilted left, 2=tilted right, 3=flat/lying, 4=upright front
+  const pose = useMemo(() => index % 5, [index]);
+
   const [bgStart, bgEnd, accent, spine] = palette;
 
   // Background surfaces - realistic textures via Unsplash
