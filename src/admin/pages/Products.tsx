@@ -137,6 +137,7 @@ const AdminProducts = () => {
                 <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">السعر</th>
                 <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">الأيقونة</th>
                 <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">الرابط</th>
+                <th className="text-center py-3 px-4 text-xs text-muted-foreground font-medium">PDF</th>
                 <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium hidden md:table-cell">الوصف</th>
                 <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">الحالة</th>
                 <th className="text-center py-3 px-4 text-xs text-muted-foreground font-medium">إجراءات</th>
