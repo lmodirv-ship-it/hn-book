@@ -13,9 +13,25 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ product, index }: ProductCardProps) => {
+  const [hasPdf, setHasPdf] = useState(false);
+
   const discount = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
+
+  // Check if product has a PDF
+  useEffect(() => {
+    const check = async () => {
+      // Quick check via product_files table
+      const { count } = await supabase
+        .from("product_files")
+        .select("*", { count: "exact", head: true })
+        .eq("product_id", product.id)
+        .eq("file_type", "pdf");
+      setHasPdf((count || 0) > 0);
+    };
+    check();
+  }, [product.id]);
 
   // Generate consistent star rating (2-5) based on product id
   const starRating = useMemo(() => {
