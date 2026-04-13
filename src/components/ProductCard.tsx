@@ -122,13 +122,13 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
 
             {/* Content - inside inner box */}
             <div className="p-4 bg-gradient-to-b from-primary/5 to-transparent">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-primary/60">
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-primary/70 drop-shadow-[0_0_4px_rgba(255,255,255,0.2)]">
                 {product.category}
               </p>
-              <h3 className="mt-1.5 text-sm font-semibold leading-snug line-clamp-1 text-foreground/90 group-hover:text-foreground transition-colors">
+              <h3 className="mt-1.5 text-base font-bold leading-snug line-clamp-1 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.3)] group-hover:drop-shadow-[0_0_12px_rgba(255,255,255,0.5)] transition-all">
                 {product.name}
               </h3>
-              <p className="mt-1 text-xs text-muted-foreground/70 line-clamp-1">
+              <p className="mt-1 text-sm text-white/60 line-clamp-1">
                 {product.shortDescription}
               </p>
 
