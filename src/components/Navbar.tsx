@@ -1,12 +1,16 @@
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Menu, X, ArrowRight } from "lucide-react";
+import { ShoppingCart, Menu, X, ArrowRight, Globe } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useI18n, locales } from "@/lib/i18n";
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
+  const langRef = useRef<HTMLDivElement>(null);
+  const { t, locale, setLocale } = useI18n();
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 10);
@@ -14,11 +18,23 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handler);
   }, []);
 
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (langRef.current && !langRef.current.contains(e.target as Node)) {
+        setLangOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
   const navLinks = [
-    { href: "#products", label: "Products" },
-    { href: "#features", label: "Features" },
-    { href: "#pricing", label: "Pricing" },
+    { href: "#products", label: t("nav.products") },
+    { href: "#features", label: t("nav.features") },
+    { href: "#pricing", label: t("nav.pricing") },
   ];
+
+  const currentLocale = locales.find((l) => l.code === locale);
 
   return (
     <header
@@ -54,6 +70,42 @@ const Navbar = () => {
 
         {/* Desktop actions */}
         <div className="hidden items-center gap-1.5 md:flex">
+          {/* Language switcher */}
+          <div className="relative" ref={langRef}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-md gap-1"
+              onClick={() => setLangOpen(!langOpen)}
+            >
+              <Globe className="h-3.5 w-3.5" />
+            </Button>
+            <AnimatePresence>
+              {langOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute end-0 top-full mt-1 w-36 rounded-lg border border-border/40 bg-card/95 backdrop-blur-xl p-1 shadow-lg"
+                >
+                  {locales.map((l) => (
+                    <button
+                      key={l.code}
+                      onClick={() => { setLocale(l.code); setLangOpen(false); }}
+                      className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors hover:bg-muted/40 ${
+                        locale === l.code ? "text-primary font-medium" : "text-foreground"
+                      }`}
+                    >
+                      <span>{l.flag}</span>
+                      <span>{l.label}</span>
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
           <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-md">
             <ShoppingCart className="h-3.5 w-3.5" />
             <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-primary-foreground">
@@ -64,7 +116,7 @@ const Navbar = () => {
             size="sm"
             className="h-8 gap-1 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 border-0 px-3"
           >
-            Get Started
+            {t("nav.getStarted")}
             <ArrowRight className="h-3 w-3" />
           </Button>
         </div>
@@ -100,8 +152,24 @@ const Navbar = () => {
                   {link.label}
                 </a>
               ))}
+              {/* Mobile language selector */}
+              <div className="flex gap-1 mt-2 px-3">
+                {locales.map((l) => (
+                  <button
+                    key={l.code}
+                    onClick={() => { setLocale(l.code); }}
+                    className={`rounded-md px-2.5 py-1.5 text-xs transition-colors ${
+                      locale === l.code
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-muted-foreground hover:bg-muted/30"
+                    }`}
+                  >
+                    {l.flag}
+                  </button>
+                ))}
+              </div>
               <Button size="sm" className="mt-2 w-full gap-1 rounded-md bg-primary text-primary-foreground border-0 text-xs">
-                Get Started <ArrowRight className="h-3 w-3" />
+                {t("nav.getStarted")} <ArrowRight className="h-3 w-3" />
               </Button>
             </nav>
           </motion.div>
