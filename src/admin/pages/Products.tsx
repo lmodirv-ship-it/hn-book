@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ProductImageUpload } from "@/admin/components/ProductImageUpload";
 import { BookPdfUpload } from "@/admin/components/BookPdfUpload";
 import { ProductCreateDialog } from "@/admin/components/ProductCreateDialog";
-import { BookCatalogUpload } from "@/admin/components/BookCatalogUpload";
+
 import { toast } from "sonner";
 
 interface Product {
@@ -31,7 +31,7 @@ const AdminProducts = () => {
   const [loading, setLoading] = useState(true);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [showCreate, setShowCreate] = useState(false);
-  const [showCatalog, setShowCatalog] = useState(false);
+  
 
   const fetchProducts = async () => {
     const { data } = await supabase
@@ -100,9 +100,9 @@ const AdminProducts = () => {
           <p className="text-sm text-muted-foreground mt-0.5">{filtered.length} منتج في قاعدة البيانات</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="gap-1.5 text-xs" onClick={() => setShowCatalog(true)}>
-            <Upload className="w-3.5 h-3.5" />
-            استيراد كتالوج
+          <Button className="gap-1.5 text-xs" onClick={() => setShowCreate(true)}>
+            <Plus className="w-3.5 h-3.5" />
+            إضافة منتج
           </Button>
           <Button className="gap-1.5 text-xs" onClick={() => setShowCreate(true)}>
             <Plus className="w-3.5 h-3.5" />
@@ -297,15 +297,7 @@ const AdminProducts = () => {
         onProductCreated={fetchProducts}
       />
 
-      {/* Catalog Import Dialog */}
-      <Dialog open={showCatalog} onOpenChange={setShowCatalog}>
-        <DialogContent className="max-w-md" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="text-foreground">📚 استيراد كتب من كتالوج</DialogTitle>
-          </DialogHeader>
-          <BookCatalogUpload onComplete={() => { fetchProducts(); }} />
-        </DialogContent>
-      </Dialog>
+    </div>
     </div>
   );
 };
