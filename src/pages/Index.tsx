@@ -167,16 +167,13 @@ const Index = () => {
         <section id="pricing" className="relative py-24">
           <div className="container mx-auto px-4">
             <motion.div
-              className="relative mx-auto max-w-2xl overflow-hidden rounded-3xl p-10 text-center md:p-16"
+              className="relative mx-auto max-w-2xl overflow-hidden rounded-3xl p-10 text-center md:p-16 glass-glow"
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
             >
-              {/* CTA Background */}
-              <div className="absolute inset-0 bg-card/50 backdrop-blur-2xl" />
-              <div className="absolute inset-0 gradient-mesh opacity-50" />
-              <div className="absolute inset-0 border border-border/20 rounded-3xl" />
+              <div className="absolute inset-0 gradient-mesh opacity-50 rounded-3xl" />
               
               <div className="relative">
                 <span className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium bg-accent/10 border border-accent/15 text-accent">

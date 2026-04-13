@@ -39,10 +39,10 @@ const Navbar = () => {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         scrolled
-          ? "bg-background/70 backdrop-blur-2xl shadow-[0_1px_30px_-8px_rgba(0,0,0,0.5)]"
+          ? "glass-glow shadow-[0_1px_30px_-8px_rgba(0,0,0,0.5)]"
           : "bg-transparent"
       }`}
-      style={{ borderBottom: scrolled ? '1px solid hsl(199 89% 48% / 0.08)' : 'none' }}
+      style={{ borderBottom: scrolled ? undefined : 'none' }}
     >
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* Logo */}
@@ -60,7 +60,7 @@ const Navbar = () => {
 
         {/* Desktop nav */}
         <nav className="hidden items-center gap-1 md:flex absolute left-1/2 -translate-x-1/2">
-          <div className="flex items-center gap-1 rounded-full px-1.5 py-1 bg-card/50 backdrop-blur-xl border border-border/30">
+          <div className="flex items-center gap-1 rounded-full px-1.5 py-1 glass-glow">
             {navLinks.map((link) => (
               <a
                 key={link.href}

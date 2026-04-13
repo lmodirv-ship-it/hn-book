@@ -114,7 +114,7 @@ const HeroSection = () => {
 
           {/* Stats */}
           <motion.div
-            className="mt-16 grid grid-cols-3 gap-px overflow-hidden rounded-2xl border-gradient"
+            className="mt-16 grid grid-cols-3 gap-px overflow-hidden rounded-2xl glass-glow"
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
