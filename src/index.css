@@ -64,6 +64,10 @@
 }
 
 @layer utilities {
+  .glass-card {
+    @apply bg-card/60 backdrop-blur-2xl border border-border/40 shadow-sm;
+  }
+
   .glass {
     @apply bg-card/50 backdrop-blur-2xl border border-border/40;
   }
