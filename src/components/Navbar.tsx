@@ -69,7 +69,7 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
       {/* Main navbar row */}
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5 group shrink-0 mt-12">
+        <Link to="/" className="flex items-center gap-2.5 group shrink-0">
           <motion.div
             className="flex flex-col items-center"
             animate={{
