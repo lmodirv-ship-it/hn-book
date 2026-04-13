@@ -244,8 +244,8 @@ function generateProducts(): Product[] {
       const isFlash = seededRandom(idx + 200) < 0.15;
       const dealHours = isFlash ? Math.floor(seededRandom(idx + 201) * 72 + 1) : undefined;
 
-      // Cycle through category-specific images
-      const imageUrl = images[ti % images.length];
+      // Unique image per product using picsum with seed
+      const imageUrl = `https://picsum.photos/seed/prod${idx}/800/544`;
 
       all.push({
         id: `p-${idx}`,
