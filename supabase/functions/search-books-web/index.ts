@@ -24,7 +24,7 @@ serve(async (req) => {
     // Step 1a: Search Google Books API directly (real results)
     const googleBooksResults: any[] = [];
     try {
-      const gbUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&filter=free-ebooks&maxResults=${Math.min(bookCount, 10)}&langRestrict=&orderBy=relevance`;
+      const gbUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&filter=free-ebooks&maxResults=${Math.min(bookCount, 10)}&orderBy=relevance`;
       const gbResp = await fetch(gbUrl);
       if (gbResp.ok) {
         const gbData = await gbResp.json();
