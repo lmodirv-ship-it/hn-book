@@ -31,6 +31,7 @@ const AdminProducts = () => {
   const [loading, setLoading] = useState(true);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [showCatalog, setShowCatalog] = useState(false);
 
   const fetchProducts = async () => {
     const { data } = await supabase
