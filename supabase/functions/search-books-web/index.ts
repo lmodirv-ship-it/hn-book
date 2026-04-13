@@ -176,6 +176,12 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks.`;
     // Step 2: Verify URLs are accessible
     const verifiedBooks = [];
     for (const book of books) {
+      // Google Books with PDF/epub available are pre-verified
+      if (book._has_pdf || book._has_epub) {
+        book._verified = true;
+        verifiedBooks.push(book);
+        continue;
+      }
       try {
         const headResp = await fetch(book.download_url, { method: "HEAD", redirect: "follow" });
         book._verified = headResp.ok;
