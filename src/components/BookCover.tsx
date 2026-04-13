@@ -111,13 +111,13 @@ const BookCover = ({ title, category, index, className = "" }: BookCoverProps) =
 
       {/* 3D Book wrapper */}
       <div
-        className={`relative transition-all duration-700 ease-out ${
+        className={`relative transition-all duration-500 ease-out group-hover:!scale-[1.25] group-hover:!translate-y-[-10px] group-hover:[filter:drop-shadow(15px_20px_30px_rgba(0,0,0,0.7))] ${
           pose === 0 ? "animate-[bookFloat_6s_ease-in-out_infinite]" :
           pose === 1 ? "animate-[bookTiltLeft_5s_ease-in-out_infinite]" :
           pose === 2 ? "animate-[bookTiltRight_7s_ease-in-out_infinite]" :
           pose === 3 ? "animate-[bookRock_4s_ease-in-out_infinite]" :
           "animate-[bookPulse_5s_ease-in-out_infinite]"
-        }`}
+        } group-hover:![animation-play-state:paused]`}
         style={{
           width: pose === 3 ? "55%" : "46%",
           height: pose === 3 ? "65%" : "72%",
