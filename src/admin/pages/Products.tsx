@@ -99,16 +99,10 @@ const AdminProducts = () => {
           <h1 className="text-2xl font-extrabold text-foreground">📦 إدارة المنتجات</h1>
           <p className="text-sm text-muted-foreground mt-0.5">{filtered.length} منتج في قاعدة البيانات</p>
         </div>
-        <div className="flex gap-2">
-          <Button className="gap-1.5 text-xs" onClick={() => setShowCreate(true)}>
-            <Plus className="w-3.5 h-3.5" />
-            إضافة منتج
-          </Button>
-          <Button className="gap-1.5 text-xs" onClick={() => setShowCreate(true)}>
-            <Plus className="w-3.5 h-3.5" />
-            إضافة منتج
-          </Button>
-        </div>
+        <Button className="gap-1.5 text-xs" onClick={() => setShowCreate(true)}>
+          <Plus className="w-3.5 h-3.5" />
+          إضافة منتج
+        </Button>
       </motion.div>
 
       <div className="flex flex-col sm:flex-row gap-3">

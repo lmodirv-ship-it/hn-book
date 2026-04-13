@@ -1,25 +1,68 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import ParticleCanvas from "@/components/ParticleCanvas";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
 import ProductCard from "@/components/ProductCard";
 import FeaturesSection from "@/components/FeaturesSection";
 import Footer from "@/components/Footer";
-import { products, categories } from "@/lib/products";
+import type { Product } from "@/lib/products";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, ChevronDown, ArrowRight } from "lucide-react";
+import { Search, ChevronDown, ArrowRight, Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { supabase } from "@/integrations/supabase/client";
 
 const ITEMS_PER_PAGE = 24;
+
+const ALL_CATEGORIES = ["كتب", "بطاقات", "قوالب", "صور", "وثائق", "عروض", "أخرى"];
 
 const Index = () => {
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const { t } = useI18n();
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+
+      if (data) {
+        const mapped: Product[] = data.map((p) => ({
+          id: p.id,
+          name: p.name,
+          description: p.description || "",
+          shortDescription: p.short_description || "",
+          price: Number(p.price),
+          originalPrice: p.original_price ? Number(p.original_price) : undefined,
+          category: p.category,
+          image: p.image || "",
+          features: p.features || [],
+          badge: p.badge || undefined,
+          isFlashDeal: p.is_flash_deal || false,
+          dealEndsIn: p.deal_ends_in || undefined,
+        }));
+        setProducts(mapped);
+      }
+      setLoading(false);
+    };
+    fetchProducts();
+  }, []);
+
+  const categories = useMemo(() => {
+    const dbCats = [...new Set(products.map((p) => p.category))];
+    // Merge with known categories, keeping order
+    const merged = [...ALL_CATEGORIES];
+    dbCats.forEach((c) => { if (!merged.includes(c)) merged.push(c); });
+    return merged.filter((c) => products.some((p) => p.category === c));
+  }, [products]);
 
   const filteredProducts = useMemo(() => {
     let filtered = products;
@@ -36,7 +79,7 @@ const Index = () => {
       );
     }
     return filtered;
-  }, [activeCategory, searchQuery]);
+  }, [activeCategory, searchQuery, products]);
 
   const visibleProducts = filteredProducts.slice(0, visibleCount);
   const hasMore = visibleCount < filteredProducts.length;
@@ -83,29 +126,37 @@ const Index = () => {
               ))}
             </div>
 
-            <div className="mt-8 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-              {visibleProducts.map((product, i) => (
-                <ProductCard key={product.id} product={product} index={i % ITEMS_PER_PAGE} />
-              ))}
-            </div>
-
-            {hasMore && (
-              <div className="mt-10 text-center">
-                <Button
-                  variant="outline"
-                  onClick={() => setVisibleCount((p) => p + ITEMS_PER_PAGE)}
-                  className="gap-2 rounded-lg px-6"
-                >
-                  <ChevronDown className="h-4 w-4" />
-                  {t("products.loadMore")}
-                </Button>
+            {loading ? (
+              <div className="mt-16 flex justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
-            )}
+            ) : (
+              <>
+                <div className="mt-8 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                  {visibleProducts.map((product, i) => (
+                    <ProductCard key={product.id} product={product} index={i % ITEMS_PER_PAGE} />
+                  ))}
+                </div>
 
-            {filteredProducts.length === 0 && (
-              <div className="mt-16 text-center text-muted-foreground">
-                {t("products.empty")}
-              </div>
+                {hasMore && (
+                  <div className="mt-10 text-center">
+                    <Button
+                      variant="outline"
+                      onClick={() => setVisibleCount((p) => p + ITEMS_PER_PAGE)}
+                      className="gap-2 rounded-lg px-6"
+                    >
+                      <ChevronDown className="h-4 w-4" />
+                      {t("products.loadMore")}
+                    </Button>
+                  </div>
+                )}
+
+                {filteredProducts.length === 0 && (
+                  <div className="mt-16 text-center text-muted-foreground">
+                    {t("products.empty")}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </section>
