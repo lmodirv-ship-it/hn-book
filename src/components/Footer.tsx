@@ -1,5 +1,5 @@
 import { useI18n } from "@/lib/i18n";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Heart } from "lucide-react";
 
 const hnSites = [
   { name: "HN Book", href: "#", current: true },
@@ -11,12 +11,13 @@ const Footer = () => {
   const { t } = useI18n();
 
   return (
-    <footer className="py-10" style={{ borderTop: '1px solid hsl(190 90% 50% / 0.12)' }}>
-      <div className="container mx-auto px-4">
+    <footer className="relative py-12 border-t border-border/15">
+      <div className="absolute inset-0 gradient-mesh opacity-30" />
+      <div className="container mx-auto px-4 relative">
         <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-accent shadow-glow-accent">
-              <span className="text-xs font-bold text-accent-foreground">HN</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-accent/80">
+              <span className="text-[9px] font-black text-accent-foreground">HN</span>
             </div>
             <span className="text-sm font-bold text-foreground">
               HN <span className="text-primary">Book</span>
@@ -24,7 +25,7 @@ const Footer = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <span className="text-xs text-muted-foreground/60">مواقعنا:</span>
+            <span className="text-xs text-muted-foreground/50">مواقعنا:</span>
             {hnSites.map((site) => (
               <a
                 key={site.name}
@@ -34,16 +35,16 @@ const Footer = () => {
                 className={`flex items-center gap-1 text-xs transition-colors ${
                   site.current
                     ? "text-primary font-medium"
-                    : "text-muted-foreground hover:text-foreground"
+                    : "text-muted-foreground/60 hover:text-foreground"
                 }`}
               >
                 {site.name}
-                {!site.current && <ExternalLink className="h-3 w-3" />}
+                {!site.current && <ExternalLink className="h-2.5 w-2.5" />}
               </a>
             ))}
           </div>
 
-          <nav className="flex gap-6 text-sm text-muted-foreground">
+          <nav className="flex gap-6 text-xs text-muted-foreground/60">
             {[
               { key: "footer.terms", label: t("footer.terms") },
               { key: "footer.privacy", label: t("footer.privacy") },
@@ -56,8 +57,11 @@ const Footer = () => {
           </nav>
         </div>
 
-        <div className="mt-8 pt-6 text-center text-xs text-muted-foreground/50" style={{ borderTop: '1px solid hsl(190 90% 50% / 0.08)' }}>
-          © {new Date().getFullYear()} HN Book — HN Groupe. {t("footer.rights")}
+        <div className="mt-8 pt-6 text-center text-xs text-muted-foreground/40 border-t border-border/10">
+          <span className="flex items-center justify-center gap-1.5">
+            © {new Date().getFullYear()} HN Book — HN Groupe. {t("footer.rights")}
+            <Heart className="h-3 w-3 text-accent/50" />
+          </span>
         </div>
       </div>
     </footer>

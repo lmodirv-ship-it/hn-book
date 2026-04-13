@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Play, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Play, CheckCircle2, Zap } from "lucide-react";
 import { products } from "@/lib/products";
 import { useI18n } from "@/lib/i18n";
 
@@ -8,46 +8,57 @@ const HeroSection = () => {
   const { t } = useI18n();
 
   return (
-    <section className="relative min-h-[90vh] flex items-center overflow-hidden">
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute top-0 left-1/4 h-[500px] w-[500px] rounded-full bg-primary/8 blur-[150px]" />
-        <div className="absolute bottom-0 right-1/4 h-[400px] w-[400px] rounded-full bg-accent/6 blur-[130px]" />
+    <section className="relative min-h-[92vh] flex items-center overflow-hidden">
+      {/* Animated orbs */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="orb orb-1 absolute top-[10%] left-[15%] h-[400px] w-[400px] bg-primary/10" />
+        <div className="orb orb-2 absolute top-[50%] right-[10%] h-[350px] w-[350px] bg-accent/8" />
+        <div className="orb orb-3 absolute bottom-[5%] left-[40%] h-[300px] w-[300px] bg-[hsl(270,70%,50%)]/6" />
+        {/* Grid */}
         <div
-          className="absolute inset-0 opacity-[0.025]"
+          className="absolute inset-0 opacity-[0.02]"
           style={{
-            backgroundImage: `linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)`,
-            backgroundSize: "80px 80px",
+            backgroundImage: `linear-gradient(hsl(210 40% 98%) 1px, transparent 1px), linear-gradient(90deg, hsl(210 40% 98%) 1px, transparent 1px)`,
+            backgroundSize: "60px 60px",
           }}
         />
+        {/* Radial vignette */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
       </div>
 
       <div className="container mx-auto px-4 py-20">
         <div className="mx-auto max-w-4xl">
+          {/* Badge */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             className="mb-8"
           >
-            <span className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-primary border-glow">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+            <span className="inline-flex items-center gap-2.5 rounded-full px-4 py-2 text-xs font-medium bg-primary/5 border border-primary/15 text-primary/90">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+              </span>
               {products.length.toLocaleString()}+ {t("hero.badge")}
             </span>
           </motion.div>
 
+          {/* Title */}
           <motion.h1
-            className="text-5xl font-bold tracking-tight md:text-7xl lg:text-8xl leading-[0.95]"
-            initial={{ opacity: 0, y: 24 }}
+            className="text-5xl font-bold tracking-tighter md:text-7xl lg:text-[5.5rem] leading-[0.9]"
+            initial={{ opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
+            transition={{ duration: 0.7, delay: 0.1 }}
           >
             <span className="text-foreground">{t("hero.title1")}</span>
             <br />
-            <span className="text-gradient-static">{t("hero.title2")}</span>
+            <span className="text-gradient">{t("hero.title2")}</span>
           </motion.h1>
 
+          {/* Description */}
           <motion.p
-            className="mt-6 max-w-xl text-lg text-muted-foreground leading-relaxed md:text-xl"
+            className="mt-7 max-w-lg text-base text-muted-foreground leading-relaxed md:text-lg"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
@@ -55,6 +66,7 @@ const HeroSection = () => {
             {t("hero.desc")}
           </motion.p>
 
+          {/* CTA Buttons */}
           <motion.div
             className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center"
             initial={{ opacity: 0, y: 16 }}
@@ -63,17 +75,19 @@ const HeroSection = () => {
           >
             <Button
               size="lg"
-              className="gap-2 rounded-xl px-8 py-6 text-base font-bold bg-accent text-accent-foreground hover:bg-accent/90 shadow-glow-accent border-0"
+              className="group gap-2 rounded-full px-8 py-6 text-base font-bold bg-gradient-to-r from-accent to-accent/80 text-accent-foreground hover:from-accent/90 hover:to-accent/70 shadow-glow-accent border-0 transition-all duration-300 hover:shadow-[0_8px_30px_-4px_hsl(25,95%,53%,0.5)]"
               asChild
             >
               <a href="#products">
-                {t("hero.browse")} <ArrowRight className="h-4 w-4" />
+                <Zap className="h-4 w-4" />
+                {t("hero.browse")}
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </a>
             </Button>
             <Button
               variant="ghost"
               size="lg"
-              className="gap-2 rounded-xl px-8 py-6 text-base text-muted-foreground hover:text-foreground border-glow"
+              className="gap-2 rounded-full px-8 py-6 text-base text-muted-foreground hover:text-foreground hover:bg-muted/30"
               asChild
             >
               <a href="#features">
@@ -83,35 +97,36 @@ const HeroSection = () => {
             </Button>
           </motion.div>
 
+          {/* Trust badges */}
           <motion.div
-            className="mt-14 flex flex-wrap gap-6 text-sm text-muted-foreground"
+            className="mt-14 flex flex-wrap gap-x-8 gap-y-3 text-sm text-muted-foreground"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
           >
             {[t("hero.trust1"), t("hero.trust2"), t("hero.trust3")].map((txt) => (
-              <span key={txt} className="flex items-center gap-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-                {txt}
+              <span key={txt} className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-primary/70" />
+                <span className="text-muted-foreground/80">{txt}</span>
               </span>
             ))}
           </motion.div>
 
+          {/* Stats */}
           <motion.div
-            className="mt-16 grid grid-cols-3 gap-px overflow-hidden rounded-2xl bg-border/50"
-            initial={{ opacity: 0, y: 20 }}
+            className="mt-16 grid grid-cols-3 gap-px overflow-hidden rounded-2xl border-gradient"
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            style={{ border: '1px solid hsl(190 90% 50% / 0.2)' }}
           >
             {[
               { value: `${products.length.toLocaleString()}+`, label: t("hero.statProducts") },
               { value: "PLR/MRR", label: t("hero.statRights") },
               { value: "24/7", label: t("hero.statAccess") },
-            ].map((stat) => (
-              <div key={stat.label} className="bg-card/80 px-6 py-5 text-center">
-                <div className="text-2xl font-bold text-primary md:text-3xl">{stat.value}</div>
-                <div className="mt-1 text-xs text-muted-foreground">{stat.label}</div>
+            ].map((stat, i) => (
+              <div key={stat.label} className={`bg-card/60 backdrop-blur-xl px-6 py-6 text-center ${i < 2 ? 'border-r border-border/30' : ''}`}>
+                <div className="text-2xl font-bold text-gradient-static md:text-3xl">{stat.value}</div>
+                <div className="mt-1 text-xs text-muted-foreground/70">{stat.label}</div>
               </div>
             ))}
           </motion.div>

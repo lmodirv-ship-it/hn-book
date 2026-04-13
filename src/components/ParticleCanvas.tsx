@@ -17,20 +17,20 @@ const ParticleCanvas = () => {
     resize();
     window.addEventListener("resize", resize);
 
-    // Minimal floating particles with green/blue tones
-    const particles = Array.from({ length: 18 }, () => ({
+    const particles = Array.from({ length: 30 }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.15,
-      vy: (Math.random() - 0.5) * 0.15,
-      size: Math.random() * 1.2 + 0.3,
-      opacity: Math.random() * 0.15 + 0.05,
+      vx: (Math.random() - 0.5) * 0.12,
+      vy: (Math.random() - 0.5) * 0.12,
+      size: Math.random() * 1.5 + 0.3,
+      opacity: Math.random() * 0.12 + 0.03,
+      hue: Math.random() > 0.5 ? 199 : 170, // cyan or teal
     }));
 
     let lastTime = 0;
 
     const animate = (time: number) => {
-      if (time - lastTime < 40) {
+      if (time - lastTime < 33) {
         animRef.current = requestAnimationFrame(animate);
         return;
       }
@@ -44,9 +44,26 @@ const ParticleCanvas = () => {
         if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
 
         ctx.beginPath();
-        ctx.fillStyle = `rgba(74, 222, 128, ${p.opacity})`;
+        ctx.fillStyle = `hsla(${p.hue}, 89%, 48%, ${p.opacity})`;
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
+      }
+
+      // Draw faint connection lines
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 150) {
+            ctx.beginPath();
+            ctx.strokeStyle = `hsla(199, 89%, 48%, ${0.03 * (1 - dist / 150)})`;
+            ctx.lineWidth = 0.5;
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.stroke();
+          }
+        }
       }
 
       animRef.current = requestAnimationFrame(animate);
@@ -63,7 +80,7 @@ const ParticleCanvas = () => {
     <canvas
       ref={canvasRef}
       className="pointer-events-none fixed inset-0 z-0"
-      style={{ opacity: 0.3 }}
+      style={{ opacity: 0.4 }}
     />
   );
 };
