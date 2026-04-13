@@ -233,12 +233,12 @@ const AdminProducts = () => {
 
       {/* Edit Product Dialog */}
       <Dialog open={!!editProduct} onOpenChange={(open) => !open && setEditProduct(null)}>
-        <DialogContent className="max-w-md" dir="rtl">
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-foreground">تعديل صورة المنتج</DialogTitle>
+            <DialogTitle className="text-foreground">تعديل المنتج</DialogTitle>
           </DialogHeader>
           {editProduct && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
                 <p className="text-sm font-medium text-foreground">{editProduct.name}</p>
                 <p className="text-xs text-muted-foreground">{editProduct.category} · ${editProduct.price}</p>
@@ -248,6 +248,13 @@ const AdminProducts = () => {
                 currentImage={editProduct.image}
                 onImageUpdated={(url) => handleImageUpdated(editProduct.id, url)}
               />
+              <div className="border-t border-border pt-4">
+                <BookPdfUpload
+                  productId={editProduct.id}
+                  currentPdfUrl={editProduct.pdf_url}
+                  onPdfUpdated={(url) => handlePdfUpdated(editProduct.id, url)}
+                />
+              </div>
             </div>
           )}
         </DialogContent>
