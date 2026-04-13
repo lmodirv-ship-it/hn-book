@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ProductImageUpload } from "@/admin/components/ProductImageUpload";
 import { BookPdfUpload } from "@/admin/components/BookPdfUpload";
+import { ProductCreateDialog } from "@/admin/components/ProductCreateDialog";
 import { toast } from "sonner";
 
 interface Product {
