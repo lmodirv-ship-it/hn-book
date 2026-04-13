@@ -137,7 +137,7 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
                   )}
                 </div>
                 <span className="text-[10px] font-mono text-muted-foreground/50 tracking-wide">
-                  {product.id.slice(0, 1).toUpperCase()}{product.id.replace(/\D/g, '').slice(0, 5).padEnd(5, '0')}
+                  {product.referenceCode || product.id.slice(0, 6).toUpperCase()}
                 </span>
               </div>
             </div>
