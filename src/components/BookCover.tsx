@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import hnLogo from "@/assets/hn-logo.jpeg";
 
 interface BookCoverProps {
   title: string;
