@@ -27,7 +27,7 @@ serve(async (req) => {
       const GOOGLE_BOOKS_API_KEY = Deno.env.get("GOOGLE_BOOKS_API_KEY") || "";
       console.log("Google Books API key present:", !!GOOGLE_BOOKS_API_KEY, "length:", GOOGLE_BOOKS_API_KEY.length);
       const gbKeyParam = GOOGLE_BOOKS_API_KEY ? `&key=${GOOGLE_BOOKS_API_KEY}` : "";
-      let gbUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&filter=free-ebooks&maxResults=${Math.min(bookCount, 10)}&orderBy=relevance${gbKeyParam}`;
+      let gbUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=${Math.min(bookCount, 40)}&orderBy=relevance${gbKeyParam}`;
       console.log("Google Books: searching...");
       let gbResp = await fetch(gbUrl);
       // If API key is blocked (403), retry without key
