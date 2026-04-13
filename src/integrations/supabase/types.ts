@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      coupons: {
+        Row: {
+          applies_to: string
+          code: string
+          created_at: string
+          created_by: string | null
+          current_uses: number
+          description: string | null
+          discount_type: string
+          discount_value: number
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_discount: number | null
+          max_uses: number
+          max_uses_per_user: number
+          min_order_amount: number
+          updated_at: string
+        }
+        Insert: {
+          applies_to?: string
+          code: string
+          created_at?: string
+          created_by?: string | null
+          current_uses?: number
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_discount?: number | null
+          max_uses?: number
+          max_uses_per_user?: number
+          min_order_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          applies_to?: string
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          current_uses?: number
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_discount?: number | null
+          max_uses?: number
+          max_uses_per_user?: number
+          min_order_amount?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           created_at: string
@@ -91,6 +148,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      page_customizations: {
+        Row: {
+          created_at: string
+          id: string
+          is_visible: boolean
+          page_slug: string
+          properties: Json
+          section_id: string
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          page_slug: string
+          properties?: Json
+          section_id: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          page_slug?: string
+          properties?: Json
+          section_id?: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
       }
       products: {
         Row: {
