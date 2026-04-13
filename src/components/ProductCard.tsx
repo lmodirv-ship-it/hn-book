@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { ArrowUpRight, Lock, Eye, Star } from "lucide-react";
@@ -145,9 +146,14 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
                     <span className="text-base font-bold text-accent">مجاني</span>
                   )}
                 </div>
-                <span className="text-[10px] font-mono text-muted-foreground/50 tracking-wide">
-                  {product.referenceCode || product.id.slice(0, 6).toUpperCase()}
-                </span>
+                <div className="flex gap-0.5">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`h-3 w-3 ${i < starRating ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/20'}`}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           </div>
