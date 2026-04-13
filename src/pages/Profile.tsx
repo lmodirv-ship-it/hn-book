@@ -26,6 +26,20 @@ const Profile = () => {
         navigate("/auth");
         return;
       }
+
+      // Check if user is admin
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+
+      if (roleData) {
+        navigate("/admin");
+        return;
+      }
+
       setEmail(session.user.email || "");
       setUserId(session.user.id);
       const { data } = await supabase
