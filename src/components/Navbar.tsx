@@ -163,9 +163,8 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
             className="h-9 gap-1.5 rounded-full bg-gradient-to-r from-accent to-accent/80 text-accent-foreground text-xs font-bold hover:from-accent/90 hover:to-accent/70 border-0 px-5 shadow-glow-accent transition-all duration-300 hover:shadow-[0_6px_24px_-4px_hsl(25,95%,53%,0.5)]"
             onClick={() => navigate("/auth")}
           >
-            <Sparkles className="h-3.5 w-3.5" />
-            {t("nav.getStarted")}
             <ArrowRight className="h-3.5 w-3.5" />
+            تسجيل الدخول
           </Button>
         </div>
 
