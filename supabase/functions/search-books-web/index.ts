@@ -18,10 +18,10 @@ serve(async (req) => {
     }
 
     const bookCount = Math.min(Math.max(count || 5, 1), 20);
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
 
-    // Step 1: Use AI to search for free books on open source sites
+    // Step 1: Use Gemini to search for free books
     const searchPrompt = `Search for ${bookCount} free PDF books about "${query}" available on these open-source platforms:
 - Internet Archive (archive.org)
 - OpenLibrary (openlibrary.org)
@@ -32,75 +32,77 @@ serve(async (req) => {
 
 For each book provide REAL, VERIFIED information. Only include books that are actually freely available.
 For download URLs, use the actual archive.org or gutenberg.org download links.
-For cover images, use the Open Library Covers API: https://covers.openlibrary.org/b/isbn/{ISBN}-L.jpg or archive.org thumbnails.`;
+For cover images, use the Open Library Covers API: https://covers.openlibrary.org/b/isbn/{ISBN}-L.jpg or archive.org thumbnails.
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+Return the result as a JSON object with a "books" array. Each book object must have:
+- title (string)
+- author (string)
+- description (string, in Arabic)
+- category (string)
+- language (string, e.g. "en", "ar", "fr")
+- year (number)
+- pages (number)
+- source (string, platform name)
+- source_url (string, URL to book page)
+- download_url (string, direct PDF download URL)
+- cover_url (string, cover image URL)
+- isbn (string, if available)
+
+IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks.`;
+
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+
+    const response = await fetch(geminiUrl, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
+        contents: [
           {
-            role: "system",
-            content: "You are a librarian expert. You find real, freely available books from open-source platforms. Only return books that genuinely exist and are freely downloadable. Never invent fake URLs.",
+            role: "user",
+            parts: [{ text: searchPrompt }],
           },
-          { role: "user", content: searchPrompt },
         ],
-        tools: [{
-          type: "function",
-          function: {
-            name: "return_books",
-            description: "Return discovered free books from open-source platforms",
-            parameters: {
-              type: "object",
-              properties: {
-                books: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      title: { type: "string", description: "Book title" },
-                      author: { type: "string", description: "Author name" },
-                      description: { type: "string", description: "Short description in Arabic" },
-                      category: { type: "string", description: "Category/genre" },
-                      language: { type: "string", description: "Book language (en, ar, fr, etc.)" },
-                      year: { type: "number", description: "Publication year" },
-                      pages: { type: "number", description: "Approximate page count" },
-                      source: { type: "string", description: "Source platform name (Archive.org, Gutenberg, etc.)" },
-                      source_url: { type: "string", description: "URL to the book page on the platform" },
-                      download_url: { type: "string", description: "Direct PDF download URL" },
-                      cover_url: { type: "string", description: "Cover image URL" },
-                      isbn: { type: "string", description: "ISBN if available" },
-                    },
-                    required: ["title", "author", "description", "source", "source_url", "download_url"],
-                  },
-                },
-              },
-              required: ["books"],
-            },
-          },
-        }],
-        tool_choice: { type: "function", function: { name: "return_books" } },
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.3,
+        },
+        systemInstruction: {
+          parts: [{ text: "You are a librarian expert. You find real, freely available books from open-source platforms. Only return books that genuinely exist and are freely downloadable. Never invent fake URLs. Always respond with valid JSON only." }],
+        },
       }),
     });
 
     if (!response.ok) {
-      const status = response.status;
-      if (status === 429) return new Response(JSON.stringify({ error: "معدل الطلبات مرتفع، حاول لاحقاً" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (status === 402) return new Response(JSON.stringify({ error: "يرجى إضافة رصيد" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      throw new Error(`AI error: ${status}`);
+      const errText = await response.text();
+      console.error("Gemini API error:", response.status, errText);
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "معدل الطلبات مرتفع، حاول لاحقاً" }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      throw new Error(`Gemini API error: ${response.status}`);
     }
 
     const aiData = await response.json();
-    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall) throw new Error("No tool call in AI response");
+    const textContent = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!textContent) throw new Error("No content in Gemini response");
 
-    const { books } = JSON.parse(toolCall.function.arguments);
+    let parsed;
+    try {
+      parsed = JSON.parse(textContent);
+    } catch {
+      // Try to extract JSON from text
+      const jsonMatch = textContent.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        parsed = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error("Failed to parse Gemini response as JSON");
+      }
+    }
 
-    // Step 2: Verify URLs are accessible (quick HEAD check)
+    const books = parsed.books || parsed;
+
+    // Step 2: Verify URLs are accessible
     const verifiedBooks = [];
     for (const book of books) {
       try {
@@ -133,7 +135,6 @@ For cover images, use the Open Library Covers API: https://covers.openlibrary.or
         const bookCode = `HNB-${String(nextNum).padStart(4, "0")}`;
 
         try {
-          // Download the PDF
           let pdfUrl: string | null = null;
           let storagePath: string | null = null;
           try {
@@ -153,7 +154,6 @@ For cover images, use the Open Library Covers API: https://covers.openlibrary.or
             console.error(`Download failed for ${book.title}:`, dlErr);
           }
 
-          // Download cover if available
           let coverUrl = book.cover_url || null;
           if (coverUrl) {
             try {
@@ -175,7 +175,7 @@ For cover images, use the Open Library Covers API: https://covers.openlibrary.or
             name: book.title,
             short_description: book.description || `${book.title} - ${book.author}`,
             description: `📖 ${book.description || book.title}\n\nالمؤلف: ${book.author}\nالمصدر: ${book.source}\nاللغة: ${book.language || "en"}\nالسنة: ${book.year || "غير محدد"}\n\n🔗 ${book.source_url}`,
-            category: book.category || "كتب عامة",
+            category: book.category || "كتب",
             price: 0,
             image: coverUrl,
             pdf_url: pdfUrl,
@@ -212,21 +212,16 @@ For cover images, use the Open Library Covers API: https://covers.openlibrary.or
       }
 
       return new Response(JSON.stringify({
-        success: true,
-        query,
-        total: books.length,
-        verified: verifiedBooks.filter(b => b._verified).length,
-        imported: imported.filter(b => b._imported).length,
+        success: true, query, total: books.length,
+        verified: verifiedBooks.filter((b: any) => b._verified).length,
+        imported: imported.filter((b: any) => b._imported).length,
         books: imported,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Return search results without importing
     return new Response(JSON.stringify({
-      success: true,
-      query,
-      total: books.length,
-      verified: verifiedBooks.filter(b => b._verified).length,
+      success: true, query, total: books.length,
+      verified: verifiedBooks.filter((b: any) => b._verified).length,
       books: verifiedBooks,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
