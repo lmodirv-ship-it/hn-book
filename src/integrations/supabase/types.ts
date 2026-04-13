@@ -14,7 +14,138 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      customers: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          name: string
+          total_orders: number | null
+          total_spent: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          total_orders?: number | null
+          total_spent?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          total_orders?: number | null
+          total_spent?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          amount: number
+          created_at: string
+          customer_id: string | null
+          id: string
+          order_number: string
+          product_id: string | null
+          status: Database["public"]["Enums"]["order_status"]
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          order_number: string
+          product_id?: string | null
+          status?: Database["public"]["Enums"]["order_status"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          order_number?: string
+          product_id?: string | null
+          status?: Database["public"]["Enums"]["order_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          badge: string | null
+          category: string
+          created_at: string
+          deal_ends_in: number | null
+          description: string | null
+          features: string[] | null
+          id: string
+          image: string | null
+          is_active: boolean | null
+          is_flash_deal: boolean | null
+          name: string
+          original_price: number | null
+          price: number
+          short_description: string | null
+          updated_at: string
+        }
+        Insert: {
+          badge?: string | null
+          category?: string
+          created_at?: string
+          deal_ends_in?: number | null
+          description?: string | null
+          features?: string[] | null
+          id?: string
+          image?: string | null
+          is_active?: boolean | null
+          is_flash_deal?: boolean | null
+          name: string
+          original_price?: number | null
+          price?: number
+          short_description?: string | null
+          updated_at?: string
+        }
+        Update: {
+          badge?: string | null
+          category?: string
+          created_at?: string
+          deal_ends_in?: number | null
+          description?: string | null
+          features?: string[] | null
+          id?: string
+          image?: string | null
+          is_active?: boolean | null
+          is_flash_deal?: boolean | null
+          name?: string
+          original_price?: number | null
+          price?: number
+          short_description?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +154,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      order_status: "pending" | "processing" | "completed" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +281,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      order_status: ["pending", "processing", "completed", "cancelled"],
+    },
   },
 } as const
