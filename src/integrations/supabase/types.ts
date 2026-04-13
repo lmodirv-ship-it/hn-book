@@ -248,6 +248,7 @@ export type Database = {
           original_price: number | null
           pdf_url: string | null
           price: number
+          reference_code: string | null
           short_description: string | null
           updated_at: string
         }
@@ -266,6 +267,7 @@ export type Database = {
           original_price?: number | null
           pdf_url?: string | null
           price?: number
+          reference_code?: string | null
           short_description?: string | null
           updated_at?: string
         }
@@ -284,6 +286,7 @@ export type Database = {
           original_price?: number | null
           pdf_url?: string | null
           price?: number
+          reference_code?: string | null
           short_description?: string | null
           updated_at?: string
         }
