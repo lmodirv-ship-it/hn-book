@@ -85,22 +85,57 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
             <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/10 border border-primary/30 shadow-[0_0_25px_-3px_hsl(199,89%,48%,0.2),inset_0_0_15px_-3px_hsl(199,89%,48%,0.1)]">
               {navLinks.map((link, idx) => (
                 <React.Fragment key={link.href}>
-                  <a
+                  <motion.a
                     href={link.href}
-                    className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-primary-foreground transition-all duration-300 bg-gradient-to-b from-primary/40 via-primary/25 to-primary/15 border border-primary/50 shadow-[inset_0_0_12px_-2px_hsl(199,89%,48%,0.5),0_0_15px_-2px_hsl(199,89%,48%,0.35)] hover:from-primary/55 hover:via-primary/35 hover:to-primary/20 hover:border-primary/70 hover:shadow-[inset_0_0_18px_-2px_hsl(199,89%,48%,0.65),0_0_25px_-3px_hsl(199,89%,48%,0.5)]"
+                    className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border border-primary/50 bg-primary/20 backdrop-blur-sm"
+                    animate={{
+                      boxShadow: [
+                        "inset 0 0 8px -2px hsl(199,89%,48%,0.3), 0 0 10px -2px hsl(199,89%,48%,0.2)",
+                        "inset 0 0 20px -2px hsl(199,89%,48%,0.7), 0 0 25px -2px hsl(199,89%,48%,0.5)",
+                        "inset 0 0 8px -2px hsl(199,89%,48%,0.3), 0 0 10px -2px hsl(199,89%,48%,0.2)",
+                      ],
+                      borderColor: [
+                        "hsl(199,89%,48%,0.4)",
+                        "hsl(199,89%,48%,0.8)",
+                        "hsl(199,89%,48%,0.4)",
+                      ],
+                    }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: idx * 0.3 }}
+                    whileHover={{
+                      boxShadow: "inset 0 0 25px -2px hsl(199,89%,48%,0.85), 0 0 35px -2px hsl(199,89%,48%,0.6)",
+                      borderColor: "hsl(199,89%,48%,0.9)",
+                      scale: 1.05,
+                    }}
                   >
                     {link.label}
-                  </a>
-                  {/* Language switcher right after "كتب" (first link) */}
+                  </motion.a>
                   {idx === 0 && (
                     <div className="relative" ref={langRef}>
-                      <button
+                      <motion.button
                         onClick={() => setLangOpen(!langOpen)}
-                        className="rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-primary-foreground transition-all duration-300 bg-gradient-to-b from-primary/40 via-primary/25 to-primary/15 border border-primary/50 shadow-[inset_0_0_12px_-2px_hsl(199,89%,48%,0.5),0_0_15px_-2px_hsl(199,89%,48%,0.35)] hover:from-primary/55 hover:via-primary/35 hover:to-primary/20 hover:border-primary/70 hover:shadow-[inset_0_0_18px_-2px_hsl(199,89%,48%,0.65),0_0_25px_-3px_hsl(199,89%,48%,0.5)] flex items-center gap-1"
+                        className="rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-white border border-primary/50 bg-primary/20 backdrop-blur-sm flex items-center gap-1"
+                        animate={{
+                          boxShadow: [
+                            "inset 0 0 8px -2px hsl(199,89%,48%,0.3), 0 0 10px -2px hsl(199,89%,48%,0.2)",
+                            "inset 0 0 20px -2px hsl(199,89%,48%,0.7), 0 0 25px -2px hsl(199,89%,48%,0.5)",
+                            "inset 0 0 8px -2px hsl(199,89%,48%,0.3), 0 0 10px -2px hsl(199,89%,48%,0.2)",
+                          ],
+                          borderColor: [
+                            "hsl(199,89%,48%,0.4)",
+                            "hsl(199,89%,48%,0.8)",
+                            "hsl(199,89%,48%,0.4)",
+                          ],
+                        }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
+                        whileHover={{
+                          boxShadow: "inset 0 0 25px -2px hsl(199,89%,48%,0.85), 0 0 35px -2px hsl(199,89%,48%,0.6)",
+                          borderColor: "hsl(199,89%,48%,0.9)",
+                          scale: 1.05,
+                        }}
                       >
                         <Globe className="h-3 w-3" />
                         {locales.find(l => l.code === locale)?.flag}
-                      </button>
+                      </motion.button>
                       <AnimatePresence>
                         {langOpen && (
                           <motion.div
@@ -129,12 +164,30 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                   )}
                 </React.Fragment>
               ))}
-              <button
+              <motion.button
                 onClick={() => navigate("/auth")}
-                className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-primary-foreground transition-all duration-300 bg-gradient-to-b from-primary/40 via-primary/25 to-primary/15 border border-primary/50 shadow-[inset_0_0_12px_-2px_hsl(199,89%,48%,0.5),0_0_15px_-2px_hsl(199,89%,48%,0.35)] hover:from-primary/55 hover:via-primary/35 hover:to-primary/20 hover:border-primary/70 hover:shadow-[inset_0_0_18px_-2px_hsl(199,89%,48%,0.65),0_0_25px_-3px_hsl(199,89%,48%,0.5)]"
+                className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border border-primary/50 bg-primary/20 backdrop-blur-sm"
+                animate={{
+                  boxShadow: [
+                    "inset 0 0 8px -2px hsl(199,89%,48%,0.3), 0 0 10px -2px hsl(199,89%,48%,0.2)",
+                    "inset 0 0 20px -2px hsl(199,89%,48%,0.7), 0 0 25px -2px hsl(199,89%,48%,0.5)",
+                    "inset 0 0 8px -2px hsl(199,89%,48%,0.3), 0 0 10px -2px hsl(199,89%,48%,0.2)",
+                  ],
+                  borderColor: [
+                    "hsl(199,89%,48%,0.4)",
+                    "hsl(199,89%,48%,0.8)",
+                    "hsl(199,89%,48%,0.4)",
+                  ],
+                }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.9 }}
+                whileHover={{
+                  boxShadow: "inset 0 0 25px -2px hsl(199,89%,48%,0.85), 0 0 35px -2px hsl(199,89%,48%,0.6)",
+                  borderColor: "hsl(199,89%,48%,0.9)",
+                  scale: 1.05,
+                }}
               >
                 {t("nav.getStarted")}
-              </button>
+              </motion.button>
             </div>
 
             {/* Categories box */}
