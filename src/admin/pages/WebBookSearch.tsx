@@ -196,7 +196,7 @@ const WebBookSearch = () => {
               <Sparkles className="w-5 h-5 text-primary" />
             </h1>
             <p className="text-sm text-muted-foreground">
-              ابحث واستورد كتب PDF مجانية من Archive.org و Gutenberg و OpenLibrary
+              ابحث واستورد كتب، قوالب، تصاميم، شعارات، لوحات ومجلات من مصادر مفتوحة
             </p>
           </div>
         </div>
@@ -228,12 +228,12 @@ const WebBookSearch = () => {
           <div className="flex items-center gap-3">
             <div className="flex-1">
               <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                🔍 ابحث عن كتب (بالعربية أو الإنجليزية أو الفرنسية)
+                🔍 ابحث عن أي محتوى (كتب، قوالب، شعارات، لوحات، مجلات...)
               </label>
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="مثال: Python programming, الأدب العربي, philosophie..."
+                placeholder="مثال: carte visite, logo design, Python programming, لوحات فنية..."
                 className="text-base"
                 onKeyDown={(e) => e.key === "Enter" && !searching && handleSearch()}
                 disabled={searching || importing}
