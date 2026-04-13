@@ -1,3 +1,4 @@
+import React from "react";
 import { Button } from "@/components/ui/button";
 import hnLogo from "@/assets/hn-logo.jpeg";
 import { ShoppingCart, Menu, X, ArrowRight, Globe, Sparkles } from "lucide-react";
@@ -82,14 +83,51 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
           <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5 bg-black/80 backdrop-blur-xl border border-white/5 shadow-[0_4px_30px_-5px_rgba(0,0,0,0.7)]">
             {/* Pages box */}
             <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/8 border border-primary/20 shadow-[0_0_20px_-5px_hsl(199,89%,48%,0.12),inset_0_1px_0_0_hsl(199,89%,48%,0.06)]">
-              {navLinks.map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white transition-all duration-200 bg-primary/10 border border-primary/25 hover:bg-primary/20 hover:border-primary/45 hover:shadow-[0_0_12px_-3px_hsl(199,89%,48%,0.3)]"
-                >
-                  {link.label}
-                </a>
+              {navLinks.map((link, idx) => (
+                <React.Fragment key={link.href}>
+                  <a
+                    href={link.href}
+                    className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white transition-all duration-200 bg-primary/10 border border-primary/25 hover:bg-primary/20 hover:border-primary/45 hover:shadow-[0_0_12px_-3px_hsl(199,89%,48%,0.3)]"
+                  >
+                    {link.label}
+                  </a>
+                  {/* Language switcher right after "كتب" (first link) */}
+                  {idx === 0 && (
+                    <div className="relative" ref={langRef}>
+                      <button
+                        onClick={() => setLangOpen(!langOpen)}
+                        className="rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-white transition-all duration-200 bg-primary/10 border border-primary/25 hover:bg-primary/20 hover:border-primary/45 hover:shadow-[0_0_12px_-3px_hsl(199,89%,48%,0.3)] flex items-center gap-1"
+                      >
+                        <Globe className="h-3 w-3" />
+                        {locales.find(l => l.code === locale)?.flag}
+                      </button>
+                      <AnimatePresence>
+                        {langOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -6, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -6, scale: 0.95 }}
+                            transition={{ duration: 0.15 }}
+                            className="absolute start-0 top-full mt-2 w-36 rounded-xl p-1.5 shadow-dramatic bg-card/95 backdrop-blur-2xl border border-border/40 z-50"
+                          >
+                            {locales.map((l) => (
+                              <button
+                                key={l.code}
+                                onClick={() => { setLocale(l.code); setLangOpen(false); }}
+                                className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors hover:bg-muted/50 ${
+                                  locale === l.code ? "text-primary font-medium bg-primary/5" : "text-foreground"
+                                }`}
+                              >
+                                <span>{l.flag}</span>
+                                <span>{l.label}</span>
+                              </button>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
+                </React.Fragment>
               ))}
             </div>
 
@@ -120,41 +158,6 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
 
         {/* Desktop actions */}
         <div className="hidden items-center gap-2.5 md:flex shrink-0">
-          {/* Language switcher */}
-          <div className="relative" ref={langRef}>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/40"
-              onClick={() => setLangOpen(!langOpen)}
-            >
-              <Globe className="h-4 w-4" />
-            </Button>
-            <AnimatePresence>
-              {langOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -6, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -6, scale: 0.95 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute end-0 top-full mt-2 w-36 rounded-xl p-1.5 shadow-dramatic bg-card/95 backdrop-blur-2xl border border-border/40"
-                >
-                  {locales.map((l) => (
-                    <button
-                      key={l.code}
-                      onClick={() => { setLocale(l.code); setLangOpen(false); }}
-                      className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors hover:bg-muted/50 ${
-                        locale === l.code ? "text-primary font-medium bg-primary/5" : "text-foreground"
-                      }`}
-                    >
-                      <span>{l.flag}</span>
-                      <span>{l.label}</span>
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
 
           <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/40">
             <ShoppingCart className="h-4 w-4" />
