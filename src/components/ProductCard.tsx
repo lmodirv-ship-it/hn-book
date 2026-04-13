@@ -15,6 +15,15 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
+  // Generate consistent star rating (2-5) based on product id
+  const starRating = useMemo(() => {
+    let hash = 0;
+    for (let i = 0; i < product.id.length; i++) {
+      hash = product.id.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return (Math.abs(hash) % 4) + 2; // 2 to 5
+  }, [product.id]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
