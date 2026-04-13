@@ -51,11 +51,14 @@ const ProductDetail = () => {
             transition={{ duration: 0.5 }}
             className="overflow-hidden rounded-2xl border"
           >
-            <img
-              src={product.image}
-              alt={product.name}
-              className="h-full w-full object-cover"
-            />
+            <div className="aspect-[4/3]">
+              <BookCover
+                title={product.name}
+                category={product.category}
+                index={products.indexOf(product)}
+                className="h-full w-full rounded-2xl"
+              />
+            </div>
           </motion.div>
 
           {/* Details */}
