@@ -161,6 +161,11 @@ File name: ${fileName}`,
         other: "أخرى",
         image: "صور",
         pdf: "كتب",
+        video: "أخرى",
+        audio: "أخرى",
+        code: "قوالب",
+        font: "قوالب",
+        executable: "أخرى",
       };
       aiClassification = {
         type: typeMap[mimeCategory] || "أخرى",
