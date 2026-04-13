@@ -4,7 +4,7 @@ import {
   Upload, Loader2, CheckCircle2, XCircle, FileText,
   BookOpen, CreditCard, Layout, ImageIcon, FileCheck,
   MonitorPlay, HelpCircle, Download, ExternalLink,
-  Archive, RotateCcw
+  Archive, RotateCcw, FolderSearch
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -343,6 +343,41 @@ const BookGeneration = () => {
     handleFiles(e.dataTransfer.files);
   }, [handleFiles]);
 
+  const handleFolderPick = useCallback(async () => {
+    try {
+      const dirHandle = await (window as any).showDirectoryPicker();
+      const files: File[] = [];
+      
+      const collectFiles = async (handle: any, path = "") => {
+        for await (const entry of handle.values()) {
+          if (entry.kind === "file") {
+            const file = await entry.getFile();
+            // Skip hidden/system files
+            if (!file.name.startsWith(".") && file.size > 512) {
+              files.push(file);
+            }
+          } else if (entry.kind === "directory" && !entry.name.startsWith(".") && entry.name !== "__MACOSX") {
+            await collectFiles(entry, `${path}${entry.name}/`);
+          }
+        }
+      };
+      
+      await collectFiles(dirHandle);
+      
+      if (files.length === 0) {
+        toast.error("لم يتم العثور على ملفات في المجلد");
+        return;
+      }
+      
+      toast.info(`تم اكتشاف ${files.length} ملف — جاري المعالجة...`);
+      handleFiles(files);
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        toast.error("فشل في فتح المجلد");
+      }
+    }
+  }, [handleFiles]);
+
   const successCount = results.filter(r => r.success).length;
   const failCount = results.filter(r => !r.success).length;
 
@@ -438,6 +473,18 @@ const BookGeneration = () => {
           onChange={(e) => e.target.files && handleFiles(e.target.files)}
           className="hidden"
         />
+
+        {/* Analyse folder button */}
+        {!processing && (
+          <Button
+            variant="outline"
+            className="w-full mt-3 gap-2 border-dashed border-primary/30 text-primary hover:bg-primary/10"
+            onClick={handleFolderPick}
+          >
+            <FolderSearch className="w-4 h-4" />
+            Analyse — تحليل مجلد كامل
+          </Button>
+        )}
       </motion.div>
 
       {/* Results */}
