@@ -199,6 +199,7 @@ export type Database = {
           is_flash_deal: boolean | null
           name: string
           original_price: number | null
+          pdf_url: string | null
           price: number
           short_description: string | null
           updated_at: string
@@ -216,6 +217,7 @@ export type Database = {
           is_flash_deal?: boolean | null
           name: string
           original_price?: number | null
+          pdf_url?: string | null
           price?: number
           short_description?: string | null
           updated_at?: string
@@ -233,6 +235,7 @@ export type Database = {
           is_flash_deal?: boolean | null
           name?: string
           original_price?: number | null
+          pdf_url?: string | null
           price?: number
           short_description?: string | null
           updated_at?: string

@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Package, Search, Plus, Edit, Trash2, Eye, X, Upload, ExternalLink, Copy } from "lucide-react";
+import { Package, Search, Plus, Edit, Trash2, Eye, X, Upload, ExternalLink, Copy, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ProductImageUpload } from "@/admin/components/ProductImageUpload";
+import { BookPdfUpload } from "@/admin/components/BookPdfUpload";
 import { toast } from "sonner";
 
 interface Product {
@@ -18,6 +19,7 @@ interface Product {
   image: string | null;
   is_active: boolean | null;
   badge: string | null;
+  pdf_url: string | null;
 }
 
 const AdminProducts = () => {
@@ -31,7 +33,7 @@ const AdminProducts = () => {
     const fetchProducts = async () => {
       const { data } = await supabase
         .from("products")
-        .select("id, name, short_description, price, original_price, category, image, is_active, badge")
+        .select("id, name, short_description, price, original_price, category, image, is_active, badge, pdf_url")
         .order("created_at", { ascending: false });
       setProducts(data || []);
       setLoading(false);
@@ -65,6 +67,15 @@ const AdminProducts = () => {
     );
     if (editProduct?.id === productId) {
       setEditProduct((prev) => prev ? { ...prev, image: url || null } : null);
+    }
+  };
+
+  const handlePdfUpdated = (productId: string, url: string) => {
+    setProducts((prev) =>
+      prev.map((p) => (p.id === productId ? { ...p, pdf_url: url || null } : p))
+    );
+    if (editProduct?.id === productId) {
+      setEditProduct((prev) => prev ? { ...prev, pdf_url: url || null } : null);
     }
   };
 
@@ -126,6 +137,7 @@ const AdminProducts = () => {
                 <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">السعر</th>
                 <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">الأيقونة</th>
                 <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">الرابط</th>
+                <th className="text-center py-3 px-4 text-xs text-muted-foreground font-medium">PDF</th>
                 <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium hidden md:table-cell">الوصف</th>
                 <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">الحالة</th>
                 <th className="text-center py-3 px-4 text-xs text-muted-foreground font-medium">إجراءات</th>
@@ -189,6 +201,16 @@ const AdminProducts = () => {
                       </button>
                     </div>
                   </td>
+                  <td className="py-3 px-4 text-center">
+                    {p.pdf_url ? (
+                      <a href={p.pdf_url} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+                        <FileText className="w-3.5 h-3.5" /> PDF
+                      </a>
+                    ) : (
+                      <span className="text-xs text-muted-foreground/50">—</span>
+                    )}
+                  </td>
                   <td className="py-3 px-4 hidden md:table-cell">
                     <p className="text-xs text-muted-foreground truncate max-w-[250px]">{p.short_description}</p>
                   </td>
@@ -231,12 +253,12 @@ const AdminProducts = () => {
 
       {/* Edit Product Dialog */}
       <Dialog open={!!editProduct} onOpenChange={(open) => !open && setEditProduct(null)}>
-        <DialogContent className="max-w-md" dir="rtl">
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-foreground">تعديل صورة المنتج</DialogTitle>
+            <DialogTitle className="text-foreground">تعديل المنتج</DialogTitle>
           </DialogHeader>
           {editProduct && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
                 <p className="text-sm font-medium text-foreground">{editProduct.name}</p>
                 <p className="text-xs text-muted-foreground">{editProduct.category} · ${editProduct.price}</p>
@@ -246,6 +268,13 @@ const AdminProducts = () => {
                 currentImage={editProduct.image}
                 onImageUpdated={(url) => handleImageUpdated(editProduct.id, url)}
               />
+              <div className="border-t border-border pt-4">
+                <BookPdfUpload
+                  productId={editProduct.id}
+                  currentPdfUrl={editProduct.pdf_url}
+                  onPdfUpdated={(url) => handlePdfUpdated(editProduct.id, url)}
+                />
+              </div>
             </div>
           )}
         </DialogContent>
