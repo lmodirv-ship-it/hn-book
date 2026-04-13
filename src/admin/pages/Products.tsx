@@ -201,6 +201,16 @@ const AdminProducts = () => {
                       </button>
                     </div>
                   </td>
+                  <td className="py-3 px-4 text-center">
+                    {p.pdf_url ? (
+                      <a href={p.pdf_url} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+                        <FileText className="w-3.5 h-3.5" /> PDF
+                      </a>
+                    ) : (
+                      <span className="text-xs text-muted-foreground/50">—</span>
+                    )}
+                  </td>
                   <td className="py-3 px-4 hidden md:table-cell">
                     <p className="text-xs text-muted-foreground truncate max-w-[250px]">{p.short_description}</p>
                   </td>
