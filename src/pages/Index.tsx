@@ -15,7 +15,7 @@ import CategoryBar from "@/components/CategoryBar";
 import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 
-const ITEMS_PER_PAGE = 24;
+const ITEMS_PER_PAGE = 60;
 
 const ALL_CATEGORIES = ["كتب", "بطاقات", "قوالب", "صور", "وثائق", "عروض", "أخرى"];
 
@@ -128,7 +128,7 @@ const Index = () => {
               </div>
             ) : (
               <>
-                <div className="mt-8 grid gap-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 bg-black/90 rounded-2xl p-2 border border-white/5 shadow-[inset_0_0_30px_-10px_rgba(0,0,0,0.8)]">
+                <div className="mt-8 grid gap-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 bg-black/90 rounded-2xl p-2 border border-white/5 shadow-[inset_0_0_30px_-10px_rgba(0,0,0,0.8)]">
                   {visibleProducts.map((product, i) => (
                     <ProductCard key={product.id} product={product} index={i % ITEMS_PER_PAGE} />
                   ))}
