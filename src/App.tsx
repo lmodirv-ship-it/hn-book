@@ -7,6 +7,7 @@ import { I18nProvider } from "@/lib/i18n";
 import Index from "./pages/Index.tsx";
 import ProductDetail from "./pages/ProductDetail.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import CustomerAuth from "./pages/CustomerAuth.tsx";
 import AdminLayout from "./admin/layouts/AdminLayout.tsx";
 import AdminDashboard from "./admin/pages/Dashboard.tsx";
 import AdminProducts from "./admin/pages/Products.tsx";
@@ -29,6 +30,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/auth" element={<CustomerAuth />} />
             
             {/* Admin Login */}
             <Route path="/admin/login" element={<AdminLogin />} />
