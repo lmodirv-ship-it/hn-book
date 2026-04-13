@@ -1,6 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check, ShoppingCart, Star, Shield, Download, Clock, Zap, Gift, Award, ChevronRight } from "lucide-react";
+import { ArrowLeft, Check, ShoppingCart, Star, Shield, Download, Clock, Zap, Gift, Award, ChevronRight, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -174,6 +174,19 @@ const ProductDetail = () => {
               >
                 <ShoppingCart className="h-5 w-5" />
                 Buy Now — ${product.price}
+              </Button>
+
+              {/* Read Online button */}
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="mt-3 w-full gap-2.5 text-base font-semibold h-12 rounded-xl border-primary/30 text-primary hover:bg-primary/10 transition-all"
+              >
+                <Link to={`/read/${product.id}`}>
+                  <BookOpen className="h-5 w-5" />
+                  📖 اقرأ الكتاب الآن
+                </Link>
               </Button>
 
               {/* Sub-info */}
