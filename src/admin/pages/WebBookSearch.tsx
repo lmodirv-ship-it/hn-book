@@ -196,7 +196,7 @@ const WebBookSearch = () => {
               <Sparkles className="w-5 h-5 text-primary" />
             </h1>
             <p className="text-sm text-muted-foreground">
-              ابحث واستورد كتب PDF مجانية من Archive.org و Gutenberg و OpenLibrary
+              ابحث واستورد كتب، قوالب، تصاميم، شعارات، لوحات ومجلات من مصادر مفتوحة
             </p>
           </div>
         </div>
