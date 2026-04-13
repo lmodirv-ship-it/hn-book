@@ -24,9 +24,9 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
     >
       <Link to={`/product/${product.id}`}>
         {/* Outer box - black glossy */}
-        <div className="group relative rounded-2xl p-3 bg-black/80 border border-primary/20 shadow-[0_4px_30px_-5px_rgba(0,0,0,0.7),0_0_20px_-5px_hsl(199,89%,48%,0.1),inset_0_0_20px_-3px_hsl(199,89%,48%,0.15)]">
+        <div className="group relative rounded-2xl p-3 bg-black/95 border border-black/80 shadow-[0_4px_30px_-5px_rgba(0,0,0,0.9)]">
           {/* Inner box - blue glass */}
-          <div className="relative overflow-hidden rounded-xl bg-primary/10 border border-primary/40 shadow-[0_0_25px_2px_hsl(199,89%,48%,0.5),0_0_50px_0px_hsl(199,89%,48%,0.3),0_0_80px_-10px_hsl(199,89%,48%,0.15),inset_0_0_15px_-3px_hsl(199,89%,48%,0.15)]">
+          <div className="relative overflow-hidden rounded-xl bg-primary/8 border border-primary/20 shadow-[0_0_10px_-3px_hsl(199,89%,48%,0.15),inset_0_1px_0_0_hsl(199,89%,48%,0.06)]">
             {/* Image */}
             <div className="relative aspect-[4/3] overflow-hidden bg-muted/20">
               {product.image ? (
