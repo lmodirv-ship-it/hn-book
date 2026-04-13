@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Package, Search, Plus, Edit, Trash2, Eye, X, Upload } from "lucide-react";
+import { Package, Search, Plus, Edit, Trash2, Eye, X, Upload, ExternalLink, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ interface Product {
   category: string;
   image: string | null;
   is_active: boolean | null;
+  badge: string | null;
 }
 
 const AdminProducts = () => {
@@ -30,7 +31,7 @@ const AdminProducts = () => {
     const fetchProducts = async () => {
       const { data } = await supabase
         .from("products")
-        .select("id, name, short_description, price, original_price, category, image, is_active")
+        .select("id, name, short_description, price, original_price, category, image, is_active, badge")
         .order("created_at", { ascending: false });
       setProducts(data || []);
       setLoading(false);
@@ -123,13 +124,18 @@ const AdminProducts = () => {
                 <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">المنتج</th>
                 <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">التصنيف</th>
                 <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">السعر</th>
+                <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">الأيقونة</th>
+                <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">الرابط</th>
                 <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium hidden md:table-cell">الوصف</th>
                 <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">الحالة</th>
                 <th className="text-center py-3 px-4 text-xs text-muted-foreground font-medium">إجراءات</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((p) => (
+              {filtered.map((p) => {
+                const productLink = `/product/${p.id}`;
+                const fullLink = `${window.location.origin}${productLink}`;
+                return (
                 <tr key={p.id} className="border-b border-border/50 last:border-0 hover:bg-secondary/20 transition-colors">
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-3">
@@ -154,6 +160,35 @@ const AdminProducts = () => {
                       )}
                     </div>
                   </td>
+                  <td className="py-3 px-4">
+                    {p.badge ? (
+                      <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">{p.badge}</span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center gap-1">
+                      <a
+                        href={productLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-primary hover:underline truncate max-w-[120px]"
+                        title={fullLink}
+                      >
+                        {productLink}
+                      </a>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(fullLink);
+                          toast.success("تم نسخ الرابط");
+                        }}
+                        className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </td>
                   <td className="py-3 px-4 hidden md:table-cell">
                     <p className="text-xs text-muted-foreground truncate max-w-[250px]">{p.short_description}</p>
                   </td>
@@ -166,9 +201,9 @@ const AdminProducts = () => {
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center justify-center gap-1">
-                      <button className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+                      <a href={productLink} target="_blank" className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
                         <Eye className="w-3.5 h-3.5" />
-                      </button>
+                      </a>
                       <button
                         onClick={() => setEditProduct(p)}
                         className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
@@ -184,7 +219,8 @@ const AdminProducts = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
