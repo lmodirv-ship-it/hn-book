@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 import type { Product } from "@/lib/products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, ChevronDown, Loader2 } from "lucide-react";
+import { Search, ChevronDown, Loader2, SlidersHorizontal, ArrowUpDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const ITEMS_PER_PAGE = 100;
@@ -21,12 +21,34 @@ const CATEGORY_LABELS: Record<string, string> = {
   "أخرى": "أخرى",
 };
 
+type SortOption = "newest" | "oldest" | "price_asc" | "price_desc" | "name_asc";
+type PriceFilter = "all" | "free" | "paid" | "under50" | "under100";
+
+const SORT_LABELS: Record<SortOption, string> = {
+  newest: "الأحدث",
+  oldest: "الأقدم",
+  price_asc: "السعر: من الأقل",
+  price_desc: "السعر: من الأعلى",
+  name_asc: "الاسم أ-ي",
+};
+
+const PRICE_LABELS: Record<PriceFilter, string> = {
+  all: "الكل",
+  free: "مجاني",
+  paid: "مدفوع",
+  under50: "أقل من 50 د.م",
+  under100: "أقل من 100 د.م",
+};
+
 const CategoryPage = () => {
   const { category } = useParams<{ category: string }>();
   const [searchQuery, setSearchQuery] = useState("");
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
+  const [priceFilter, setPriceFilter] = useState<PriceFilter>("all");
+  const [showFilters, setShowFilters] = useState(false);
 
   const categoryName = category ? decodeURIComponent(category) : "";
   const categoryLabel = CATEGORY_LABELS[categoryName] || categoryName;
@@ -65,14 +87,52 @@ const CategoryPage = () => {
   }, [categoryName]);
 
   const filteredProducts = useMemo(() => {
-    if (!searchQuery.trim()) return products;
-    const q = searchQuery.toLowerCase();
-    return products.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.shortDescription.toLowerCase().includes(q)
-    );
-  }, [searchQuery, products]);
+    let result = [...products];
+
+    // Search
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.shortDescription.toLowerCase().includes(q)
+      );
+    }
+
+    // Price filter
+    switch (priceFilter) {
+      case "free":
+        result = result.filter((p) => p.price === 0);
+        break;
+      case "paid":
+        result = result.filter((p) => p.price > 0);
+        break;
+      case "under50":
+        result = result.filter((p) => p.price < 50);
+        break;
+      case "under100":
+        result = result.filter((p) => p.price < 100);
+        break;
+    }
+
+    // Sort
+    switch (sortBy) {
+      case "oldest":
+        result.reverse();
+        break;
+      case "price_asc":
+        result.sort((a, b) => a.price - b.price);
+        break;
+      case "price_desc":
+        result.sort((a, b) => b.price - a.price);
+        break;
+      case "name_asc":
+        result.sort((a, b) => a.name.localeCompare(b.name, "ar"));
+        break;
+    }
+
+    return result;
+  }, [searchQuery, products, sortBy, priceFilter]);
 
   const visibleProducts = filteredProducts.slice(0, visibleCount);
   const hasMore = visibleCount < filteredProducts.length;
@@ -91,27 +151,90 @@ const CategoryPage = () => {
         <section className="relative py-20">
           <div className="container mx-auto px-4">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-              <div>
-                <h1 className="text-3xl font-bold text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
-                  {categoryLabel}
-                </h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {filteredProducts.length} منتج
-                </p>
+            <div className="flex flex-col gap-4 mb-8">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <h1 className="text-3xl font-bold text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+                    {categoryLabel}
+                  </h1>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {filteredProducts.length} منتج
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <div className="relative flex-1 sm:w-64">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
+                    <Input
+                      placeholder="بحث..."
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setVisibleCount(ITEMS_PER_PAGE);
+                      }}
+                      className="pl-10 rounded-xl bg-card/30 border-border/20 focus:border-primary/30 transition-colors"
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowFilters(!showFilters)}
+                    className={`rounded-xl border-border/20 hover:border-primary/30 shrink-0 ${showFilters ? 'bg-primary/20 border-primary/40' : ''}`}
+                  >
+                    <SlidersHorizontal className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-              <div className="relative w-full max-w-xs">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
-                <Input
-                  placeholder="بحث..."
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setVisibleCount(ITEMS_PER_PAGE);
-                  }}
-                  className="pl-10 rounded-xl bg-card/30 border-border/20 focus:border-primary/30 transition-colors"
-                />
-              </div>
+
+              {/* Filters bar */}
+              {showFilters && (
+                <div className="flex flex-col sm:flex-row gap-3 p-4 rounded-xl bg-black/60 border border-white/10 backdrop-blur-sm">
+                  {/* Sort */}
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1.5">
+                      <ArrowUpDown className="h-3 w-3" />
+                      الترتيب
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(Object.keys(SORT_LABELS) as SortOption[]).map((key) => (
+                        <button
+                          key={key}
+                          onClick={() => { setSortBy(key); setVisibleCount(ITEMS_PER_PAGE); }}
+                          className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
+                            sortBy === key
+                              ? "bg-primary/30 text-white border border-primary/60 shadow-[0_0_10px_-2px_hsl(199,89%,48%,0.4)]"
+                              : "bg-white/5 text-muted-foreground border border-white/10 hover:bg-white/10"
+                          }`}
+                        >
+                          {SORT_LABELS[key]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Price filter */}
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1.5">
+                      <SlidersHorizontal className="h-3 w-3" />
+                      السعر
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(Object.keys(PRICE_LABELS) as PriceFilter[]).map((key) => (
+                        <button
+                          key={key}
+                          onClick={() => { setPriceFilter(key); setVisibleCount(ITEMS_PER_PAGE); }}
+                          className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
+                            priceFilter === key
+                              ? "bg-primary/30 text-white border border-primary/60 shadow-[0_0_10px_-2px_hsl(199,89%,48%,0.4)]"
+                              : "bg-white/5 text-muted-foreground border border-white/10 hover:bg-white/10"
+                          }`}
+                        >
+                          {PRICE_LABELS[key]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {loading ? (
@@ -121,7 +244,7 @@ const CategoryPage = () => {
               </div>
             ) : filteredProducts.length === 0 ? (
               <div className="mt-20 text-center text-muted-foreground">
-                لا توجد منتجات في هذه الفئة
+                لا توجد منتجات مطابقة
               </div>
             ) : (
               <>
