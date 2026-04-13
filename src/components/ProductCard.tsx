@@ -28,13 +28,13 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
           {/* Inner box */}
           <div className="relative overflow-hidden rounded-xl bg-black/90 border border-[hsl(42,75%,65%,0.5)] shadow-[0_0_35px_0px_hsl(42,75%,65%,0.55),0_0_60px_-5px_hsl(42,75%,65%,0.3),inset_0_0_25px_-2px_hsl(42,75%,65%,0.35)]">
             {/* Image */}
-            <div className="relative aspect-[4/3] overflow-hidden bg-muted/20">
+            <div className="relative aspect-[3/4] overflow-hidden bg-muted/20 p-4">
               {product.image ? (
                 <>
                   <img
                     src={product.image}
                     alt={product.name}
-                    className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:brightness-110"
+                    className="w-full h-full object-contain rounded-lg transition-all duration-700 group-hover:scale-110 group-hover:brightness-110"
                     loading="lazy"
                   />
                   {/* Overlay on hover */}
