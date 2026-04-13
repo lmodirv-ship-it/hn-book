@@ -100,3 +100,8 @@
     font-family: 'Space Grotesk', sans-serif;
   }
 }
+
+@keyframes gradient {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
