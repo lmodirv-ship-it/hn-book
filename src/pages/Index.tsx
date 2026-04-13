@@ -44,7 +44,7 @@ const Index = () => {
       <ParticleCanvas />
       <div className="relative z-10">
         <Navbar />
-        <HeroSection />
+        
 
         {/* Products Section */}
         <section id="products" className="relative py-20">
