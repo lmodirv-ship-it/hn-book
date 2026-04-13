@@ -47,6 +47,7 @@ function getMime(ext: string): string {
 interface RawItem {
   fileName: string; fileExt: string; mimeCategory: string; mimeType: string;
   fileSizeKB: number; fileBytes: Uint8Array; fromArchive?: string;
+  folderPath?: string; // full path inside ZIP for smart categorization
 }
 
 function isReadableTextFile(mime: string, ext: string): boolean {
@@ -158,6 +159,37 @@ Rules: كتب=books/ebooks, بطاقات=cards, قوالب=templates, صور=pho
   return null;
 }
 
+// Folder name → category hint mapping (for ZIP structure-based classification)
+const FOLDER_CATEGORY_HINTS: Record<string, string> = {
+  logo: "صور", logos: "صور", logotype: "صور",
+  card: "بطاقات", cards: "بطاقات", "carte-visite": "بطاقات", "business-card": "بطاقات",
+  "visit-card": "بطاقات", "carte_visite": "بطاقات", "cartes": "بطاقات",
+  template: "قوالب", templates: "قوالب", mockup: "قوالب", mockups: "قوالب",
+  image: "صور", images: "صور", photo: "صور", photos: "صور", picture: "صور", pictures: "صور",
+  book: "كتب", books: "كتب", ebook: "كتب", ebooks: "كتب", pdf: "كتب",
+  doc: "وثائق", docs: "وثائق", document: "وثائق", documents: "وثائق",
+  presentation: "عروض", presentations: "عروض", slides: "عروض", slide: "عروض",
+  flyer: "بطاقات", flyers: "بطاقات", brochure: "وثائق", brochures: "وثائق",
+  banner: "صور", banners: "صور", cover: "صور", covers: "صور",
+  icon: "صور", icons: "صور", sticker: "صور", stickers: "صور",
+  cv: "قوالب", resume: "قوالب", invoice: "قوالب", letterhead: "قوالب",
+  social: "قوالب", "social-media": "قوالب", post: "قوالب", posts: "قوالب",
+};
+
+function getCategoryFromFolderPath(folderPath: string): string | null {
+  const parts = folderPath.toLowerCase().split("/").filter(Boolean);
+  // Check each folder level for a category match
+  for (const part of parts) {
+    const cleaned = part.replace(/[_\-\s]+/g, "-").trim();
+    if (FOLDER_CATEGORY_HINTS[cleaned]) return FOLDER_CATEGORY_HINTS[cleaned];
+    // Also check partial matches
+    for (const [key, cat] of Object.entries(FOLDER_CATEGORY_HINTS)) {
+      if (cleaned.includes(key)) return cat;
+    }
+  }
+  return null;
+}
+
 async function extractZip(bytes: Uint8Array, parent: string): Promise<RawItem[]> {
   const items: RawItem[] = [];
   try {
@@ -173,8 +205,16 @@ async function extractZip(bytes: Uint8Array, parent: string): Promise<RawItem[]>
       const cat = getMimeCat(mime, ext);
       const b = new Uint8Array(await e.async("arraybuffer"));
       if (b.length < 512) continue;
-      items.push({ fileName: name, fileExt: ext, mimeCategory: cat, mimeType: mime, fileSizeKB: Math.round(b.length / 1024), fileBytes: b, fromArchive: parent });
+      items.push({
+        fileName: name, fileExt: ext, mimeCategory: cat, mimeType: mime,
+        fileSizeKB: Math.round(b.length / 1024), fileBytes: b,
+        fromArchive: parent, folderPath: path,
+      });
     }
+    console.log(`📂 Extracted ${items.length} files from ZIP`);
+    // Log folder structure for debugging
+    const folders = [...new Set(items.map(i => i.folderPath?.split("/").slice(0, -1).join("/")).filter(Boolean))];
+    if (folders.length > 0) console.log(`📁 Folders found: ${folders.join(", ")}`);
   } catch (e) { console.error("ZIP error:", e); }
   return items;
 }
@@ -277,14 +317,21 @@ serve(async (req) => {
       console.log(`🔍 [${i+1}/${rawItems.length}] ${item.fileName}`);
 
       try {
+        // Folder-based category hint (from ZIP structure)
+        const folderHint = item.folderPath ? getCategoryFromFolderPath(item.folderPath) : null;
+        if (folderHint) {
+          console.log(`📁 Folder hint for ${item.fileName}: ${folderHint} (from ${item.folderPath})`);
+        }
+
         // AI Classification
         const cls = await classifyAI(item.fileBytes, item.fileName, item.mimeType, item.mimeCategory) || {
-          type: "أخرى", name_ar: item.fileName.replace(/\.[^.]+$/, ""),
+          type: folderHint || "أخرى", name_ar: item.fileName.replace(/\.[^.]+$/, ""),
           name_en: item.fileName.replace(/\.[^.]+$/, ""),
           description_ar: `ملف ${item.fileName}`, author: "", tags: [], suggested_price: 0,
         };
 
-        const categoryType = cls.type || "أخرى";
+        // If AI couldn't determine type well but folder structure gives a hint, prefer folder hint
+        const categoryType = folderHint || cls.type || "أخرى";
         const prefix = CATEGORY_PREFIXES[categoryType] || "HNX";
 
         // Generate unique code
