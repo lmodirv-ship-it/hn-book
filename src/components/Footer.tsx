@@ -1,5 +1,6 @@
 import { useI18n } from "@/lib/i18n";
 import { ExternalLink, Heart } from "lucide-react";
+import hnLogo from "@/assets/hn-logo.jpeg";
 
 const hnSites = [
   { name: "HN Book", href: "#", current: true },
