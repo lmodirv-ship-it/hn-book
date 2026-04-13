@@ -70,6 +70,15 @@ const AdminProducts = () => {
     }
   };
 
+  const handlePdfUpdated = (productId: string, url: string) => {
+    setProducts((prev) =>
+      prev.map((p) => (p.id === productId ? { ...p, pdf_url: url || null } : p))
+    );
+    if (editProduct?.id === productId) {
+      setEditProduct((prev) => prev ? { ...prev, pdf_url: url || null } : null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
