@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Package, Search, Plus, Edit, Trash2, Eye, X, Upload, ExternalLink, Copy } from "lucide-react";
+import { Package, Search, Plus, Edit, Trash2, Eye, X, Upload, ExternalLink, Copy, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ProductImageUpload } from "@/admin/components/ProductImageUpload";
+import { BookPdfUpload } from "@/admin/components/BookPdfUpload";
 import { toast } from "sonner";
 
 interface Product {
@@ -18,6 +19,7 @@ interface Product {
   image: string | null;
   is_active: boolean | null;
   badge: string | null;
+  pdf_url: string | null;
 }
 
 const AdminProducts = () => {
