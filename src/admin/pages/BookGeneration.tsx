@@ -343,6 +343,41 @@ const BookGeneration = () => {
     handleFiles(e.dataTransfer.files);
   }, [handleFiles]);
 
+  const handleFolderPick = useCallback(async () => {
+    try {
+      const dirHandle = await (window as any).showDirectoryPicker();
+      const files: File[] = [];
+      
+      const collectFiles = async (handle: any, path = "") => {
+        for await (const entry of handle.values()) {
+          if (entry.kind === "file") {
+            const file = await entry.getFile();
+            // Skip hidden/system files
+            if (!file.name.startsWith(".") && file.size > 512) {
+              files.push(file);
+            }
+          } else if (entry.kind === "directory" && !entry.name.startsWith(".") && entry.name !== "__MACOSX") {
+            await collectFiles(entry, `${path}${entry.name}/`);
+          }
+        }
+      };
+      
+      await collectFiles(dirHandle);
+      
+      if (files.length === 0) {
+        toast.error("لم يتم العثور على ملفات في المجلد");
+        return;
+      }
+      
+      toast.info(`تم اكتشاف ${files.length} ملف — جاري المعالجة...`);
+      handleFiles(files);
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        toast.error("فشل في فتح المجلد");
+      }
+    }
+  }, [handleFiles]);
+
   const successCount = results.filter(r => r.success).length;
   const failCount = results.filter(r => !r.success).length;
 
