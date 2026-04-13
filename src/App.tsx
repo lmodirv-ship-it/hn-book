@@ -14,6 +14,8 @@ import AdminOrders from "./admin/pages/Orders.tsx";
 import AdminCustomers from "./admin/pages/Customers.tsx";
 import AdminEarnings from "./admin/pages/Earnings.tsx";
 import AdminSettings from "./admin/pages/AdminSettings.tsx";
+import AdminLogin from "./admin/pages/AdminLogin.tsx";
+import RequireAdmin from "./admin/components/RequireAdmin.tsx";
 
 const queryClient = new QueryClient();
 
@@ -28,8 +30,11 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             
-            {/* Admin Panel */}
-            <Route path="/admin" element={<AdminLayout />}>
+            {/* Admin Login */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+            
+            {/* Protected Admin Panel */}
+            <Route path="/admin" element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
               <Route index element={<AdminDashboard />} />
               <Route path="products" element={<AdminProducts />} />
               <Route path="orders" element={<AdminOrders />} />

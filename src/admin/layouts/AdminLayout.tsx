@@ -4,9 +4,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart3, Package, Users, TrendingUp, Settings,
   Menu, X, Shield, BookOpen, Tag, LayoutDashboard,
-  ShoppingCart, FileText
+  ShoppingCart, FileText, LogOut
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
   { path: "/admin", icon: LayoutDashboard, label: "لوحة التحكم" },
@@ -163,6 +164,18 @@ const AdminLayout = () => {
             >
               <BookOpen className="w-3.5 h-3.5" />
               عرض الموقع
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs gap-1.5 text-destructive hover:text-destructive"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                navigate("/admin/login");
+              }}
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              خروج
             </Button>
           </div>
         </header>
