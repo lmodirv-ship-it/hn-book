@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Product } from "@/lib/products";
+import BookCover from "@/components/BookCover";
 
 interface ProductCardProps {
   product: Product;
