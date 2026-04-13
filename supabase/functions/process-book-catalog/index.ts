@@ -165,7 +165,7 @@ Extract every single book you can find. Be thorough.`,
         // Generate a cover image using AI
         let coverUrl: string | null = null;
         try {
-          const coverResponse = await fetch("https://ai-gateway.lovable.dev/v1/images/generations", {
+          const coverResponse = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
