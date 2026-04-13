@@ -113,3 +113,29 @@
   background: hsl(var(--primary) / 0.25);
   color: hsl(var(--foreground));
 }
+
+/* Book animations */
+@keyframes bookFloat {
+  0%, 100% { transform: perspective(900px) rotateY(-18deg) rotateX(4deg) translateY(0); }
+  50% { transform: perspective(900px) rotateY(-18deg) rotateX(4deg) translateY(-8px); }
+}
+
+@keyframes bookTiltLeft {
+  0%, 100% { transform: perspective(900px) rotateY(-25deg) rotateX(2deg) rotate(-5deg) translateY(0); }
+  50% { transform: perspective(900px) rotateY(-20deg) rotateX(4deg) rotate(-3deg) translateY(-6px); }
+}
+
+@keyframes bookTiltRight {
+  0%, 100% { transform: perspective(900px) rotateY(15deg) rotateX(3deg) rotate(4deg) translateY(0); }
+  50% { transform: perspective(900px) rotateY(10deg) rotateX(5deg) rotate(2deg) translateY(-7px); }
+}
+
+@keyframes bookRock {
+  0%, 100% { transform: perspective(900px) rotateX(35deg) rotateY(-5deg) rotateZ(-2deg) translateY(0); }
+  50% { transform: perspective(900px) rotateX(30deg) rotateY(-8deg) rotateZ(0deg) translateY(-5px); }
+}
+
+@keyframes bookPulse {
+  0%, 100% { transform: perspective(900px) rotateY(-5deg) rotateX(2deg) scale(1); }
+  50% { transform: perspective(900px) rotateY(-8deg) rotateX(4deg) scale(1.03); }
+}

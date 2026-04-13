@@ -57,6 +57,9 @@ const BookCover = ({ title, category, index, className = "" }: BookCoverProps) =
   const lines = useMemo(() => splitTitle(title, 16), [title]);
   const decorPattern = useMemo(() => Math.floor(seededRandom(index + 77) * 5), [index]);
 
+  // Book pose: 0=standing 3D, 1=tilted left, 2=tilted right, 3=flat/lying, 4=upright front
+  const pose = useMemo(() => index % 5, [index]);
+
   const [bgStart, bgEnd, accent, spine] = palette;
 
   // Background surfaces - realistic textures via Unsplash
@@ -108,12 +111,22 @@ const BookCover = ({ title, category, index, className = "" }: BookCoverProps) =
 
       {/* 3D Book wrapper */}
       <div
-        className="relative transition-all duration-700 ease-out group-hover:[transform:perspective(900px)_rotateY(-30deg)_rotateX(5deg)_translateY(-4px)_scale(1.04)]"
+        className={`relative transition-all duration-700 ease-out ${
+          pose === 0 ? "animate-[bookFloat_6s_ease-in-out_infinite]" :
+          pose === 1 ? "animate-[bookTiltLeft_5s_ease-in-out_infinite]" :
+          pose === 2 ? "animate-[bookTiltRight_7s_ease-in-out_infinite]" :
+          pose === 3 ? "animate-[bookRock_4s_ease-in-out_infinite]" :
+          "animate-[bookPulse_5s_ease-in-out_infinite]"
+        }`}
         style={{
-          width: "46%",
-          height: "72%",
+          width: pose === 3 ? "55%" : "46%",
+          height: pose === 3 ? "65%" : "72%",
           transformStyle: "preserve-3d",
-          transform: "perspective(900px) rotateY(-18deg) rotateX(4deg)",
+          transform: pose === 0 ? "perspective(900px) rotateY(-18deg) rotateX(4deg)"
+            : pose === 1 ? "perspective(900px) rotateY(-25deg) rotateX(2deg) rotate(-5deg)"
+            : pose === 2 ? "perspective(900px) rotateY(15deg) rotateX(3deg) rotate(4deg)"
+            : pose === 3 ? "perspective(900px) rotateX(35deg) rotateY(-5deg) rotateZ(-2deg)"
+            : "perspective(900px) rotateY(-5deg) rotateX(2deg)",
           filter: "drop-shadow(10px 15px 25px rgba(0,0,0,0.6))",
         }}
       >
