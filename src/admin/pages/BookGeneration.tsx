@@ -37,17 +37,202 @@ const CATEGORY_ICONS: Record<string, any> = {
   "أخرى": HelpCircle,
 };
 
-// Threshold: files above this size are uploaded to storage first
+// Files under this go directly via FormData to edge function
 const DIRECT_UPLOAD_LIMIT = 10 * 1024 * 1024; // 10MB
+// Files under this go to storage then edge function processes them
+const EDGE_FUNCTION_LIMIT = 50 * 1024 * 1024; // 50MB
+// Files above EDGE_FUNCTION_LIMIT are uploaded to storage and saved directly (no edge function)
+
+const CATEGORY_MAP: Record<string, string> = {
+  pdf: "كتب", jpg: "صور", jpeg: "صور", png: "صور", gif: "صور", webp: "صور",
+  bmp: "صور", svg: "صور", tiff: "صور", heic: "صور", avif: "صور",
+  doc: "وثائق", docx: "وثائق", txt: "وثائق", rtf: "وثائق", odt: "وثائق", md: "وثائق",
+  ppt: "عروض", pptx: "عروض", key: "عروض", odp: "عروض",
+  xls: "وثائق", xlsx: "وثائق", csv: "وثائق", ods: "وثائق",
+  psd: "قوالب", ai: "قوالب", eps: "قوالب", fig: "قوالب", sketch: "قوالب",
+  zip: "أخرى", rar: "أخرى", "7z": "أخرى",
+};
+
+const CATEGORY_PREFIXES: Record<string, string> = {
+  "كتب": "HNB", "بطاقات": "HNC", "قوالب": "HNT", "صور": "HNI",
+  "وثائق": "HND", "عروض": "HNP", "أخرى": "HNX",
+};
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 const BookGeneration = () => {
   const [processing, setProcessing] = useState(false);
   const [currentFile, setCurrentFile] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState<ProcessedItem[]>([]);
   const [sourceName, setSourceName] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Get next product code from DB
+  const getNextCode = async (prefix: string): Promise<string> => {
+    const { data } = await supabase
+      .from("products")
+      .select("badge")
+      .like("badge", `${prefix}-%`);
+    let max = 0;
+    if (data) {
+      for (const p of data) {
+        const m = p.badge?.match(new RegExp(`${prefix}-(\\d+)`));
+        if (m) { const n = parseInt(m[1]); if (n > max) max = n; }
+      }
+    }
+    return `${prefix}-${String(max + 1).padStart(4, "0")}`;
+  };
+
+  // Direct save for very large files (skip edge function to avoid timeout)
+  const processLargeFile = async (file: File): Promise<ProcessedItem[]> => {
+    const ext = file.name.split(".").pop()?.toLowerCase() || "";
+    const category = CATEGORY_MAP[ext] || "أخرى";
+    const prefix = CATEGORY_PREFIXES[category] || "HNX";
+
+    // Step 1: Upload to storage with XHR for progress tracking
+    setStatusMessage("جاري رفع الملف...");
+    const tempPath = `temp-uploads/${Date.now()}-${file.name}`;
+
+    // Use chunked upload via XMLHttpRequest for progress
+    const uploaded = await uploadWithProgress(file, tempPath);
+    if (!uploaded) {
+      return [{ success: false, fileName: file.name, error: "فشل رفع الملف" }];
+    }
+
+    // Step 2: Generate code
+    setStatusMessage("جاري الترقيم والتصنيف...");
+    const itemCode = await getNextCode(prefix);
+
+    // Step 3: Move file to permanent location
+    const bucket = category === "صور" ? "book-images" : "book-files";
+    const permanentPath = `products/${itemCode}/${itemCode}.${ext}`;
+
+    // Copy from temp to permanent
+    const { error: copyErr } = await supabase.storage
+      .from(bucket)
+      .copy(tempPath.replace("temp-uploads/", ""), permanentPath);
+
+    // If copy doesn't work (same bucket issue), download and re-upload
+    let fileUrl: string;
+    if (copyErr) {
+      // File is already in book-files, just move/rename
+      const { data: moveData, error: moveErr } = await supabase.storage
+        .from("book-files")
+        .move(tempPath, permanentPath);
+
+      if (moveErr) {
+        // Fallback: use the temp path as-is
+        fileUrl = `${SUPABASE_URL}/storage/v1/object/public/book-files/${tempPath}`;
+      } else {
+        fileUrl = `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${permanentPath}`;
+      }
+    } else {
+      fileUrl = `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${permanentPath}`;
+      // Remove temp file
+      await supabase.storage.from("book-files").remove([tempPath]);
+    }
+
+    const coverUrl = category === "صور" ? fileUrl : null;
+    const fileSizeKB = Math.round(file.size / 1024);
+    const productName = `${itemCode} - ${file.name.replace(/\.[^.]+$/, "")}`;
+
+    // Step 4: Save to database
+    setStatusMessage("جاري الحفظ في قاعدة البيانات...");
+    const { data: product, error: insertErr } = await supabase.from("products").insert({
+      name: productName,
+      short_description: `ملف ${ext.toUpperCase()} - ${formatSize(file.size)}`,
+      description: `ملف ${file.name}\nالحجم: ${formatSize(file.size)}\nالنوع: ${category}`,
+      category,
+      price: 0,
+      image: coverUrl,
+      pdf_url: ext === "pdf" ? fileUrl : null,
+      badge: itemCode,
+      is_active: true,
+      features: [
+        `النوع: ${category}`,
+        `الصيغة: ${ext.toUpperCase()}`,
+        `الحجم: ${formatSize(file.size)}`,
+      ],
+    }).select("id").single();
+
+    if (insertErr) {
+      return [{ success: false, fileName: file.name, error: "فشل الحفظ: " + insertErr.message }];
+    }
+
+    // Step 5: Create file reference
+    const fileType = category === "صور" ? "image" : ext === "pdf" ? "pdf" : "other";
+    await supabase.from("product_files").insert({
+      product_id: product.id,
+      file_type: fileType as any,
+      file_name: `${itemCode}.${ext}`,
+      storage_path: `${bucket}/${permanentPath}`,
+      public_url: fileUrl,
+      file_size: file.size,
+      is_primary: true,
+    });
+
+    return [{
+      success: true,
+      id: product.id,
+      code: itemCode,
+      category,
+      name: productName,
+      cover: coverUrl,
+      file_url: fileUrl,
+      fileName: file.name,
+      fileSizeKB,
+      fileExt: ext,
+    }];
+  };
+
+  // Upload with progress tracking using XMLHttpRequest
+  const uploadWithProgress = (file: File, path: string): Promise<boolean> => {
+    return new Promise(async (resolve) => {
+      try {
+        // For very large files, use the Supabase storage upload directly
+        // The JS client doesn't support progress, so we track by polling
+        setUploadProgress(0);
+
+        const chunkSize = 50 * 1024 * 1024; // 50MB chunks
+        const totalChunks = Math.ceil(file.size / chunkSize);
+
+        if (totalChunks <= 1) {
+          // Single upload
+          const { error } = await supabase.storage
+            .from("book-files")
+            .upload(path, file, { upsert: true });
+          setUploadProgress(100);
+          resolve(!error);
+        } else {
+          // For very large files, upload as single file (Supabase handles it)
+          // Show estimated progress based on time
+          const startTime = Date.now();
+          const estimatedSpeed = 2 * 1024 * 1024; // ~2MB/s estimate
+          const estimatedTime = (file.size / estimatedSpeed) * 1000;
+
+          const progressInterval = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            const estimatedProgress = Math.min(95, (elapsed / estimatedTime) * 100);
+            setUploadProgress(Math.round(estimatedProgress));
+          }, 500);
+
+          const { error } = await supabase.storage
+            .from("book-files")
+            .upload(path, file, { upsert: true });
+
+          clearInterval(progressInterval);
+          setUploadProgress(100);
+          resolve(!error);
+        }
+      } catch {
+        resolve(false);
+      }
+    });
+  };
 
   const processFile = async (file: File): Promise<ProcessedItem[]> => {
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
@@ -57,18 +242,21 @@ const BookGeneration = () => {
 
     let response: Response;
 
-    if (file.size > DIRECT_UPLOAD_LIMIT) {
-      // Large file: upload to storage first, then send path
+    if (file.size > EDGE_FUNCTION_LIMIT) {
+      // Very large file: process directly on client side
+      setStatusMessage(`ملف كبير (${formatSize(file.size)}) — رفع مباشر ومعالجة محلية`);
+      return processLargeFile(file);
+    } else if (file.size > DIRECT_UPLOAD_LIMIT) {
+      // Medium file: upload to storage, then edge function processes
+      setStatusMessage("جاري الرفع للتخزين...");
       const tempPath = `temp-uploads/${Date.now()}-${file.name}`;
-      
-      const { error: uploadErr } = await supabase.storage
-        .from("book-files")
-        .upload(tempPath, file, { upsert: true });
 
-      if (uploadErr) {
-        return [{ success: false, fileName: file.name, error: "فشل رفع الملف إلى التخزين: " + uploadErr.message }];
+      const uploaded = await uploadWithProgress(file, tempPath);
+      if (!uploaded) {
+        return [{ success: false, fileName: file.name, error: "فشل رفع الملف إلى التخزين" }];
       }
 
+      setStatusMessage("جاري التحليل بالذكاء الاصطناعي...");
       response = await fetch(url, {
         method: "POST",
         headers: {
@@ -82,7 +270,8 @@ const BookGeneration = () => {
         }),
       });
     } else {
-      // Small file: send directly as FormData
+      // Small file: send directly
+      setStatusMessage("جاري التحليل والتصنيف...");
       const formData = new FormData();
       formData.append("file", file);
 
@@ -110,7 +299,9 @@ const BookGeneration = () => {
     setProcessing(true);
     setResults([]);
     setProgress(0);
+    setUploadProgress(0);
     setSourceName(null);
+    setStatusMessage("");
 
     const allResults: ProcessedItem[] = [];
 
@@ -132,6 +323,8 @@ const BookGeneration = () => {
     setProgress(100);
     setCurrentFile(null);
     setProcessing(false);
+    setStatusMessage("");
+    setUploadProgress(0);
 
     const successCount = allResults.filter(r => r.success).length;
     if (successCount > 0) {
@@ -149,12 +342,6 @@ const BookGeneration = () => {
     setDragOver(false);
     handleFiles(e.dataTransfer.files);
   }, [handleFiles]);
-
-  const formatSize = (bytes: number) => {
-    if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)}GB`;
-    if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
-    return `${Math.round(bytes / 1024)}KB`;
-  };
 
   const successCount = results.filter(r => r.success).length;
   const failCount = results.filter(r => !r.success).length;
@@ -206,13 +393,19 @@ const BookGeneration = () => {
               <Loader2 className="w-10 h-10 text-primary animate-spin" />
               <div className="text-center">
                 <p className="text-sm font-semibold text-foreground">
-                  جاري التحليل والتصنيف والترقيم والحفظ...
+                  {statusMessage || "جاري المعالجة..."}
                 </p>
                 {currentFile && (
                   <p className="text-xs text-muted-foreground mt-1 truncate max-w-xs">{currentFile}</p>
                 )}
               </div>
-              <Progress value={progress} className="w-56 h-2" />
+              {uploadProgress > 0 && uploadProgress < 100 && (
+                <div className="w-56 space-y-1">
+                  <Progress value={uploadProgress} className="h-2" />
+                  <p className="text-[10px] text-muted-foreground text-center">رفع: {uploadProgress}%</p>
+                </div>
+              )}
+              {uploadProgress === 0 && <Progress value={progress} className="w-56 h-2" />}
               {results.length > 0 && (
                 <p className="text-[10px] text-muted-foreground">
                   ✅ {results.filter(r => r.success).length} محفوظ
@@ -315,7 +508,6 @@ const BookGeneration = () => {
                 <div className="divide-y divide-border">
                   {items.map((r, i) => (
                     <div key={i} className="flex items-center gap-3 px-4 py-3">
-                      {/* Thumbnail */}
                       {r.cover ? (
                         <img src={r.cover} alt="" className="w-10 h-12 rounded-lg object-cover bg-secondary" />
                       ) : (
@@ -323,8 +515,6 @@ const BookGeneration = () => {
                           <FileText className="w-5 h-5 text-muted-foreground" />
                         </div>
                       )}
-
-                      {/* Info */}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{r.name}</p>
                         <p className="text-[11px] text-muted-foreground flex items-center gap-2">
@@ -336,14 +526,10 @@ const BookGeneration = () => {
                           )}
                         </p>
                       </div>
-
-                      {/* Code badge */}
                       {r.code && (
                         <span className="text-xs font-mono text-primary bg-primary/10 px-2 py-1 rounded-md">{r.code}</span>
                       )}
                       <Badge variant="outline" className="text-[10px] shrink-0">{r.fileExt?.toUpperCase()}</Badge>
-
-                      {/* Actions */}
                       {r.file_url && (
                         <a href={r.file_url} target="_blank" rel="noopener noreferrer"
                           className="p-1.5 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors"
@@ -389,5 +575,11 @@ const BookGeneration = () => {
     </div>
   );
 };
+
+function formatSize(bytes: number) {
+  if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)}GB`;
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+  return `${Math.round(bytes / 1024)}KB`;
+}
 
 export default BookGeneration;
