@@ -528,6 +528,14 @@ const BookGeneration = () => {
           onChange={(e) => e.target.files && handleFiles(e.target.files)}
           className="hidden"
         />
+        <input
+          ref={folderInputRef}
+          type="file"
+          {...({ webkitdirectory: "", directory: "", mozdirectory: "" } as any)}
+          multiple
+          onChange={handleFolderInputChange}
+          className="hidden"
+        />
 
         {/* Analyse folder button */}
         {!processing && !pendingFiles && (
