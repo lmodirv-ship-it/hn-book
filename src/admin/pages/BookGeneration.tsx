@@ -390,17 +390,30 @@ const BookGeneration = () => {
     }
   }, []);
 
+  const getFileExt = (name: string) => name.split(".").pop()?.toLowerCase() || "";
+
+  const filteredPendingFiles = useCallback(() => {
+    if (!pendingFiles) return [];
+    if (activeFilters.size === 0) return pendingFiles;
+    const allowedExts = new Set<string>();
+    FILE_FILTERS.filter(f => activeFilters.has(f.key)).forEach(f => f.exts.forEach(e => allowedExts.add(e)));
+    return pendingFiles.filter(f => allowedExts.has(getFileExt(f.name)));
+  }, [pendingFiles, activeFilters]);
+
   const confirmPendingFiles = useCallback(() => {
-    if (pendingFiles) {
-      handleFiles(pendingFiles);
-      setPendingFiles(null);
-      setPendingTotalSize(0);
+    const files = filteredPendingFiles();
+    if (files.length > 0) {
+      handleFiles(files);
     }
-  }, [pendingFiles, handleFiles]);
+    setPendingFiles(null);
+    setPendingTotalSize(0);
+    setActiveFilters(new Set());
+  }, [filteredPendingFiles, handleFiles]);
 
   const cancelPendingFiles = useCallback(() => {
     setPendingFiles(null);
     setPendingTotalSize(0);
+    setActiveFilters(new Set());
   }, []);
 
   const successCount = results.filter(r => r.success).length;
