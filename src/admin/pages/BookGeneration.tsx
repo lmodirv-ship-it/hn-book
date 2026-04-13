@@ -473,6 +473,18 @@ const BookGeneration = () => {
           onChange={(e) => e.target.files && handleFiles(e.target.files)}
           className="hidden"
         />
+
+        {/* Analyse folder button */}
+        {!processing && (
+          <Button
+            variant="outline"
+            className="w-full mt-3 gap-2 border-dashed border-primary/30 text-primary hover:bg-primary/10"
+            onClick={handleFolderPick}
+          >
+            <FolderSearch className="w-4 h-4" />
+            Analyse — تحليل مجلد كامل
+          </Button>
+        )}
       </motion.div>
 
       {/* Results */}
