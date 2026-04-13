@@ -1,16 +1,16 @@
 import { motion } from "framer-motion";
-import { Download, RefreshCw, Shield, Zap } from "lucide-react";
+import { Download, RefreshCw, Shield, DollarSign } from "lucide-react";
 
 const features = [
   {
     icon: Download,
     title: "Instant Download",
-    description: "Get your files immediately after purchase. No waiting, no shipping.",
+    description: "Get all your files immediately after purchase. No waiting, no shipping.",
   },
   {
-    icon: RefreshCw,
-    title: "Free Lifetime Updates",
-    description: "Every template gets regular updates. Buy once, benefit forever.",
+    icon: DollarSign,
+    title: "Full Resale Rights",
+    description: "PLR & MRR included. Resell products as your own and keep 100% of profits.",
   },
   {
     icon: Shield,
@@ -18,9 +18,9 @@ const features = [
     description: "Not happy? Get a full refund within 30 days, no questions asked.",
   },
   {
-    icon: Zap,
-    title: "Easy to Customize",
-    description: "No design skills needed. Just open, edit, and make it yours.",
+    icon: RefreshCw,
+    title: "Free Lifetime Updates",
+    description: "New products added regularly. Buy once, get updates forever.",
   },
 ];
 
@@ -35,9 +35,9 @@ const FeaturesSection = () => {
           transition={{ duration: 0.5 }}
           viewport={{ once: true }}
         >
-          <h2 className="text-3xl font-bold md:text-4xl">Why choose our templates?</h2>
+          <h2 className="text-3xl font-bold md:text-4xl">Why choose us?</h2>
           <p className="mt-3 text-muted-foreground">
-            Built by professionals, loved by thousands
+            100M+ products, full rights, instant access
           </p>
         </motion.div>
 
