@@ -27,25 +27,25 @@ serve(async (req) => {
       const GOOGLE_BOOKS_API_KEY = Deno.env.get("GOOGLE_BOOKS_API_KEY") || "";
       const gbKeyParam = GOOGLE_BOOKS_API_KEY ? `&key=${GOOGLE_BOOKS_API_KEY}` : "";
       const gbUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&filter=free-ebooks&maxResults=${Math.min(bookCount, 10)}&orderBy=relevance${gbKeyParam}`;
+      console.log("Google Books URL:", gbUrl.replace(GOOGLE_BOOKS_API_KEY, "KEY***"));
       const gbResp = await fetch(gbUrl);
+      console.log("Google Books status:", gbResp.status);
       if (gbResp.ok) {
         const gbData = await gbResp.json();
+        console.log("Google Books totalItems:", gbData.totalItems, "items:", (gbData.items || []).length);
         for (const item of (gbData.items || [])) {
           const v = item.volumeInfo || {};
           const accessInfo = item.accessInfo || {};
           const pdfInfo = accessInfo.pdf || {};
           const epubInfo = accessInfo.epub || {};
 
-          // Get the best download/read link
           let downloadUrl = pdfInfo.downloadLink || pdfInfo.acsTokenLink || "";
           const previewLink = v.previewLink || "";
           const infoLink = v.infoLink || "";
 
-          // Build cover URL
           const thumbnail = v.imageLinks?.thumbnail || v.imageLinks?.smallThumbnail || "";
           const coverUrl = thumbnail ? thumbnail.replace("http://", "https://").replace("&edge=curl", "") : "";
 
-          // Get ISBN
           const identifiers = v.industryIdentifiers || [];
           const isbn = identifiers.find((id: any) => id.type === "ISBN_13")?.identifier ||
                        identifiers.find((id: any) => id.type === "ISBN_10")?.identifier || "";
@@ -70,6 +70,9 @@ serve(async (req) => {
           });
         }
         console.log(`Google Books: found ${googleBooksResults.length} free ebooks`);
+      } else {
+        const errText = await gbResp.text();
+        console.error("Google Books API failed:", gbResp.status, errText);
       }
     } catch (gbErr) {
       console.error("Google Books API error:", gbErr);
