@@ -244,9 +244,9 @@ const WebBookSearch = () => {
               <Input
                 type="number"
                 min={1}
-                max={20}
+                max={1000}
                 value={count}
-                onChange={(e) => setCount(Math.min(20, Math.max(1, parseInt(e.target.value) || 5)))}
+                onChange={(e) => setCount(Math.min(1000, Math.max(1, parseInt(e.target.value) || 5)))}
                 disabled={searching || importing}
               />
             </div>
