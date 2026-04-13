@@ -133,12 +133,53 @@ const BookGeneration = () => {
     setCurrentFile(null);
     setAnalyzing(false);
 
-    if (allItems.length > 0) {
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
+    if (allItems.length === 0) return;
+
+    if (autoSave) {
+      // Auto-save all items immediately
+      setStatusText("جاري الحفظ التلقائي...");
+      setSaving(true);
+      setItems(prev => prev.map(it => ({ ...it, saving: true })));
+
+      try {
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const { data: sd } = await supabase.auth.getSession();
+        const tk = sd?.session?.access_token;
+
+        const res = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/process-universal-file?mode=save`,
+          {
+            method: "POST",
+            headers: { Authorization: `Bearer ${tk}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ items: allItems }),
+          }
+        );
+        const data = await res.json();
+        if (data.results) {
+          const okSet = new Set(data.results.filter((r: any) => r.success).map((r: any) => r.index));
+          setItems(prev => prev.map(it => {
+            if (okSet.has(it.index)) {
+              const r = data.results.find((x: any) => x.index === it.index);
+              return { ...it, saved: true, saving: false, selected: false, code: r?.code };
+            }
+            return { ...it, saving: false };
+          }));
+          const ok = okSet.size;
+          if (ok > 0) toast.success(`✅ تم تحليل وحفظ ${ok} عنصر تلقائياً`);
+          if (ok < allItems.length) toast.error(`فشل حفظ ${allItems.length - ok} عنصر`);
+        }
+      } catch (err: any) {
+        toast.error("خطأ في الحفظ التلقائي: " + err.message);
+        setItems(prev => prev.map(it => ({ ...it, saving: false })));
+      }
+      setSaving(false);
+      setStatusText(null);
+    } else {
       toast.success(`✅ تم تحليل ${allItems.length} عنصر — راجعها ثم اضغط حفظ`);
     }
-
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  }, []);
+  }, [autoSave]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
