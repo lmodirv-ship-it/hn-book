@@ -12,20 +12,17 @@ const RequireAdmin = ({ children }: RequireAdminProps) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkAdmin = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    let mounted = true;
 
-      if (!session) {
-        navigate("/admin/login", { replace: true });
-        return;
-      }
-
+    const checkAdmin = async (userId: string) => {
       const { data: roles } = await supabase
         .from("user_roles" as any)
         .select("role")
-        .eq("user_id", session.user.id);
+        .eq("user_id", userId);
 
       const isAdmin = (roles as any[])?.some((r: any) => r.role === "admin");
+
+      if (!mounted) return;
 
       if (!isAdmin) {
         await supabase.auth.signOut();
@@ -37,15 +34,26 @@ const RequireAdmin = ({ children }: RequireAdminProps) => {
       setLoading(false);
     };
 
-    checkAdmin();
+    // Set up listener BEFORE getSession to avoid race conditions
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT" || !session) {
+        if (mounted) {
+          setAuthorized(false);
+          setLoading(false);
+          navigate("/admin/login", { replace: true });
+        }
+        return;
+      }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_OUT") {
-        navigate("/admin/login", { replace: true });
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") {
+        checkAdmin(session.user.id);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   if (loading && !authorized) {
