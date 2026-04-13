@@ -149,7 +149,7 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
                     <span className="text-base font-bold text-accent">مجاني</span>
                   )}
                 </div>
-                <span className="text-[10px] font-mono text-muted-foreground/50 tracking-wide">
+                <span className="text-[11px] font-mono font-bold text-foreground tracking-wide drop-shadow-[0_0_6px_rgba(255,255,255,0.4)]">
                   {product.referenceCode || product.id.slice(0, 6).toUpperCase()}
                 </span>
               </div>
