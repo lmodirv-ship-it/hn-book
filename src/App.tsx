@@ -24,6 +24,7 @@ import PageManagement from "./admin/pages/PageManagement.tsx";
 import VisitorAnalytics from "./admin/pages/VisitorAnalytics.tsx";
 import SystemHealthCheck from "./admin/pages/SystemHealthCheck.tsx";
 import BookGeneration from "./admin/pages/BookGeneration.tsx";
+import WebBookSearch from "./admin/pages/WebBookSearch.tsx";
 
 const queryClient = new QueryClient();
 
