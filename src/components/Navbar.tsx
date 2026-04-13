@@ -84,40 +84,30 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
           >
             <img src={hnLogo} alt="HN Groupe" className="h-20 w-20 rounded-full object-cover transition-transform duration-300 group-hover:scale-110 ring-2 ring-primary/40" />
           </motion.div>
-          <motion.div
-            className="relative mt-0 px-5 py-2 rounded-xl overflow-hidden"
-            style={{
-              background: "linear-gradient(135deg, rgba(0,0,0,0.95) 0%, rgba(10,10,10,0.9) 40%, rgba(20,20,30,0.95) 100%)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              backdropFilter: "blur(12px)",
-              perspective: "600px",
-              transformStyle: "preserve-3d",
-              boxShadow: "0 4px 15px -3px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.05)",
-            }}
+          <motion.button
+            onClick={() => {}}
+            className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border border-primary/50 bg-primary/20 backdrop-blur-sm"
             animate={{
-              rotateY: [-8, 8, -8],
-              rotateX: [3, -3, 3],
+              boxShadow: [
+                "inset 0 0 8px -2px hsl(199,89%,48%,0.3), 0 0 10px -2px hsl(199,89%,48%,0.2)",
+                "inset 0 0 20px -2px hsl(199,89%,48%,0.7), 0 0 25px -2px hsl(199,89%,48%,0.5)",
+                "inset 0 0 8px -2px hsl(199,89%,48%,0.3), 0 0 10px -2px hsl(199,89%,48%,0.2)",
+              ],
+              borderColor: [
+                "hsl(199,89%,48%,0.4)",
+                "hsl(199,89%,48%,0.8)",
+                "hsl(199,89%,48%,0.4)",
+              ],
             }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            whileHover={{
+              boxShadow: "inset 0 0 25px -2px hsl(199,89%,48%,0.85), 0 0 35px -2px hsl(199,89%,48%,0.6)",
+              borderColor: "hsl(199,89%,48%,0.9)",
+              scale: 1.05,
+            }}
           >
-            {/* Glass reflection */}
-            <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-transparent h-1/2 rounded-t-xl pointer-events-none" />
-            {/* Bottom metallic edge */}
-            <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
-            <span
-              className="relative text-base font-black tracking-[0.2em] leading-none"
-              style={{
-                background: "linear-gradient(135deg, #ffd700 0%, #f0c040 20%, #fff8dc 40%, #daa520 60%, #ffd700 80%, #f5d060 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                filter: "drop-shadow(0 0 8px rgba(255,215,0,0.5))",
-                textShadow: "0 2px 4px rgba(0,0,0,0.3), 0 4px 8px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.3)",
-                transform: "translateZ(20px)",
-              }}
-            >
-              HN-BOOK
-            </span>
-          </motion.div>
+            HN-BOOK
+          </motion.button>
         </Link>
 
         {/* Desktop nav: nested box buttons */}
