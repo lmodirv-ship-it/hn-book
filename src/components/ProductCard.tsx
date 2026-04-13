@@ -170,6 +170,18 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
                   {product.referenceCode || product.id.slice(0, 6).toUpperCase()}
                 </span>
               </div>
+
+              {/* Read button */}
+              {hasPdf && (
+                <Link
+                  to={`/read/${product.id}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="mt-2 flex items-center justify-center gap-1.5 w-full py-2 rounded-lg text-xs font-semibold text-primary bg-primary/10 border border-primary/20 hover:bg-primary/20 hover:border-primary/40 transition-all"
+                >
+                  <BookOpen className="h-3.5 w-3.5" />
+                  مطالعة
+                </Link>
+              )}
             </div>
           </div>
         </div>
