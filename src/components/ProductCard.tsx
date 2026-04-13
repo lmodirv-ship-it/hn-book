@@ -34,7 +34,7 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
                   <img
                     src={product.image}
                     alt={product.name}
-                    className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:brightness-110"
+                    className="w-full h-full object-contain rounded-lg transition-all duration-700 group-hover:scale-110 group-hover:brightness-110"
                     loading="lazy"
                   />
                   {/* Overlay on hover */}
