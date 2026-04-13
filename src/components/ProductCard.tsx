@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Lock } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Product } from "@/lib/products";
 import BookCover from "@/components/BookCover";
@@ -26,15 +26,52 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
         <div className="group relative overflow-hidden rounded-xl border border-border/40 bg-card/60 transition-all duration-300 hover:border-primary/20 hover:bg-card/90">
           {/* Image */}
           <div className="relative aspect-[4/3] overflow-hidden bg-muted/30">
-            <BookCover
-              title={product.name}
-              category={product.category}
-              index={index}
-              className="h-full w-full"
-            />
+            {product.image ? (
+              <>
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  loading="lazy"
+                />
+                {/* Watermark overlay */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="absolute inset-0 overflow-hidden opacity-[0.07]">
+                    {Array.from({ length: 4 }).map((_, row) =>
+                      Array.from({ length: 3 }).map((_, col) => (
+                        <span
+                          key={`${row}-${col}`}
+                          className="absolute text-white font-bold text-sm"
+                          style={{
+                            top: `${10 + row * 25}%`,
+                            left: `${5 + col * 35}%`,
+                            transform: "rotate(-30deg)",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          HN BOOK
+                        </span>
+                      ))
+                    )}
+                  </div>
+                  {/* Small lock badge */}
+                  <div className="absolute bottom-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/50 backdrop-blur-sm">
+                    <Lock className="w-2.5 h-2.5 text-white/70" />
+                    <span className="text-[9px] text-white/70 font-medium">محمي</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <BookCover
+                title={product.name}
+                category={product.category}
+                index={index}
+                className="h-full w-full"
+              />
+            )}
 
             {/* Top badges */}
-            <div className="absolute left-2 top-2 flex gap-1.5">
+            <div className="absolute right-2 top-2 flex gap-1.5">
               {product.badge && (
                 <Badge className="bg-primary/90 text-primary-foreground text-[10px] px-2 py-0.5 border-0 font-medium">
                   {product.badge}
@@ -48,7 +85,7 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
             </div>
 
             {discount > 0 && (
-              <div className="absolute right-2 top-2">
+              <div className="absolute left-2 top-2">
                 <Badge variant="secondary" className="text-[10px] font-bold px-2 py-0.5 border-0 bg-background/80 backdrop-blur-sm text-primary">
                   -{discount}%
                 </Badge>
@@ -76,17 +113,23 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
             {/* Price */}
             <div className="mt-3 flex items-center justify-between border-t border-border/30 pt-3">
               <div className="flex items-baseline gap-1.5">
-                <span className="text-base font-bold text-foreground">
-                  ${product.price}
-                </span>
-                {product.originalPrice && (
-                  <span className="text-[11px] text-muted-foreground/50 line-through">
-                    ${product.originalPrice}
-                  </span>
+                {product.price > 0 ? (
+                  <>
+                    <span className="text-base font-bold text-foreground">
+                      {product.price} د.م
+                    </span>
+                    {product.originalPrice && (
+                      <span className="text-[11px] text-muted-foreground/50 line-through">
+                        {product.originalPrice} د.م
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-base font-bold text-primary">مجاني</span>
                 )}
               </div>
               <span className="text-[10px] text-muted-foreground/50">
-                Instant
+                تحميل فوري
               </span>
             </div>
           </div>
