@@ -218,32 +218,34 @@ File name: ${fileName}`,
     // Step 4: Generate cover/thumbnail image
     let coverUrl: string | null = null;
     try {
-      const coverPrompt = `Professional thumbnail/cover for "${aiClassification.name_en}". Category: ${categoryType}. Clean modern design. Type: ${mimeCategory}.`;
-      const coverRes = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
+      const coverPrompt = `Professional thumbnail/cover for "${aiClassification.name_en}". Category: ${categoryType}. Clean modern design. Type: ${mimeCategory}. Title text prominently displayed.`;
+      const coverRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
         },
         body: JSON.stringify({
-          model: "google/gemini-3.1-flash-image-preview",
-          prompt: coverPrompt,
-          n: 1,
-          size: "512x768",
+          model: "google/gemini-2.5-flash-image",
+          messages: [{ role: "user", content: coverPrompt }],
+          modalities: ["image", "text"],
         }),
       });
 
       if (coverRes.ok) {
         const coverData = await coverRes.json();
-        const imgB64 = coverData.data?.[0]?.b64_json;
-        if (imgB64) {
-          const imgBytes = Uint8Array.from(atob(imgB64), c => c.charCodeAt(0));
-          const imgPath = `universal/${itemCode}/cover.jpg`;
-          const { error: imgErr } = await supabase.storage
-            .from("book-images")
-            .upload(imgPath, imgBytes, { contentType: "image/jpeg", upsert: true });
-          if (!imgErr) {
-            coverUrl = `${SUPABASE_URL}/storage/v1/object/public/book-images/${imgPath}`;
+        const imageUrl = coverData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+        if (imageUrl && imageUrl.startsWith("data:")) {
+          const b64Part = imageUrl.split(",")[1];
+          if (b64Part) {
+            const imgBytes = Uint8Array.from(atob(b64Part), c => c.charCodeAt(0));
+            const imgPath = `universal/${itemCode}/cover.png`;
+            const { error: imgErr } = await supabase.storage
+              .from("book-images")
+              .upload(imgPath, imgBytes, { contentType: "image/png", upsert: true });
+            if (!imgErr) {
+              coverUrl = `${SUPABASE_URL}/storage/v1/object/public/book-images/${imgPath}`;
+            }
           }
         }
       }
