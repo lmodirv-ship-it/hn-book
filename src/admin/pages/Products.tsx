@@ -29,6 +29,7 @@ const AdminProducts = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [loading, setLoading] = useState(true);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
 
   useEffect(() => {
     const fetchProducts = async () => {
