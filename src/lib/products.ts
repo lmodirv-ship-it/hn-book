@@ -1,11 +1,3 @@
-import ebooksImg from "@/assets/products/ebooks.jpg";
-import designTemplatesImg from "@/assets/products/design-templates.jpg";
-import onlineCoursesImg from "@/assets/products/online-courses.jpg";
-import aiToolsImg from "@/assets/products/ai-tools.jpg";
-import designAssetsImg from "@/assets/products/design-assets.jpg";
-import businessCoursesImg from "@/assets/products/business-courses.jpg";
-import videoCoursesImg from "@/assets/products/video-courses.jpg";
-import languageCoursesImg from "@/assets/products/language-courses.jpg";
 
 export interface Product {
   id: string;
