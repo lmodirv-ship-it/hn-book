@@ -30,6 +30,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/auth" element={<CustomerAuth />} />
             
             {/* Admin Login */}
             <Route path="/admin/login" element={<AdminLogin />} />
