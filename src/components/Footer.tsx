@@ -1,4 +1,8 @@
+import { useI18n } from "@/lib/i18n";
+
 const Footer = () => {
+  const { t } = useI18n();
+
   return (
     <footer className="border-t border-border/30 py-10">
       <div className="container mx-auto px-4">
@@ -13,16 +17,20 @@ const Footer = () => {
           </div>
 
           <nav className="flex gap-6 text-sm text-muted-foreground">
-            {["Terms", "Privacy", "Support"].map((label) => (
-              <a key={label} href="#" className="transition-colors hover:text-foreground">
-                {label}
+            {[
+              { key: "footer.terms", label: t("footer.terms") },
+              { key: "footer.privacy", label: t("footer.privacy") },
+              { key: "footer.support", label: t("footer.support") },
+            ].map((item) => (
+              <a key={item.key} href="#" className="transition-colors hover:text-foreground">
+                {item.label}
               </a>
             ))}
           </nav>
         </div>
 
         <div className="mt-8 border-t border-border/20 pt-6 text-center text-xs text-muted-foreground/50">
-          © {new Date().getFullYear()} TemplateVault. All rights reserved.
+          © {new Date().getFullYear()} TemplateVault. {t("footer.rights")}
         </div>
       </div>
     </footer>

@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, ChevronDown, ArrowRight } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 const ITEMS_PER_PAGE = 24;
 
@@ -18,6 +19,7 @@ const Index = () => {
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+  const { t } = useI18n();
 
   const filteredProducts = useMemo(() => {
     let filtered = products;
@@ -48,12 +50,10 @@ const Index = () => {
         {/* Products Section */}
         <section id="products" className="relative py-20">
           <div className="container mx-auto px-4">
-            {/* Section header */}
-            {/* Search */}
             <div className="relative w-full max-w-xs">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search products..."
+                placeholder={t("products.search")}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -63,14 +63,13 @@ const Index = () => {
               />
             </div>
 
-            {/* Category filters */}
             <div className="mt-6 flex flex-wrap gap-2">
               <Badge
                 variant={activeCategory === "All" ? "default" : "secondary"}
                 className="cursor-pointer px-3 py-1 text-xs transition-all hover:bg-primary/10"
                 onClick={() => { setActiveCategory("All"); setVisibleCount(ITEMS_PER_PAGE); }}
               >
-                All
+                {t("products.all")}
               </Badge>
               {categories.map((cat) => (
                 <Badge
@@ -84,14 +83,12 @@ const Index = () => {
               ))}
             </div>
 
-            {/* Product grid */}
             <div className="mt-8 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {visibleProducts.map((product, i) => (
                 <ProductCard key={product.id} product={product} index={i % ITEMS_PER_PAGE} />
               ))}
             </div>
 
-            {/* Load more */}
             {hasMore && (
               <div className="mt-10 text-center">
                 <Button
@@ -100,14 +97,14 @@ const Index = () => {
                   className="gap-2 rounded-lg px-6"
                 >
                   <ChevronDown className="h-4 w-4" />
-                  Load More
+                  {t("products.loadMore")}
                 </Button>
               </div>
             )}
 
             {filteredProducts.length === 0 && (
               <div className="mt-16 text-center text-muted-foreground">
-                No products found.
+                {t("products.empty")}
               </div>
             )}
           </div>
@@ -128,20 +125,20 @@ const Index = () => {
               viewport={{ once: true }}
             >
               <span className="text-xs font-medium uppercase tracking-widest text-primary">
-                Bundle Deal
+                {t("cta.tag")}
               </span>
               <h2 className="mt-4 text-3xl font-bold md:text-4xl">
-                Get <span className="text-gradient-static">everything</span>
+                {t("cta.title")} <span className="text-gradient-static">{t("cta.titleHighlight")}</span>
               </h2>
               <p className="mt-3 text-muted-foreground">
-                All {products.length.toLocaleString()}+ products with full PLR/MRR resale rights.
+                {t("cta.desc")}
               </p>
 
               <div className="mt-8 flex items-baseline justify-center gap-3">
                 <span className="text-5xl font-bold text-foreground md:text-6xl">$149</span>
                 <span className="text-lg text-muted-foreground/50 line-through">$4,990</span>
                 <Badge className="bg-primary/10 text-primary border-primary/20 text-xs">
-                  Save 97%
+                  {t("cta.save")}
                 </Badge>
               </div>
 
@@ -151,12 +148,12 @@ const Index = () => {
                 asChild
               >
                 <a href="#products">
-                  Get All Products <ArrowRight className="h-4 w-4" />
+                  {t("cta.button")} <ArrowRight className="h-4 w-4" />
                 </a>
               </Button>
 
               <p className="mt-4 text-xs text-muted-foreground/50">
-                Instant access • Full rights • 30-day guarantee
+                {t("cta.note")}
               </p>
             </motion.div>
           </div>
