@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart3, Package, Users, TrendingUp, Settings,
   Menu, X, Shield, BookOpen, Tag, LayoutDashboard,
-  ShoppingCart, FileText, LogOut
+  ShoppingCart, FileText, LogOut, Ticket, Activity, ShieldCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,8 +15,10 @@ const navItems = [
   { path: "/admin/orders", icon: ShoppingCart, label: "الطلبات" },
   { path: "/admin/customers", icon: Users, label: "العملاء" },
   { path: "/admin/earnings", icon: TrendingUp, label: "الأرباح" },
-  { path: "/admin/categories", icon: Tag, label: "التصنيفات" },
+  { path: "/admin/coupons", icon: Ticket, label: "كوبونات الخصم" },
   { path: "/admin/pages", icon: FileText, label: "إدارة الصفحات" },
+  { path: "/admin/analytics", icon: BarChart3, label: "تحليلات المتجر" },
+  { path: "/admin/health-check", icon: ShieldCheck, label: "فحص صحة النظام" },
   { path: "/admin/settings", icon: Settings, label: "الإعدادات" },
 ];
 
