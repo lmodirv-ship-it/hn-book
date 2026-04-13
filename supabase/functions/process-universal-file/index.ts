@@ -36,13 +36,18 @@ function getFileExtension(filename: string): string {
 }
 
 function getMimeCategory(mime: string, ext: string): string {
-  if (mime.startsWith("image/")) return "image";
+  if (mime.startsWith("image/") || ["jpg","jpeg","png","gif","bmp","webp","tiff","ico","svg","heic","heif","avif"].includes(ext)) return "image";
   if (mime === "application/pdf" || ext === "pdf") return "pdf";
-  if (["doc", "docx", "txt", "rtf", "odt"].includes(ext)) return "document";
-  if (["ppt", "pptx", "key"].includes(ext)) return "presentation";
-  if (["xls", "xlsx", "csv"].includes(ext)) return "spreadsheet";
-  if (["zip", "rar", "7z", "tar", "gz"].includes(ext)) return "archive";
-  if (["svg", "ai", "eps", "psd", "fig", "sketch"].includes(ext)) return "design";
+  if (["doc","docx","txt","rtf","odt","md","tex","pages"].includes(ext)) return "document";
+  if (["ppt","pptx","key","odp"].includes(ext)) return "presentation";
+  if (["xls","xlsx","csv","ods","numbers","tsv"].includes(ext)) return "spreadsheet";
+  if (["zip","rar","7z","tar","gz","bz2","xz","tgz","cab","iso","dmg"].includes(ext)) return "archive";
+  if (["svg","ai","eps","psd","fig","sketch","xd","indd","cdr","afdesign"].includes(ext)) return "design";
+  if (["mp4","avi","mkv","mov","wmv","flv","webm","m4v","3gp"].includes(ext)) return "video";
+  if (["mp3","wav","aac","flac","ogg","wma","m4a","aiff"].includes(ext)) return "audio";
+  if (["html","htm","css","js","ts","jsx","tsx","py","java","c","cpp","rb","go","rs","php","swift","kt","json","xml","yaml","yml","toml","ini","cfg","conf","sh","bat","ps1","sql"].includes(ext)) return "code";
+  if (["ttf","otf","woff","woff2","eot"].includes(ext)) return "font";
+  if (["exe","msi","apk","deb","rpm","app","bin"].includes(ext)) return "executable";
   return "other";
 }
 
