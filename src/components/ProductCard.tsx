@@ -56,7 +56,7 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
 
             {product.isFlashDeal && (
               <div className="absolute bottom-2 left-2">
-                <Badge className="bg-orange-500 text-white text-[10px] px-2 py-0.5 animate-pulse">
+              <Badge className="bg-destructive text-destructive-foreground text-[10px] px-2 py-0.5 animate-pulse">
                   ⚡ {product.dealEndsIn}h left
                 </Badge>
               </div>
