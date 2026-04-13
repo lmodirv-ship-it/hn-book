@@ -59,10 +59,17 @@ const Index = () => {
 
   const categories = useMemo(() => {
     const dbCats = [...new Set(products.map((p) => p.category))];
-    // Merge with known categories, keeping order
     const merged = [...ALL_CATEGORIES];
     dbCats.forEach((c) => { if (!merged.includes(c)) merged.push(c); });
     return merged.filter((c) => products.some((p) => p.category === c));
+  }, [products]);
+
+  const productCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    products.forEach((p) => {
+      counts[p.category] = (counts[p.category] || 0) + 1;
+    });
+    return counts;
   }, [products]);
 
   const filteredProducts = useMemo(() => {
