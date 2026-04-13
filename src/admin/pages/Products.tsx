@@ -296,6 +296,16 @@ const AdminProducts = () => {
         onOpenChange={setShowCreate}
         onProductCreated={fetchProducts}
       />
+
+      {/* Catalog Import Dialog */}
+      <Dialog open={showCatalog} onOpenChange={setShowCatalog}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">📚 استيراد كتب من كتالوج</DialogTitle>
+          </DialogHeader>
+          <BookCatalogUpload onComplete={() => { fetchProducts(); }} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
