@@ -96,13 +96,18 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
             animate={{
               rotateY: [-8, 8, -8],
               rotateX: [3, -3, 3],
-              boxShadow: [
-                "0 4px 20px -3px hsl(199,89%,48%,0.3), inset 0 1px 2px rgba(255,255,255,0.15), inset 0 -1px 2px rgba(0,0,0,0.2)",
-                "0 4px 35px -3px hsl(199,89%,48%,0.6), inset 0 1px 2px rgba(255,255,255,0.25), inset 0 -1px 2px rgba(0,0,0,0.2)",
-                "0 4px 20px -3px hsl(199,89%,48%,0.3), inset 0 1px 2px rgba(255,255,255,0.15), inset 0 -1px 2px rgba(0,0,0,0.2)",
-              ],
             }}
             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            style={{
+              ...{
+                background: "linear-gradient(135deg, rgba(0,0,0,0.95) 0%, rgba(10,10,10,0.9) 40%, rgba(20,20,30,0.95) 100%)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                backdropFilter: "blur(12px)",
+                perspective: "600px",
+                transformStyle: "preserve-3d" as const,
+              },
+              boxShadow: "0 4px 15px -3px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.05)",
+            }}
           >
             {/* Glass reflection */}
             <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-transparent h-1/2 rounded-t-xl pointer-events-none" />
