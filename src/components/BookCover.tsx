@@ -59,22 +59,51 @@ const BookCover = ({ title, category, index, className = "" }: BookCoverProps) =
 
   const [bgStart, bgEnd, accent, spine] = palette;
 
-  // Leather-like texture noise seed
+  // Background surfaces - realistic textures via Unsplash
+  const backgrounds = useMemo(() => [
+    "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600&h=400&fit=crop", // dark wood
+    "https://images.unsplash.com/photo-1530982011887-3cc11cc85693?w=600&h=400&fit=crop", // rusty metal
+    "https://images.unsplash.com/photo-1487530811176-3780de880c2d?w=600&h=400&fit=crop", // green leaves
+    "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=600&h=400&fit=crop", // purple gradient
+    "https://images.unsplash.com/photo-1490750967868-88aa4f44baee?w=600&h=400&fit=crop", // marble
+    "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&h=400&fit=crop", // concrete
+    "https://images.unsplash.com/photo-1507924538820-ede94a04019d?w=600&h=400&fit=crop", // sand texture
+    "https://images.unsplash.com/photo-1533035353720-f1c6a75cd8ab?w=600&h=400&fit=crop", // fabric
+    "https://images.unsplash.com/photo-1557683316-973673baf926?w=600&h=400&fit=crop", // gradient mesh
+    "https://images.unsplash.com/photo-1546484396-fb3fc6f95f98?w=600&h=400&fit=crop", // brick wall
+    "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=600&h=400&fit=crop", // starry mountain
+    "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?w=600&h=400&fit=crop", // forest
+    "https://images.unsplash.com/photo-1504610926078-a1611562d5fb?w=600&h=400&fit=crop", // ocean waves
+    "https://images.unsplash.com/photo-1534312527009-56c7016453e6?w=600&h=400&fit=crop", // dark leather
+    "https://images.unsplash.com/photo-1508615039623-a25605d2b022?w=600&h=400&fit=crop", // steel
+    "https://images.unsplash.com/photo-1550684376-efcbd6e3f031?w=600&h=400&fit=crop", // neon lights
+    "https://images.unsplash.com/photo-1557683311-eac922347aa1?w=600&h=400&fit=crop", // warm gradient
+    "https://images.unsplash.com/photo-1476842634003-7dcca8f832de?w=600&h=400&fit=crop", // water drops
+    "https://images.unsplash.com/photo-1501436513145-30f24e19fcc8?w=600&h=400&fit=crop", // autumn leaves
+    "https://images.unsplash.com/photo-1511447333015-45b65e60f6d5?w=600&h=400&fit=crop", // dark clouds
+  ], []);
+
+  const bgImage = backgrounds[index % backgrounds.length];
   const textureSeed = useMemo(() => Math.floor(seededRandom(index + 33) * 360), [index]);
 
   return (
     <div
       className={`relative w-full h-full flex items-center justify-center overflow-hidden ${className}`}
-      style={{ background: `linear-gradient(135deg, #0a0a0f 0%, #151520 50%, #0a0a0f 100%)` }}
     >
+      {/* Real texture background */}
+      <img
+        src={bgImage}
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover"
+        loading="lazy"
+      />
+      {/* Dark overlay for contrast */}
+      <div className="absolute inset-0 bg-black/40" />
+
       {/* Soft ambient light */}
       <div
         className="absolute w-[50%] h-[50%] rounded-full blur-[80px] opacity-15 top-[10%] left-[25%]"
         style={{ background: accent }}
-      />
-      <div
-        className="absolute w-[30%] h-[40%] rounded-full blur-[60px] opacity-10 bottom-[5%] right-[15%]"
-        style={{ background: spine }}
       />
 
       {/* 3D Book wrapper */}
