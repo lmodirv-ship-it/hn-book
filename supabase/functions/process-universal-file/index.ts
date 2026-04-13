@@ -223,36 +223,48 @@ File name: ${fileName}`,
     // Step 4: Generate cover/thumbnail image
     let coverUrl: string | null = null;
     try {
-      const coverPrompt = `Professional thumbnail/cover for "${aiClassification.name_en}". Category: ${categoryType}. Clean modern design. Type: ${mimeCategory}. Title text prominently displayed.`;
-      const coverRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const coverPrompt = `Create a professional thumbnail cover image for a digital product called "${aiClassification.name_en}". Category: ${categoryType}. Style: clean, modern, minimal. Show the title text prominently.`;
+      console.log("Generating cover with prompt:", coverPrompt.substring(0, 80));
+      
+      const coverRes = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash-image",
-          messages: [{ role: "user", content: coverPrompt }],
-          modalities: ["image", "text"],
+          model: "google/gemini-3.1-flash-image-preview",
+          prompt: coverPrompt,
+          n: 1,
+          response_format: "b64_json",
         }),
       });
 
+      console.log("Cover API status:", coverRes.status);
+      
       if (coverRes.ok) {
         const coverData = await coverRes.json();
-        const imageUrl = coverData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-        if (imageUrl && imageUrl.startsWith("data:")) {
-          const b64Part = imageUrl.split(",")[1];
-          if (b64Part) {
-            const imgBytes = Uint8Array.from(atob(b64Part), c => c.charCodeAt(0));
-            const imgPath = `universal/${itemCode}/cover.png`;
-            const { error: imgErr } = await supabase.storage
-              .from("book-images")
-              .upload(imgPath, imgBytes, { contentType: "image/png", upsert: true });
-            if (!imgErr) {
-              coverUrl = `${SUPABASE_URL}/storage/v1/object/public/book-images/${imgPath}`;
-            }
+        console.log("Cover response keys:", Object.keys(coverData));
+        
+        const b64 = coverData.data?.[0]?.b64_json;
+        if (b64) {
+          const imgBytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+          const imgPath = `universal/${itemCode}/cover.png`;
+          const { error: imgErr } = await supabase.storage
+            .from("book-images")
+            .upload(imgPath, imgBytes, { contentType: "image/png", upsert: true });
+          if (!imgErr) {
+            coverUrl = `${SUPABASE_URL}/storage/v1/object/public/book-images/${imgPath}`;
+            console.log("Cover saved:", coverUrl);
+          } else {
+            console.error("Cover upload error:", imgErr);
           }
+        } else {
+          console.log("No b64_json in response. Full response:", JSON.stringify(coverData).substring(0, 500));
         }
+      } else {
+        const errText = await coverRes.text();
+        console.error("Cover API error:", coverRes.status, errText.substring(0, 300));
       }
     } catch (e) {
       console.error("Cover generation error:", e);
