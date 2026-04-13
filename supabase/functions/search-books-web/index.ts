@@ -27,13 +27,13 @@ serve(async (req) => {
       const GOOGLE_BOOKS_API_KEY = Deno.env.get("GOOGLE_BOOKS_API_KEY") || "";
       console.log("Google Books API key present:", !!GOOGLE_BOOKS_API_KEY, "length:", GOOGLE_BOOKS_API_KEY.length);
       const gbKeyParam = GOOGLE_BOOKS_API_KEY ? `&key=${GOOGLE_BOOKS_API_KEY}` : "";
-      let gbUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&filter=free-ebooks&maxResults=${Math.min(bookCount, 10)}&orderBy=relevance${gbKeyParam}`;
+      let gbUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=${Math.min(bookCount, 40)}&orderBy=relevance${gbKeyParam}`;
       console.log("Google Books: searching...");
       let gbResp = await fetch(gbUrl);
       // If API key is blocked (403), retry without key
       if (!gbResp.ok && GOOGLE_BOOKS_API_KEY) {
         console.log("Google Books: API key blocked, retrying without key...");
-        gbUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&filter=free-ebooks&maxResults=${Math.min(bookCount, 10)}&orderBy=relevance`;
+        gbUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=${Math.min(bookCount, 40)}&orderBy=relevance`;
         gbResp = await fetch(gbUrl);
       }
       console.log("Google Books status:", gbResp.status);
@@ -88,7 +88,7 @@ serve(async (req) => {
 
     // Step 1b: Use Gemini to search for more free books from other platforms
     const remainingCount = Math.max(bookCount - googleBooksResults.length, 2);
-    const searchPrompt = `Search for ${remainingCount} free PDF books about "${query}" available on these open-source platforms:
+    const searchPrompt = `Search for ${remainingCount} books about "${query}" available on these platforms:
 - Internet Archive (archive.org)
 - OpenLibrary (openlibrary.org)
 - Project Gutenberg (gutenberg.org)
