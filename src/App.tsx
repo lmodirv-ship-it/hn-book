@@ -23,6 +23,7 @@ import CouponsManagement from "./admin/pages/CouponsManagement.tsx";
 import PageManagement from "./admin/pages/PageManagement.tsx";
 import VisitorAnalytics from "./admin/pages/VisitorAnalytics.tsx";
 import SystemHealthCheck from "./admin/pages/SystemHealthCheck.tsx";
+import BookGeneration from "./admin/pages/BookGeneration.tsx";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/admin" element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
               <Route index element={<AdminDashboard />} />
               <Route path="products" element={<AdminProducts />} />
+              <Route path="book-generation" element={<BookGeneration />} />
               <Route path="orders" element={<AdminOrders />} />
               <Route path="customers" element={<AdminCustomers />} />
               <Route path="earnings" element={<AdminEarnings />} />
