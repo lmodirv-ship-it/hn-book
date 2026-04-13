@@ -233,7 +233,7 @@ const WebBookSearch = () => {
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="مثال: Python programming, الأدب العربي, philosophie..."
+                placeholder="مثال: carte visite, logo design, Python programming, لوحات فنية..."
                 className="text-base"
                 onKeyDown={(e) => e.key === "Enter" && !searching && handleSearch()}
                 disabled={searching || importing}
