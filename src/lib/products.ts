@@ -149,7 +149,7 @@ function generateProducts(): Product[] {
   const badges = ["🔥 Best Seller", "⭐ Popular", "🏆 Top Rated", "🆕 New", "💎 Premium", "⚡ Flash Deal", undefined, undefined, undefined, undefined];
 
   for (const cat of categoryData) {
-    const image = categoryImages[cat.category] || categoryImages["Online Courses"];
+    const _unused = cat.category;
     const tier = priceTiers[cat.category] || { min: 9, max: 49 };
 
     for (let ti = 0; ti < cat.topics.length; ti++) {
@@ -172,7 +172,7 @@ function generateProducts(): Product[] {
       const isFlash = seededRandom(idx + 200) < 0.15;
       const dealHours = isFlash ? Math.floor(seededRandom(idx + 201) * 72 + 1) : undefined;
 
-      const imageUrl = image;
+      const imageUrl = `https://images.unsplash.com/photo-${1500000000000 + idx * 131 + (seededRandom(idx + 500) * 99999 | 0)}?w=800&h=544&fit=crop&q=80`;
 
       all.push({
         id: `p-${idx}`,
