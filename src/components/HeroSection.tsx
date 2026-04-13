@@ -133,7 +133,7 @@ const HeroSection = () => {
             transition={{ delay: 0.25 }}
           >
             {[
-              { value: `${products.length.toLocaleString()}+`, label: t("hero.statProducts") },
+              { value: `${productCount.toLocaleString()}+`, label: t("hero.statProducts") },
               { value: "PLR/MRR", label: t("hero.statRights") },
               { value: "24/7", label: t("hero.statAccess") },
             ].map((stat, i) => (
