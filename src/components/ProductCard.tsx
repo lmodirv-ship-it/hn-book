@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpRight, Lock, Eye } from "lucide-react";
+import { ArrowUpRight, Lock, Eye, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Product } from "@/lib/products";
 import BookCover from "@/components/BookCover";
