@@ -70,12 +70,23 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group shrink-0 mt-6">
-          <div className="flex flex-col items-center">
-            <img src={hnLogo} alt="HN Groupe" className="h-20 w-20 rounded-full object-cover transition-transform duration-300 group-hover:scale-110 shadow-[0_0_20px_-2px_hsl(199,89%,48%,0.5),0_0_40px_-5px_hsl(199,89%,48%,0.3),inset_0_0_0_2px_hsl(199,89%,48%,0.3)] ring-2 ring-primary/40" />
-            <span className="text-sm font-bold tracking-tight text-white leading-none mt-1">
-              HN <span className="text-primary">BOOK</span>
-            </span>
-          </div>
+          <motion.div
+            className="flex flex-col items-center"
+            animate={{
+              boxShadow: [
+                "0 0 15px -2px hsl(199,89%,48%,0.3), 0 0 30px -5px hsl(199,89%,48%,0.15)",
+                "0 0 30px -2px hsl(199,89%,48%,0.7), 0 0 60px -5px hsl(199,89%,48%,0.4)",
+                "0 0 15px -2px hsl(199,89%,48%,0.3), 0 0 30px -5px hsl(199,89%,48%,0.15)",
+              ],
+            }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            style={{ borderRadius: "9999px" }}
+          >
+            <img src={hnLogo} alt="HN Groupe" className="h-20 w-20 rounded-full object-cover transition-transform duration-300 group-hover:scale-110 ring-2 ring-primary/40" />
+          </motion.div>
+          <span className="text-sm font-bold tracking-tight text-white leading-none mt-1">
+            HN <span className="text-primary">BOOK</span>
+          </span>
         </Link>
 
         {/* Desktop nav: nested box buttons */}
