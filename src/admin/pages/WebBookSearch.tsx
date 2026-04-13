@@ -228,7 +228,7 @@ const WebBookSearch = () => {
           <div className="flex items-center gap-3">
             <div className="flex-1">
               <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                🔍 ابحث عن كتب (بالعربية أو الإنجليزية أو الفرنسية)
+                🔍 ابحث عن أي محتوى (كتب، قوالب، شعارات، لوحات، مجلات...)
               </label>
               <Input
                 value={query}
