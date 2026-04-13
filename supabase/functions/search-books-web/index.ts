@@ -26,9 +26,17 @@ serve(async (req) => {
     try {
       const GOOGLE_BOOKS_API_KEY = Deno.env.get("GOOGLE_BOOKS_API_KEY") || "";
       const gbKeyParam = GOOGLE_BOOKS_API_KEY ? `&key=${GOOGLE_BOOKS_API_KEY}` : "";
-      const gbUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&filter=free-ebooks&maxResults=${Math.min(bookCount, 10)}&orderBy=relevance${gbKeyParam}`;
-      console.log("Google Books URL:", gbUrl.replace(GOOGLE_BOOKS_API_KEY, "KEY***"));
-      const gbResp = await fetch(gbUrl);
+      // Try with API key first, fallback without key
+      let gbUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&filter=free-ebooks&maxResults=${Math.min(bookCount, 10)}&orderBy=relevance${gbKeyParam}`;
+      console.log("Google Books: searching...");
+      let gbResp = await fetch(gbUrl);
+      // If API key is blocked (403), retry without key
+      if (!gbResp.ok && GOOGLE_BOOKS_API_KEY) {
+        console.log("Google Books: API key blocked, retrying without key...");
+        gbUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&filter=free-ebooks&maxResults=${Math.min(bookCount, 10)}&orderBy=relevance`;
+        gbResp = await fetch(gbUrl);
+      }
+      console.log("Google Books status:", gbResp.status);
       console.log("Google Books status:", gbResp.status);
       if (gbResp.ok) {
         const gbData = await gbResp.json();
