@@ -136,9 +136,9 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
                     <span className="text-base font-bold text-accent">مجاني</span>
                   )}
                 </div>
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary/50 opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:text-primary group-hover:shadow-[0_0_10px_-2px_hsl(199,89%,48%,0.3)]">
-                  <ArrowUpRight className="h-3.5 w-3.5" />
-                </div>
+                <span className="text-[10px] font-mono text-muted-foreground/50 tracking-wide">
+                  {product.id.slice(0, 1).toUpperCase()}{product.id.replace(/\D/g, '').slice(0, 5).padEnd(5, '0')}
+                </span>
               </div>
             </div>
           </div>
