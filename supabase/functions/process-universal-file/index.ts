@@ -36,13 +36,18 @@ function getFileExtension(filename: string): string {
 }
 
 function getMimeCategory(mime: string, ext: string): string {
-  if (mime.startsWith("image/")) return "image";
+  if (mime.startsWith("image/") || ["jpg","jpeg","png","gif","bmp","webp","tiff","ico","svg","heic","heif","avif"].includes(ext)) return "image";
   if (mime === "application/pdf" || ext === "pdf") return "pdf";
-  if (["doc", "docx", "txt", "rtf", "odt"].includes(ext)) return "document";
-  if (["ppt", "pptx", "key"].includes(ext)) return "presentation";
-  if (["xls", "xlsx", "csv"].includes(ext)) return "spreadsheet";
-  if (["zip", "rar", "7z", "tar", "gz"].includes(ext)) return "archive";
-  if (["svg", "ai", "eps", "psd", "fig", "sketch"].includes(ext)) return "design";
+  if (["doc","docx","txt","rtf","odt","md","tex","pages"].includes(ext)) return "document";
+  if (["ppt","pptx","key","odp"].includes(ext)) return "presentation";
+  if (["xls","xlsx","csv","ods","numbers","tsv"].includes(ext)) return "spreadsheet";
+  if (["zip","rar","7z","tar","gz","bz2","xz","tgz","cab","iso","dmg"].includes(ext)) return "archive";
+  if (["svg","ai","eps","psd","fig","sketch","xd","indd","cdr","afdesign"].includes(ext)) return "design";
+  if (["mp4","avi","mkv","mov","wmv","flv","webm","m4v","3gp"].includes(ext)) return "video";
+  if (["mp3","wav","aac","flac","ogg","wma","m4a","aiff"].includes(ext)) return "audio";
+  if (["html","htm","css","js","ts","jsx","tsx","py","java","c","cpp","rb","go","rs","php","swift","kt","json","xml","yaml","yml","toml","ini","cfg","conf","sh","bat","ps1","sql"].includes(ext)) return "code";
+  if (["ttf","otf","woff","woff2","eot"].includes(ext)) return "font";
+  if (["exe","msi","apk","deb","rpm","app","bin"].includes(ext)) return "executable";
   return "other";
 }
 
@@ -156,6 +161,11 @@ File name: ${fileName}`,
         other: "أخرى",
         image: "صور",
         pdf: "كتب",
+        video: "أخرى",
+        audio: "أخرى",
+        code: "قوالب",
+        font: "قوالب",
+        executable: "أخرى",
       };
       aiClassification = {
         type: typeMap[mimeCategory] || "أخرى",
@@ -213,32 +223,34 @@ File name: ${fileName}`,
     // Step 4: Generate cover/thumbnail image
     let coverUrl: string | null = null;
     try {
-      const coverPrompt = `Professional thumbnail/cover for "${aiClassification.name_en}". Category: ${categoryType}. Clean modern design. Type: ${mimeCategory}.`;
-      const coverRes = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
+      const coverPrompt = `Professional thumbnail/cover for "${aiClassification.name_en}". Category: ${categoryType}. Clean modern design. Type: ${mimeCategory}. Title text prominently displayed.`;
+      const coverRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
         },
         body: JSON.stringify({
-          model: "google/gemini-3.1-flash-image-preview",
-          prompt: coverPrompt,
-          n: 1,
-          size: "512x768",
+          model: "google/gemini-2.5-flash-image",
+          messages: [{ role: "user", content: coverPrompt }],
+          modalities: ["image", "text"],
         }),
       });
 
       if (coverRes.ok) {
         const coverData = await coverRes.json();
-        const imgB64 = coverData.data?.[0]?.b64_json;
-        if (imgB64) {
-          const imgBytes = Uint8Array.from(atob(imgB64), c => c.charCodeAt(0));
-          const imgPath = `universal/${itemCode}/cover.jpg`;
-          const { error: imgErr } = await supabase.storage
-            .from("book-images")
-            .upload(imgPath, imgBytes, { contentType: "image/jpeg", upsert: true });
-          if (!imgErr) {
-            coverUrl = `${SUPABASE_URL}/storage/v1/object/public/book-images/${imgPath}`;
+        const imageUrl = coverData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+        if (imageUrl && imageUrl.startsWith("data:")) {
+          const b64Part = imageUrl.split(",")[1];
+          if (b64Part) {
+            const imgBytes = Uint8Array.from(atob(b64Part), c => c.charCodeAt(0));
+            const imgPath = `universal/${itemCode}/cover.png`;
+            const { error: imgErr } = await supabase.storage
+              .from("book-images")
+              .upload(imgPath, imgBytes, { contentType: "image/png", upsert: true });
+            if (!imgErr) {
+              coverUrl = `${SUPABASE_URL}/storage/v1/object/public/book-images/${imgPath}`;
+            }
           }
         }
       }
