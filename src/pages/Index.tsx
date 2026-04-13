@@ -10,7 +10,7 @@ import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, ChevronDown, ArrowRight, Loader2 } from "lucide-react";
+import { Search, ChevronDown, ArrowRight, Loader2, Sparkles } from "lucide-react";
 import CategoryBar from "@/components/CategoryBar";
 import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
@@ -111,7 +111,7 @@ const Index = () => {
 
             {/* Search */}
             <div className="mt-6 relative w-full max-w-xs">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
               <Input
                 placeholder={t("products.search")}
                 value={searchQuery}
@@ -119,13 +119,14 @@ const Index = () => {
                   setSearchQuery(e.target.value);
                   setVisibleCount(ITEMS_PER_PAGE);
                 }}
-                className="pl-10 rounded-lg bg-card/50 border-border/40"
+                className="pl-10 rounded-xl bg-card/30 border-border/20 focus:border-primary/30 transition-colors"
               />
             </div>
 
             {loading ? (
-              <div className="mt-16 flex justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="mt-20 flex flex-col items-center gap-3">
+                <Loader2 className="h-8 w-8 animate-spin text-primary/50" />
+                <span className="text-sm text-muted-foreground/50">جاري التحميل...</span>
               </div>
             ) : (
               <>
@@ -136,11 +137,11 @@ const Index = () => {
                 </div>
 
                 {hasMore && (
-                  <div className="mt-10 text-center">
+                  <div className="mt-12 text-center">
                     <Button
                       variant="outline"
                       onClick={() => setVisibleCount((p) => p + ITEMS_PER_PAGE)}
-                      className="gap-2 rounded-lg px-6"
+                      className="gap-2 rounded-full px-8 py-5 border-border/20 hover:border-primary/20 hover:bg-card/40 transition-all"
                     >
                       <ChevronDown className="h-4 w-4" />
                       {t("products.loadMore")}
@@ -149,7 +150,7 @@ const Index = () => {
                 )}
 
                 {filteredProducts.length === 0 && (
-                  <div className="mt-16 text-center text-muted-foreground">
+                  <div className="mt-20 text-center text-muted-foreground/50">
                     {t("products.empty")}
                   </div>
                 )}
@@ -163,46 +164,54 @@ const Index = () => {
         </div>
 
         {/* CTA Section */}
-        <section id="pricing" className="relative py-20">
+        <section id="pricing" className="relative py-24">
           <div className="container mx-auto px-4">
             <motion.div
-              className="mx-auto max-w-2xl rounded-2xl bg-card/50 p-10 text-center md:p-14 border-glow"
-              initial={{ opacity: 0, y: 20 }}
+              className="relative mx-auto max-w-2xl overflow-hidden rounded-3xl p-10 text-center md:p-16"
+              initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <span className="text-xs font-medium uppercase tracking-widest text-primary">
-                {t("cta.tag")}
-              </span>
-              <h2 className="mt-4 text-3xl font-bold md:text-4xl">
-                {t("cta.title")} <span className="text-gradient-static">{t("cta.titleHighlight")}</span>
-              </h2>
-              <p className="mt-3 text-muted-foreground">
-                {t("cta.desc")}
-              </p>
+              {/* CTA Background */}
+              <div className="absolute inset-0 bg-card/50 backdrop-blur-2xl" />
+              <div className="absolute inset-0 gradient-mesh opacity-50" />
+              <div className="absolute inset-0 border border-border/20 rounded-3xl" />
+              
+              <div className="relative">
+                <span className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium bg-accent/10 border border-accent/15 text-accent">
+                  <Sparkles className="h-3 w-3" />
+                  {t("cta.tag")}
+                </span>
+                <h2 className="mt-6 text-3xl font-bold md:text-5xl tracking-tight">
+                  {t("cta.title")} <span className="text-gradient-static">{t("cta.titleHighlight")}</span>
+                </h2>
+                <p className="mt-4 text-muted-foreground/70 max-w-md mx-auto">
+                  {t("cta.desc")}
+                </p>
 
-              <div className="mt-8 flex items-baseline justify-center gap-3">
-                <span className="text-5xl font-bold text-foreground md:text-6xl">$149</span>
-                <span className="text-lg text-muted-foreground/50 line-through">$4,990</span>
-                <Badge className="bg-primary/10 text-primary border-primary/20 text-xs">
-                  {t("cta.save")}
-                </Badge>
+                <div className="mt-10 flex items-baseline justify-center gap-3">
+                  <span className="text-5xl font-bold text-foreground md:text-7xl tracking-tight">$149</span>
+                  <span className="text-lg text-muted-foreground/30 line-through">$4,990</span>
+                  <Badge className="bg-primary/10 text-primary border-primary/15 text-xs font-bold">
+                    {t("cta.save")}
+                  </Badge>
+                </div>
+
+                <Button
+                  size="lg"
+                  className="mt-10 gap-2 rounded-full px-12 py-7 text-base font-bold bg-gradient-to-r from-accent to-accent/80 text-accent-foreground hover:from-accent/90 hover:to-accent/70 shadow-glow-accent border-0 transition-all duration-300 hover:shadow-[0_8px_30px_-4px_hsl(25,95%,53%,0.5)]"
+                  asChild
+                >
+                  <a href="#products">
+                    {t("cta.button")} <ArrowRight className="h-4 w-4" />
+                  </a>
+                </Button>
+
+                <p className="mt-5 text-xs text-muted-foreground/30">
+                  {t("cta.note")}
+                </p>
               </div>
-
-              <Button
-                size="lg"
-                className="mt-8 gap-2 rounded-xl px-10 py-6 text-base font-bold bg-accent text-accent-foreground hover:bg-accent/90 shadow-glow-accent border-0"
-                asChild
-              >
-                <a href="#products">
-                  {t("cta.button")} <ArrowRight className="h-4 w-4" />
-                </a>
-              </Button>
-
-              <p className="mt-4 text-xs text-muted-foreground/50">
-                {t("cta.note")}
-              </p>
             </motion.div>
           </div>
         </section>
