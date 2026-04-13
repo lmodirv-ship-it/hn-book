@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ProductImageUpload } from "@/admin/components/ProductImageUpload";
 import { BookPdfUpload } from "@/admin/components/BookPdfUpload";
 import { ProductCreateDialog } from "@/admin/components/ProductCreateDialog";
+import { BookCatalogUpload } from "@/admin/components/BookCatalogUpload";
 import { toast } from "sonner";
 
 interface Product {
