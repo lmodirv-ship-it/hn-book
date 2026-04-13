@@ -96,11 +96,6 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
 
               {/* Badges */}
               <div className="absolute right-2 top-2 flex gap-1.5">
-                {product.badge && (
-                  <Badge className="bg-accent/90 text-accent-foreground text-[10px] px-2.5 py-0.5 border-0 font-semibold backdrop-blur-sm">
-                    {product.badge}
-                  </Badge>
-                )}
                 {product.isFlashDeal && (
                   <Badge className="bg-destructive/90 text-destructive-foreground text-[10px] px-2.5 py-0.5 border-0 backdrop-blur-sm">
                     ⚡ {product.dealEndsIn}h
