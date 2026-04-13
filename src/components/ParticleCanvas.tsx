@@ -17,20 +17,20 @@ const ParticleCanvas = () => {
     resize();
     window.addEventListener("resize", resize);
 
-    const particles = Array.from({ length: 30 }, () => ({
+    const particles = Array.from({ length: 15 }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.12,
-      vy: (Math.random() - 0.5) * 0.12,
-      size: Math.random() * 1.5 + 0.3,
-      opacity: Math.random() * 0.12 + 0.03,
-      hue: Math.random() > 0.5 ? 199 : 170, // cyan or teal
+      vx: (Math.random() - 0.5) * 0.1,
+      vy: (Math.random() - 0.5) * 0.1,
+      size: Math.random() * 1.2 + 0.3,
+      opacity: Math.random() * 0.1 + 0.03,
+      hue: Math.random() > 0.5 ? 199 : 170,
     }));
 
     let lastTime = 0;
 
     const animate = (time: number) => {
-      if (time - lastTime < 33) {
+      if (time - lastTime < 50) {
         animRef.current = requestAnimationFrame(animate);
         return;
       }
@@ -49,23 +49,6 @@ const ParticleCanvas = () => {
         ctx.fill();
       }
 
-      // Draw faint connection lines
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 150) {
-            ctx.beginPath();
-            ctx.strokeStyle = `hsla(199, 89%, 48%, ${0.03 * (1 - dist / 150)})`;
-            ctx.lineWidth = 0.5;
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.stroke();
-          }
-        }
-      }
-
       animRef.current = requestAnimationFrame(animate);
     };
 
@@ -80,7 +63,7 @@ const ParticleCanvas = () => {
     <canvas
       ref={canvasRef}
       className="pointer-events-none fixed inset-0 z-0"
-      style={{ opacity: 0.4 }}
+      style={{ opacity: 0.3 }}
     />
   );
 };

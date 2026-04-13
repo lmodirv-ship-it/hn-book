@@ -30,10 +30,10 @@ const HeroSection = () => {
         <div className="mx-auto max-w-4xl">
           {/* Badge */}
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="mb-8"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="mb-6"
           >
             <span className="inline-flex items-center gap-2.5 rounded-full px-4 py-2 text-xs font-medium bg-primary/5 border border-primary/15 text-primary/90">
               <span className="relative flex h-2 w-2">
@@ -47,9 +47,9 @@ const HeroSection = () => {
           {/* Title */}
           <motion.h1
             className="text-5xl font-bold tracking-tighter md:text-7xl lg:text-[5.5rem] leading-[0.9]"
-            initial={{ opacity: 0, y: 28 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.1 }}
+            transition={{ duration: 0.4, delay: 0.05 }}
           >
             <span className="text-foreground">{t("hero.title1")}</span>
             <br />
@@ -59,9 +59,9 @@ const HeroSection = () => {
           {/* Description */}
           <motion.p
             className="mt-7 max-w-lg text-base text-muted-foreground leading-relaxed md:text-lg"
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
           >
             {t("hero.desc")}
           </motion.p>
@@ -69,9 +69,9 @@ const HeroSection = () => {
           {/* CTA Buttons */}
           <motion.div
             className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center"
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
+            transition={{ duration: 0.3, delay: 0.15 }}
           >
             <Button
               size="lg"
@@ -102,7 +102,7 @@ const HeroSection = () => {
             className="mt-14 flex flex-wrap gap-x-8 gap-y-3 text-sm text-muted-foreground"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 0.2 }}
           >
             {[t("hero.trust1"), t("hero.trust2"), t("hero.trust3")].map((txt) => (
               <span key={txt} className="flex items-center gap-2">
@@ -115,9 +115,9 @@ const HeroSection = () => {
           {/* Stats */}
           <motion.div
             className="mt-16 grid grid-cols-3 gap-px overflow-hidden rounded-2xl glass-glow"
-            initial={{ opacity: 0, y: 24 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
+            transition={{ delay: 0.25 }}
           >
             {[
               { value: `${products.length.toLocaleString()}+`, label: t("hero.statProducts") },
