@@ -300,14 +300,10 @@ serve(async (req) => {
 
     console.log(`📦 Processing: ${fileName} (${mimeType}, ${fileSizeKB}KB, ${mimeCategory})`);
 
-    // 1. Extract items (ZIP → multiple, others → single)
+    // ZIP files are saved as a single file (no extraction)
+    // All file types are treated as single items
     let rawItems: RawItem[] = [];
-    if (mimeCategory === "archive" && fileExt === "zip") {
-      rawItems = await extractZip(fileBytes, fileName);
-      console.log(`📂 Extracted ${rawItems.length} files from ZIP`);
-    } else {
-      rawItems.push({ fileName, fileExt, mimeCategory, mimeType, fileSizeKB, fileBytes });
-    }
+    rawItems.push({ fileName, fileExt, mimeCategory, mimeType, fileSizeKB, fileBytes });
 
     // 2. Process each item: classify → upload → number → save → create references
     const results = [];
