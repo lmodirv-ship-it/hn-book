@@ -65,10 +65,14 @@ async function classifyAI(bytes: Uint8Array, name: string, mime: string, cat: st
   }
 
   try {
+    // For AI classification, limit to first 4MB to avoid token limits
+    const maxBytes = 4 * 1024 * 1024;
+    const classifyBytes = bytes.length > maxBytes ? bytes.slice(0, maxBytes) : bytes;
+    
     let b64 = "";
     const cs = 8192;
-    for (let i = 0; i < bytes.length; i += cs) {
-      b64 += String.fromCharCode(...bytes.slice(i, i + cs));
+    for (let i = 0; i < classifyBytes.length; i += cs) {
+      b64 += String.fromCharCode(...classifyBytes.slice(i, i + cs));
     }
     b64 = btoa(b64);
     const mediaType = cat === "pdf" ? "application/pdf" : mime;
@@ -139,21 +143,66 @@ serve(async (req) => {
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // ===== FULL MODE (default): analyze + classify + upload + number + save =====
-    const formData = await req.formData();
-    const file = formData.get("file") as File;
-    if (!file) {
-      return new Response(JSON.stringify({ error: "No file provided" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    let fileName: string;
+    let fileExt: string;
+    let mimeType: string;
+    let mimeCategory: string;
+    let fileBytes: Uint8Array;
+    let fileSizeKB: number;
 
-    const fileName = file.name;
-    const fileExt = getExt(fileName);
-    const mimeType = file.type || "application/octet-stream";
-    const mimeCategory = getMimeCat(mimeType, fileExt);
-    const fileBytes = new Uint8Array(await file.arrayBuffer());
-    const fileSizeKB = Math.round(fileBytes.length / 1024);
+    const contentType = req.headers.get("content-type") || "";
+
+    // Mode 1: Storage path (for large files uploaded directly to storage)
+    if (contentType.includes("application/json")) {
+      const body = await req.json();
+      const { storage_path, file_name, bucket } = body;
+      if (!storage_path || !file_name) {
+        return new Response(JSON.stringify({ error: "storage_path and file_name required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const bucketName = bucket || "book-files";
+      console.log(`📥 Downloading from storage: ${bucketName}/${storage_path}`);
+
+      const { data: fileData, error: dlError } = await supabase.storage
+        .from(bucketName)
+        .download(storage_path);
+
+      if (dlError || !fileData) {
+        console.error("Storage download failed:", dlError);
+        return new Response(JSON.stringify({ error: "فشل تحميل الملف من التخزين" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      fileName = file_name;
+      fileExt = getExt(fileName);
+      mimeType = fileData.type || getMime(fileExt);
+      mimeCategory = getMimeCat(mimeType, fileExt);
+      fileBytes = new Uint8Array(await fileData.arrayBuffer());
+      fileSizeKB = Math.round(fileBytes.length / 1024);
+
+      // Clean up the temp upload after downloading
+      await supabase.storage.from(bucketName).remove([storage_path]);
+    }
+    // Mode 2: FormData (for smaller files sent directly)
+    else {
+      const formData = await req.formData();
+      const file = formData.get("file") as File;
+      if (!file) {
+        return new Response(JSON.stringify({ error: "No file provided" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      fileName = file.name;
+      fileExt = getExt(fileName);
+      mimeType = file.type || "application/octet-stream";
+      mimeCategory = getMimeCat(mimeType, fileExt);
+      fileBytes = new Uint8Array(await file.arrayBuffer());
+      fileSizeKB = Math.round(fileBytes.length / 1024);
+    }
 
     console.log(`📦 Processing: ${fileName} (${mimeType}, ${fileSizeKB}KB, ${mimeCategory})`);
 
@@ -229,7 +278,7 @@ serve(async (req) => {
             cls.author ? `المؤلف: ${cls.author}` : "",
             `النوع: ${categoryType}`,
             `الصيغة: ${item.fileExt.toUpperCase()}`,
-            `الحجم: ${item.fileSizeKB}KB`,
+            `الحجم: ${fileSizeKB > 1024 ? `${(item.fileSizeKB / 1024).toFixed(1)}MB` : `${item.fileSizeKB}KB`}`,
             ...(cls.tags || []),
           ].filter(Boolean),
         }).select("id").single();
