@@ -18,6 +18,10 @@ import AdminEarnings from "./admin/pages/Earnings.tsx";
 import AdminSettings from "./admin/pages/AdminSettings.tsx";
 import AdminLogin from "./admin/pages/AdminLogin.tsx";
 import RequireAdmin from "./admin/components/RequireAdmin.tsx";
+import CouponsManagement from "./admin/pages/CouponsManagement.tsx";
+import PageManagement from "./admin/pages/PageManagement.tsx";
+import VisitorAnalytics from "./admin/pages/VisitorAnalytics.tsx";
+import SystemHealthCheck from "./admin/pages/SystemHealthCheck.tsx";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +48,10 @@ const App = () => (
               <Route path="orders" element={<AdminOrders />} />
               <Route path="customers" element={<AdminCustomers />} />
               <Route path="earnings" element={<AdminEarnings />} />
+              <Route path="coupons" element={<CouponsManagement />} />
+              <Route path="pages" element={<PageManagement />} />
+              <Route path="analytics" element={<VisitorAnalytics />} />
+              <Route path="health-check" element={<SystemHealthCheck />} />
               <Route path="settings" element={<AdminSettings />} />
             </Route>
             
