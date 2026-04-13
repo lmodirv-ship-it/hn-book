@@ -1,19 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, Mail, Phone, LogOut, ArrowRight, Loader2, Save, CheckCircle } from "lucide-react";
+import { User, Mail, Phone, LogOut, ArrowRight, Loader2, Save, CheckCircle, Camera } from "lucide-react";
 import { motion } from "framer-motion";
 
 const Profile = () => {
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string>("");
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -23,6 +27,7 @@ const Profile = () => {
         return;
       }
       setEmail(session.user.email || "");
+      setUserId(session.user.id);
       const { data } = await supabase
         .from("profiles")
         .select("*")
@@ -31,11 +36,43 @@ const Profile = () => {
       if (data) {
         setDisplayName(data.display_name || "");
         setPhone(data.phone || "");
+        setAvatarUrl(data.avatar_url || null);
       }
       setLoading(false);
     };
     fetchProfile();
   }, [navigate]);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !userId) return;
+
+    setUploadingAvatar(true);
+    const fileExt = file.name.split(".").pop();
+    const filePath = `${userId}/avatar.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) {
+      setUploadingAvatar(false);
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from("avatars")
+      .getPublicUrl(filePath);
+
+    const url = `${publicUrl}?t=${Date.now()}`;
+    await supabase
+      .from("profiles")
+      .update({ avatar_url: url })
+      .eq("user_id", userId);
+
+    setAvatarUrl(url);
+    setUploadingAvatar(false);
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,8 +119,35 @@ const Profile = () => {
         className="w-full max-w-md"
       >
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center mx-auto mb-4">
-            <User className="w-8 h-8 text-primary" />
+          <div
+            className="relative w-20 h-20 mx-auto mb-4 cursor-pointer group"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="Avatar"
+                className="w-20 h-20 rounded-full object-cover border-2 border-primary"
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center">
+                <User className="w-9 h-9 text-primary" />
+              </div>
+            )}
+            <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              {uploadingAvatar ? (
+                <Loader2 className="w-5 h-5 text-white animate-spin" />
+              ) : (
+                <Camera className="w-5 h-5 text-white" />
+              )}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarUpload}
+            />
           </div>
           <h1 className="text-2xl font-extrabold text-foreground font-['Space_Grotesk']">
             الملف الشخصي
