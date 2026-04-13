@@ -346,7 +346,7 @@ const BookGeneration = () => {
                 </p>
               </div>
             </>
-          )}
+          ) : null}
         </button>
 
         <input
