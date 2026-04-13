@@ -26,13 +26,11 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
         <div className="group relative overflow-hidden rounded-xl border border-border/40 bg-card/60 transition-all duration-300 hover:border-primary/20 hover:bg-card/90">
           {/* Image */}
           <div className="relative aspect-[4/3] overflow-hidden bg-muted/30">
-            <img
-              src={product.image}
-              alt={product.name}
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-              loading="lazy"
-              width={400}
-              height={300}
+            <BookCover
+              title={product.name}
+              category={product.category}
+              index={index}
+              className="h-full w-full"
             />
 
             {/* Top badges */}
