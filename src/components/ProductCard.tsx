@@ -23,7 +23,7 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
       viewport={{ once: true, margin: "-30px" }}
     >
       <Link to={`/product/${product.id}`}>
-        <div className="group relative overflow-hidden rounded-2xl bg-card/40 transition-all duration-500 hover:bg-card/70 border border-border/20 hover:border-primary/20 hover:shadow-dramatic">
+        <div className="group relative overflow-hidden rounded-2xl glass-card transition-all duration-500 glass-card-hover">
           {/* Image */}
           <div className="relative aspect-[4/3] overflow-hidden bg-muted/20">
             {product.image ? (

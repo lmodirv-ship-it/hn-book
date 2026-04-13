@@ -45,7 +45,7 @@ const FeaturesSection = () => {
           {features.map((feature, i) => (
             <motion.div
               key={feature.titleKey}
-              className="group relative rounded-2xl p-7 transition-all duration-500 bg-card/30 border border-border/20 hover:border-primary/15 hover:bg-card/60 hover:shadow-dramatic"
+              className="group relative rounded-2xl p-7 transition-all duration-500 glass-glow"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: i * 0.1 }}
