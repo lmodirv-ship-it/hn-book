@@ -32,22 +32,41 @@ export const BookPdfUpload = ({ productId, currentPdfUrl, onPdfUpdated }: BookPd
 
     setUploading(true);
     try {
-      const filePath = `${productId}/${Date.now()}.pdf`;
+      const storagePath = `${productId}/${Date.now()}.pdf`;
 
       const { error: uploadError } = await supabase.storage
         .from("book-files")
-        .upload(filePath, file, { upsert: true });
+        .upload(storagePath, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/book-files/${filePath}`;
+      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/book-files/${storagePath}`;
 
+      // Update product pdf_url field
       const { error: updateError } = await supabase
         .from("products")
         .update({ pdf_url: publicUrl } as any)
         .eq("id", productId);
 
       if (updateError) throw updateError;
+
+      // Remove old PDF reference
+      await supabase
+        .from("product_files")
+        .delete()
+        .eq("product_id", productId)
+        .eq("file_type", "pdf");
+
+      // Insert new reference
+      await supabase.from("product_files").insert({
+        product_id: productId,
+        file_type: "pdf" as any,
+        file_name: file.name,
+        file_size: file.size,
+        storage_path: `book-files/${storagePath}`,
+        public_url: publicUrl,
+        is_primary: true,
+      });
 
       setPdfUrl(publicUrl);
       onPdfUpdated(publicUrl);
@@ -68,10 +87,14 @@ export const BookPdfUpload = ({ productId, currentPdfUrl, onPdfUpdated }: BookPd
         await supabase.storage.from("book-files").remove([path]);
       }
 
+      await supabase.from("products").update({ pdf_url: null } as any).eq("id", productId);
+
+      // Remove reference
       await supabase
-        .from("products")
-        .update({ pdf_url: null } as any)
-        .eq("id", productId);
+        .from("product_files")
+        .delete()
+        .eq("product_id", productId)
+        .eq("file_type", "pdf");
 
       setPdfUrl(null);
       onPdfUpdated("");

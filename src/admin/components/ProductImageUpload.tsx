@@ -33,22 +33,43 @@ export const ProductImageUpload = ({ productId, currentImage, onImageUpdated }: 
     setUploading(true);
     try {
       const ext = file.name.split(".").pop();
-      const filePath = `${productId}/${Date.now()}.${ext}`;
+      const storagePath = `${productId}/${Date.now()}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from("book-images")
-        .upload(filePath, file, { upsert: true });
+        .upload(storagePath, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/book-images/${filePath}`;
+      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/book-images/${storagePath}`;
 
+      // Update product image field
       const { error: updateError } = await supabase
         .from("products")
         .update({ image: publicUrl })
         .eq("id", productId);
 
       if (updateError) throw updateError;
+
+      // Register file in product_files with reference
+      // First remove old primary image reference
+      await supabase
+        .from("product_files")
+        .delete()
+        .eq("product_id", productId)
+        .eq("file_type", "image")
+        .eq("is_primary", true);
+
+      // Insert new reference
+      await supabase.from("product_files").insert({
+        product_id: productId,
+        file_type: "image" as any,
+        file_name: file.name,
+        file_size: file.size,
+        storage_path: `book-images/${storagePath}`,
+        public_url: publicUrl,
+        is_primary: true,
+      });
 
       setPreview(publicUrl);
       onImageUpdated(publicUrl);
@@ -64,16 +85,20 @@ export const ProductImageUpload = ({ productId, currentImage, onImageUpdated }: 
   const handleRemove = async () => {
     setUploading(true);
     try {
-      // Extract path from URL
       if (preview?.includes("book-images/")) {
         const path = preview.split("book-images/")[1];
         await supabase.storage.from("book-images").remove([path]);
       }
 
+      await supabase.from("products").update({ image: null }).eq("id", productId);
+
+      // Remove reference from product_files
       await supabase
-        .from("products")
-        .update({ image: null })
-        .eq("id", productId);
+        .from("product_files")
+        .delete()
+        .eq("product_id", productId)
+        .eq("file_type", "image")
+        .eq("is_primary", true);
 
       setPreview(null);
       onImageUpdated("");
@@ -88,7 +113,7 @@ export const ProductImageUpload = ({ productId, currentImage, onImageUpdated }: 
   return (
     <div className="space-y-3">
       <label className="text-sm font-medium text-foreground">صورة المنتج</label>
-      
+
       {preview ? (
         <div className="relative w-full aspect-square max-w-[200px] rounded-xl overflow-hidden border border-border bg-secondary/30">
           <img src={preview} alt="صورة المنتج" className="w-full h-full object-cover" />

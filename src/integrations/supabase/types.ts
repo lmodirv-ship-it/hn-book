@@ -185,6 +185,53 @@ export type Database = {
         }
         Relationships: []
       }
+      product_files: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_size: number | null
+          file_type: Database["public"]["Enums"]["file_type"]
+          id: string
+          is_primary: boolean | null
+          product_id: string
+          public_url: string
+          storage_path: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_size?: number | null
+          file_type?: Database["public"]["Enums"]["file_type"]
+          id?: string
+          is_primary?: boolean | null
+          product_id: string
+          public_url: string
+          storage_path: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_size?: number | null
+          file_type?: Database["public"]["Enums"]["file_type"]
+          id?: string
+          is_primary?: boolean | null
+          product_id?: string
+          public_url?: string
+          storage_path?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_files_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           badge: string | null
@@ -305,6 +352,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      file_type: "image" | "pdf" | "other"
       order_status: "pending" | "processing" | "completed" | "cancelled"
     }
     CompositeTypes: {
@@ -434,6 +482,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      file_type: ["image", "pdf", "other"],
       order_status: ["pending", "processing", "completed", "cancelled"],
     },
   },
