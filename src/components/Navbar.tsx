@@ -85,34 +85,38 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
             <img src={hnLogo} alt="HN Groupe" className="h-20 w-20 rounded-full object-cover transition-transform duration-300 group-hover:scale-110 ring-2 ring-primary/40" />
           </motion.div>
           <motion.div
-            className="relative mt-2 px-4 py-1.5 rounded-lg overflow-hidden"
+            className="relative mt-2 px-5 py-2 rounded-xl overflow-hidden"
             style={{
               background: "linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 40%, rgba(59,130,246,0.08) 100%)",
               border: "1px solid rgba(255,255,255,0.2)",
-              boxShadow: "0 2px 15px -3px hsl(199,89%,48%,0.3), inset 0 1px 2px rgba(255,255,255,0.15), inset 0 -1px 2px rgba(0,0,0,0.2)",
               backdropFilter: "blur(12px)",
+              perspective: "600px",
+              transformStyle: "preserve-3d",
             }}
             animate={{
+              rotateY: [-8, 8, -8],
+              rotateX: [3, -3, 3],
               boxShadow: [
-                "0 2px 15px -3px hsl(199,89%,48%,0.3), inset 0 1px 2px rgba(255,255,255,0.15), inset 0 -1px 2px rgba(0,0,0,0.2)",
-                "0 2px 25px -3px hsl(199,89%,48%,0.6), inset 0 1px 2px rgba(255,255,255,0.25), inset 0 -1px 2px rgba(0,0,0,0.2)",
-                "0 2px 15px -3px hsl(199,89%,48%,0.3), inset 0 1px 2px rgba(255,255,255,0.15), inset 0 -1px 2px rgba(0,0,0,0.2)",
+                "0 4px 20px -3px hsl(199,89%,48%,0.3), inset 0 1px 2px rgba(255,255,255,0.15), inset 0 -1px 2px rgba(0,0,0,0.2)",
+                "0 4px 35px -3px hsl(199,89%,48%,0.6), inset 0 1px 2px rgba(255,255,255,0.25), inset 0 -1px 2px rgba(0,0,0,0.2)",
+                "0 4px 20px -3px hsl(199,89%,48%,0.3), inset 0 1px 2px rgba(255,255,255,0.15), inset 0 -1px 2px rgba(0,0,0,0.2)",
               ],
             }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
           >
             {/* Glass reflection */}
-            <div className="absolute inset-0 bg-gradient-to-b from-white/15 via-transparent to-transparent h-1/2 rounded-t-lg pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-transparent h-1/2 rounded-t-xl pointer-events-none" />
             {/* Bottom metallic edge */}
             <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
             <span
-              className="relative text-sm font-extrabold tracking-widest leading-none"
+              className="relative text-base font-black tracking-[0.2em] leading-none"
               style={{
-                background: "linear-gradient(180deg, #ffffff 0%, #93c5fd 40%, #3b82f6 80%, #60a5fa 100%)",
+                background: "linear-gradient(180deg, #ffffff 0%, #93c5fd 30%, #3b82f6 70%, #60a5fa 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
-                filter: "drop-shadow(0 0 6px hsl(199,89%,48%,0.5))",
-                textShadow: "none",
+                filter: "drop-shadow(0 0 8px hsl(199,89%,48%,0.6))",
+                textShadow: "0 2px 4px rgba(0,0,0,0.3), 0 4px 8px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.3)",
+                transform: "translateZ(20px)",
               }}
             >
               HN-BOOK
