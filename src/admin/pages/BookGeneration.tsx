@@ -318,18 +318,20 @@ const BookGeneration = () => {
               : "border-border hover:border-primary/50 bg-card hover:bg-secondary/10"
           }`}
         >
-          {analyzing ? (
+          {(analyzing || saving) ? (
             <>
               <Loader2 className="w-10 h-10 text-primary animate-spin" />
               <div className="text-center">
-                <p className="text-sm font-semibold text-foreground">جاري التحليل والاستخراج...</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {statusText || (analyzing ? "جاري التحليل والاستخراج..." : "جاري الحفظ...")}
+                </p>
                 {currentFile && (
                   <p className="text-xs text-muted-foreground mt-1 truncate max-w-xs">{currentFile}</p>
                 )}
               </div>
               <Progress value={progress} className="w-56 h-2" />
             </>
-          ) : (
+          ) : items.length === 0 ? (
             <>
               <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
                 <Upload className="w-8 h-8 text-primary" />
