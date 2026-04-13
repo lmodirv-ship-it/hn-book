@@ -2,82 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
 
 @layer base {
   :root {
-    --background: 230 15% 5%;
-    --foreground: 220 15% 93%;
+    --background: 240 6% 3%;
+    --foreground: 0 0% 96%;
 
-    --card: 230 14% 8%;
-    --card-foreground: 220 15% 93%;
+    --card: 240 5% 6%;
+    --card-foreground: 0 0% 96%;
 
-    --popover: 230 14% 8%;
-    --popover-foreground: 220 15% 93%;
+    --popover: 240 5% 6%;
+    --popover-foreground: 0 0% 96%;
 
-    --primary: 260 80% 65%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 145 65% 52%;
+    --primary-foreground: 240 6% 3%;
 
-    --secondary: 230 12% 12%;
-    --secondary-foreground: 220 15% 93%;
+    --secondary: 240 4% 10%;
+    --secondary-foreground: 0 0% 80%;
 
-    --muted: 230 10% 14%;
-    --muted-foreground: 225 8% 50%;
+    --muted: 240 4% 12%;
+    --muted-foreground: 240 4% 46%;
 
-    --accent: 170 80% 48%;
+    --accent: 270 60% 62%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 230 10% 13%;
-    --input: 230 10% 13%;
-    --ring: 260 80% 65%;
+    --border: 240 4% 11%;
+    --input: 240 4% 11%;
+    --ring: 145 65% 52%;
 
     --radius: 0.75rem;
 
-    --glow-primary: 260 80% 65%;
-    --glow-accent: 170 80% 48%;
-    --surface-elevated: 230 14% 10%;
-
-    --sidebar-background: 230 15% 5%;
-    --sidebar-foreground: 220 15% 93%;
-    --sidebar-primary: 260 80% 65%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 230 12% 12%;
-    --sidebar-accent-foreground: 220 15% 93%;
-    --sidebar-border: 230 10% 13%;
-    --sidebar-ring: 260 80% 65%;
-  }
-
-  .dark {
-    --background: 230 18% 4%;
-    --foreground: 220 15% 95%;
-    --card: 230 16% 7%;
-    --card-foreground: 220 15% 95%;
-    --popover: 230 16% 7%;
-    --popover-foreground: 220 15% 95%;
-    --primary: 260 80% 65%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 230 12% 10%;
-    --secondary-foreground: 220 15% 95%;
-    --muted: 230 10% 12%;
-    --muted-foreground: 225 8% 50%;
-    --accent: 170 80% 48%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 72% 50%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 230 10% 11%;
-    --input: 230 10% 11%;
-    --ring: 260 80% 65%;
-    --sidebar-background: 230 18% 4%;
-    --sidebar-foreground: 220 15% 95%;
-    --sidebar-primary: 260 80% 65%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 230 12% 10%;
-    --sidebar-accent-foreground: 220 15% 95%;
-    --sidebar-border: 230 10% 11%;
-    --sidebar-ring: 260 80% 65%;
+    --sidebar-background: 240 6% 3%;
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-primary: 145 65% 52%;
+    --sidebar-primary-foreground: 240 6% 3%;
+    --sidebar-accent: 240 4% 10%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 240 4% 11%;
+    --sidebar-ring: 145 65% 52%;
   }
 }
 
@@ -88,88 +54,62 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'DM Sans', system-ui, sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Outfit', system-ui, sans-serif;
-    letter-spacing: -0.02em;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    letter-spacing: -0.03em;
   }
 }
 
 @layer utilities {
   .glass {
-    @apply bg-card/60 backdrop-blur-2xl border border-border/50;
+    @apply bg-card/50 backdrop-blur-2xl border border-border/40;
   }
 
   .glass-subtle {
-    @apply bg-card/30 backdrop-blur-xl border border-border/30;
-  }
-
-  .glow-primary {
-    box-shadow: 0 0 40px -8px hsl(var(--primary) / 0.35);
-  }
-
-  .glow-accent {
-    box-shadow: 0 0 40px -8px hsl(var(--accent) / 0.35);
+    @apply bg-card/25 backdrop-blur-xl border border-border/20;
   }
 
   .text-gradient {
-    @apply bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent bg-[length:200%_auto];
+    @apply bg-gradient-to-r from-primary via-[hsl(200,80%,60%)] to-accent bg-clip-text text-transparent bg-[length:200%_auto];
   }
 
   .text-gradient-static {
-    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-primary to-[hsl(200,80%,60%)] bg-clip-text text-transparent;
   }
 
   .shadow-glow {
-    box-shadow: 
-      0 4px 6px -1px hsl(var(--primary) / 0.1),
-      0 10px 30px -5px hsl(var(--primary) / 0.2);
+    box-shadow: 0 0 20px -4px hsl(var(--primary) / 0.25);
   }
 
   .shadow-glow-lg {
-    box-shadow: 
-      0 10px 25px -3px hsl(var(--primary) / 0.15),
-      0 20px 60px -10px hsl(var(--primary) / 0.3);
+    box-shadow: 0 0 40px -8px hsl(var(--primary) / 0.35),
+                0 0 80px -16px hsl(var(--primary) / 0.15);
+  }
+
+  .noise-bg {
+    position: relative;
+  }
+  .noise-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
   }
 }
 
-@keyframes gradient {
-  0% { background-position: 0% center; }
-  100% { background-position: 200% center; }
-}
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: hsl(var(--muted)); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: hsl(var(--background));
-}
-
-::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted));
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground));
-}
-
-/* Selection */
 ::selection {
-  background: hsl(var(--primary) / 0.3);
+  background: hsl(var(--primary) / 0.25);
   color: hsl(var(--foreground));
 }

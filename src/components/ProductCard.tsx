@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Product } from "@/lib/products";
 
@@ -16,91 +16,79 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, delay: Math.min(index * 0.03, 0.25) }}
-      viewport={{ once: true, margin: "-20px" }}
+      transition={{ duration: 0.3, delay: Math.min(index * 0.03, 0.2) }}
+      viewport={{ once: true, margin: "-30px" }}
     >
       <Link to={`/product/${product.id}`}>
-        <div className="group relative cursor-pointer overflow-hidden rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm transition-all duration-500 hover:shadow-glow hover:border-primary/20 hover:-translate-y-1.5">
+        <div className="group relative overflow-hidden rounded-xl border border-border/40 bg-card/60 transition-all duration-300 hover:border-primary/20 hover:bg-card/90">
           {/* Image */}
-          <div className="relative aspect-[3/2] overflow-hidden bg-muted">
+          <div className="relative aspect-[4/3] overflow-hidden bg-muted/30">
             <img
               src={product.image}
               alt={product.name}
-              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               loading="lazy"
               width={400}
-              height={272}
+              height={300}
             />
 
-            {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-
-            {/* Badges */}
-            {product.badge && (
-              <div className="absolute left-2 top-2">
-                <Badge className="bg-primary/90 text-primary-foreground text-[10px] px-2 py-0.5 backdrop-blur-sm border-0 shadow-lg">
+            {/* Top badges */}
+            <div className="absolute left-2 top-2 flex gap-1.5">
+              {product.badge && (
+                <Badge className="bg-primary/90 text-primary-foreground text-[10px] px-2 py-0.5 border-0 font-medium">
                   {product.badge}
                 </Badge>
-              </div>
-            )}
+              )}
+              {product.isFlashDeal && (
+                <Badge className="bg-destructive/90 text-destructive-foreground text-[10px] px-2 py-0.5 border-0">
+                  ⚡ {product.dealEndsIn}h
+                </Badge>
+              )}
+            </div>
 
             {discount > 0 && (
               <div className="absolute right-2 top-2">
-                <Badge variant="destructive" className="text-[10px] font-bold px-2 py-0.5 shadow-lg border-0">
+                <Badge variant="secondary" className="text-[10px] font-bold px-2 py-0.5 border-0 bg-background/80 backdrop-blur-sm text-primary">
                   -{discount}%
                 </Badge>
               </div>
             )}
 
-            {product.isFlashDeal && (
-              <div className="absolute bottom-2 left-2">
-                <Badge className="bg-destructive/90 text-destructive-foreground text-[10px] px-2 py-0.5 animate-pulse border-0 shadow-lg">
-                  ⚡ {product.dealEndsIn}h left
-                </Badge>
-              </div>
-            )}
-
-            {/* Quick action */}
-            <div className="absolute bottom-2 right-2 opacity-0 translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0">
-              <button className="flex items-center gap-1.5 rounded-xl bg-primary/90 px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-glow backdrop-blur-sm border-0">
-                <ShoppingCart className="h-3 w-3" /> Buy
-              </button>
+            {/* Hover arrow */}
+            <div className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-lg bg-primary/90 text-primary-foreground opacity-0 translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0">
+              <ArrowUpRight className="h-4 w-4" />
             </div>
           </div>
 
           {/* Content */}
           <div className="p-3.5">
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-primary/80">
-                {product.category}
-              </p>
-              <ArrowUpRight className="h-3 w-3 text-muted-foreground opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:text-primary" />
-            </div>
-            <h3 className="mt-1.5 text-sm font-bold leading-tight line-clamp-1 transition-colors group-hover:text-primary">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-primary/70">
+              {product.category}
+            </p>
+            <h3 className="mt-1 text-sm font-semibold leading-tight line-clamp-1 text-foreground/90 group-hover:text-foreground">
               {product.name}
             </h3>
-            <p className="mt-1 text-xs text-muted-foreground/70 line-clamp-1">
+            <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
               {product.shortDescription}
             </p>
 
             {/* Price */}
-            <div className="mt-3 flex items-center justify-between border-t border-border/50 pt-3">
+            <div className="mt-3 flex items-center justify-between border-t border-border/30 pt-3">
               <div className="flex items-baseline gap-1.5">
-                <span className="text-lg font-extrabold text-gradient-static">
+                <span className="text-base font-bold text-foreground">
                   ${product.price}
                 </span>
                 {product.originalPrice && (
-                  <span className="text-[11px] text-muted-foreground/60 line-through">
+                  <span className="text-[11px] text-muted-foreground/50 line-through">
                     ${product.originalPrice}
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/60">
-                <div className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+              <span className="text-[10px] text-muted-foreground/50">
                 Instant
-              </div>
+              </span>
             </div>
           </div>
         </div>
