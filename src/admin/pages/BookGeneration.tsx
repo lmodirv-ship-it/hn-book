@@ -69,6 +69,8 @@ const BookGeneration = () => {
   const [sourceName, setSourceName] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string>("");
+  const [pendingFiles, setPendingFiles] = useState<File[] | null>(null);
+  const [pendingTotalSize, setPendingTotalSize] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Get next product code from DB
