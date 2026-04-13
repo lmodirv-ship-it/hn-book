@@ -43,11 +43,12 @@ const AdminLayout = () => {
     <div className="min-h-screen bg-background flex" dir="rtl">
       {/* Desktop Sidebar */}
       <aside
-        className={`${sidebarCollapsed ? "w-[72px]" : "w-64"} border-l border-border hidden lg:flex flex-col transition-all duration-300 bg-card/50 backdrop-blur-xl`}
+        className={`${sidebarCollapsed ? "w-[72px]" : "w-64"} hidden lg:flex flex-col transition-all duration-300 bg-card/50 backdrop-blur-xl`}
+        style={{ borderLeft: '1px solid hsl(190 90% 50% / 0.15)' }}
       >
-        <div className="p-4 flex items-center gap-3 border-b border-border">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center flex-shrink-0">
-            <BookOpen className="w-5 h-5 text-primary-foreground" />
+        <div className="p-4 flex items-center gap-3" style={{ borderBottom: '1px solid hsl(190 90% 50% / 0.12)' }}>
+          <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center flex-shrink-0 shadow-glow-accent">
+            <BookOpen className="w-5 h-5 text-accent-foreground" />
           </div>
           {!sidebarCollapsed && (
             <div className="flex flex-col">
@@ -60,8 +61,8 @@ const AdminLayout = () => {
         </div>
 
         {!sidebarCollapsed && (
-          <div className="p-4 border-b border-border flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+          <div className="p-4 flex items-center gap-3" style={{ borderBottom: '1px solid hsl(190 90% 50% / 0.12)' }}>
+            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center" style={{ border: '1px solid hsl(190 90% 50% / 0.3)' }}>
               <Shield className="w-5 h-5 text-primary" />
             </div>
             <div>
@@ -78,9 +79,10 @@ const AdminLayout = () => {
               onClick={() => navigate(item.path)}
               className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-200 ${
                 isActive(item.path)
-                  ? "bg-primary/10 text-primary font-semibold border border-primary/20"
+                  ? "bg-primary/10 text-primary font-semibold"
                   : "text-muted-foreground hover:bg-secondary hover:text-foreground"
               } ${sidebarCollapsed ? "justify-center px-2" : ""}`}
+              style={isActive(item.path) ? { border: '1px solid hsl(190 90% 50% / 0.25)' } : { border: '1px solid transparent' }}
             >
               <item.icon className="w-4.5 h-4.5 flex-shrink-0" />
               {!sidebarCollapsed && <span>{item.label}</span>}
@@ -88,7 +90,7 @@ const AdminLayout = () => {
           ))}
         </nav>
 
-        <div className="p-3 border-t border-border">
+        <div className="p-3" style={{ borderTop: '1px solid hsl(190 90% 50% / 0.12)' }}>
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             className="w-full flex items-center justify-center px-3 py-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors text-xs"
@@ -114,15 +116,16 @@ const AdminLayout = () => {
               animate={{ x: 0 }}
               exit={{ x: 100 }}
               transition={{ type: "spring", damping: 25 }}
-              className="absolute right-0 top-0 bottom-0 w-72 bg-card border-l border-border flex flex-col z-10 overflow-auto"
+              className="absolute right-0 top-0 bottom-0 w-72 bg-card flex flex-col z-10 overflow-auto"
+              style={{ borderLeft: '1px solid hsl(190 90% 50% / 0.15)' }}
             >
-              <div className="p-4 flex items-center justify-between border-b border-border">
+              <div className="p-4 flex items-center justify-between" style={{ borderBottom: '1px solid hsl(190 90% 50% / 0.12)' }}>
                 <button onClick={() => setMobileOpen(false)} className="p-1 hover:bg-secondary rounded-lg">
                   <X className="w-5 h-5 text-muted-foreground" />
                 </button>
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                    <BookOpen className="w-4 h-4 text-primary-foreground" />
+                  <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center shadow-glow-accent">
+                    <BookOpen className="w-4 h-4 text-accent-foreground" />
                   </div>
                   <span className="font-bold text-foreground">HN Book</span>
                 </div>
@@ -137,6 +140,7 @@ const AdminLayout = () => {
                         ? "bg-primary/10 text-primary font-semibold"
                         : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                     }`}
+                    style={isActive(item.path) ? { border: '1px solid hsl(190 90% 50% / 0.25)' } : { border: '1px solid transparent' }}
                   >
                     <item.icon className="w-4.5 h-4.5" />
                     <span>{item.label}</span>
@@ -150,7 +154,10 @@ const AdminLayout = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-0">
-        <header className="border-b border-border px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 z-40 bg-background/80 backdrop-blur-xl">
+        <header
+          className="px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 z-40 bg-background/80 backdrop-blur-xl"
+          style={{ borderBottom: '1px solid hsl(190 90% 50% / 0.12)' }}
+        >
           <div className="flex items-center gap-2">
             <button onClick={() => setMobileOpen(true)} className="lg:hidden p-1.5 hover:bg-secondary rounded-lg">
               <Menu className="w-5 h-5 text-muted-foreground" />
@@ -163,7 +170,7 @@ const AdminLayout = () => {
             <Button
               variant="outline"
               size="sm"
-              className="text-xs gap-1.5"
+              className="text-xs gap-1.5 border-glow"
               onClick={() => navigate("/")}
             >
               <BookOpen className="w-3.5 h-3.5" />

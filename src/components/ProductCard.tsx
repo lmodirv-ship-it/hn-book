@@ -23,7 +23,7 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
       viewport={{ once: true, margin: "-30px" }}
     >
       <Link to={`/product/${product.id}`}>
-        <div className="group relative overflow-hidden rounded-xl border border-border/40 bg-card/60 transition-all duration-300 hover:border-primary/20 hover:bg-card/90">
+        <div className="group relative overflow-hidden rounded-xl bg-card/60 transition-all duration-300 hover:shadow-glow border-glow glass-card-hover">
           {/* Image */}
           <div className="relative aspect-[4/3] overflow-hidden bg-muted/30">
             {product.image ? (
@@ -34,7 +34,6 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   loading="lazy"
                 />
-                {/* Watermark overlay */}
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className="absolute inset-0 overflow-hidden opacity-[0.07]">
                     {Array.from({ length: 4 }).map((_, row) =>
@@ -54,7 +53,6 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
                       ))
                     )}
                   </div>
-                  {/* Small lock badge */}
                   <div className="absolute bottom-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/50 backdrop-blur-sm">
                     <Lock className="w-2.5 h-2.5 text-white/70" />
                     <span className="text-[9px] text-white/70 font-medium">محمي</span>
@@ -70,10 +68,9 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
               />
             )}
 
-            {/* Top badges */}
             <div className="absolute right-2 top-2 flex gap-1.5">
               {product.badge && (
-                <Badge className="bg-primary/90 text-primary-foreground text-[10px] px-2 py-0.5 border-0 font-medium">
+                <Badge className="bg-accent/90 text-accent-foreground text-[10px] px-2 py-0.5 border-0 font-medium">
                   {product.badge}
                 </Badge>
               )}
@@ -92,8 +89,7 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
               </div>
             )}
 
-            {/* Hover arrow */}
-            <div className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-lg bg-primary/90 text-primary-foreground opacity-0 translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0">
+            <div className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-lg bg-accent/90 text-accent-foreground opacity-0 translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0">
               <ArrowUpRight className="h-4 w-4" />
             </div>
           </div>
@@ -110,8 +106,7 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
               {product.shortDescription}
             </p>
 
-            {/* Price */}
-            <div className="mt-3 flex items-center justify-between border-t border-border/30 pt-3">
+            <div className="mt-3 flex items-center justify-between pt-3" style={{ borderTop: '1px solid hsl(190 90% 50% / 0.1)' }}>
               <div className="flex items-baseline gap-1.5">
                 {product.price > 0 ? (
                   <>
@@ -125,7 +120,7 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
                     )}
                   </>
                 ) : (
-                  <span className="text-base font-bold text-primary">مجاني</span>
+                  <span className="text-base font-bold text-accent">مجاني</span>
                 )}
               </div>
               <span className="text-[10px] text-muted-foreground/50">
