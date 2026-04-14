@@ -22,6 +22,13 @@ const LANGUAGES = [
   { code: "en" as LangCode, label: "English", flag: "🇬🇧" },
 ];
 
+const SUBCATEGORIES: string[] = [
+  "التاريخ", "العلوم", "الطب", "الأدب العربي", "الدين الإسلامي",
+  "تطوير الذات", "الفلسفة والفكر", "اللغة العربية", "الاقتصاد والمال",
+  "التكنولوجيا", "كتب", "Arabic literature", "Literature", "Philosophy",
+  "Biography & Autobiography", "Photography", "مطبخ الدار",
+];
+
 const CATEGORY_LANG_MAP: Record<string, LangCode> = {
   "التاريخ": "ar",
   "العلوم": "ar",
@@ -34,10 +41,12 @@ const CATEGORY_LANG_MAP: Record<string, LangCode> = {
   "الاقتصاد والمال": "ar",
   "التكنولوجيا": "ar",
   "كتب": "ar",
+  "مطبخ الدار": "ar",
   "Arabic literature": "ar",
   "Literature": "en",
   "Philosophy": "en",
   "Biography & Autobiography": "en",
+  "Photography": "en",
 };
 
 const CATEGORY_DISPLAY: Record<string, { label: string; icon: string }> = {
@@ -52,10 +61,12 @@ const CATEGORY_DISPLAY: Record<string, { label: string; icon: string }> = {
   "الاقتصاد والمال": { label: "الاقتصاد", icon: "💰" },
   "التكنولوجيا": { label: "التكنولوجيا", icon: "💻" },
   "كتب": { label: "كتب عامة", icon: "📚" },
+  "مطبخ الدار": { label: "مطبخ الدار", icon: "🍳" },
   "Arabic literature": { label: "أدب عربي كلاسيكي", icon: "📖" },
   "Literature": { label: "Literature", icon: "📕" },
   "Philosophy": { label: "Philosophy", icon: "🤔" },
   "Biography & Autobiography": { label: "Biography", icon: "👤" },
+  "Photography": { label: "Photography", icon: "📷" },
 };
 
 const COUNTRY_LANG: Record<string, LangCode> = {
@@ -76,8 +87,36 @@ function detectLanguage(): LangCode {
   return "ar";
 }
 
-const btnActive = "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_12px_-3px_rgba(16,185,129,0.4)]";
-const btnInactive = "bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-white";
+const glowAnim = {
+  boxShadow: [
+    "inset 0 0 8px -2px hsl(199,89%,48%,0.3), 0 0 10px -2px hsl(199,89%,48%,0.2)",
+    "inset 0 0 20px -2px hsl(199,89%,48%,0.7), 0 0 25px -2px hsl(199,89%,48%,0.5)",
+    "inset 0 0 8px -2px hsl(199,89%,48%,0.3), 0 0 10px -2px hsl(199,89%,48%,0.2)",
+  ],
+  borderColor: [
+    "hsl(199,89%,48%,0.4)",
+    "hsl(199,89%,48%,0.8)",
+    "hsl(199,89%,48%,0.4)",
+  ],
+};
+const glowAnimActive = {
+  boxShadow: [
+    "inset 0 0 15px -2px rgba(16,185,129,0.5), 0 0 20px -2px rgba(16,185,129,0.4)",
+    "inset 0 0 25px -2px rgba(16,185,129,0.85), 0 0 35px -2px rgba(16,185,129,0.65)",
+    "inset 0 0 15px -2px rgba(16,185,129,0.5), 0 0 20px -2px rgba(16,185,129,0.4)",
+  ],
+  borderColor: [
+    "rgba(16,185,129,0.5)",
+    "rgba(16,185,129,0.9)",
+    "rgba(16,185,129,0.5)",
+  ],
+};
+const glowHover = {
+  boxShadow: "inset 0 0 25px -2px hsl(199,89%,48%,0.85), 0 0 35px -2px hsl(199,89%,48%,0.6)",
+  borderColor: "hsl(199,89%,48%,0.9)",
+  scale: 1.05,
+};
+const btnBase = "rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border backdrop-blur-sm";
 
 const BooksPage = () => {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -169,31 +208,34 @@ const BooksPage = () => {
             {/* Filters */}
             <div className="space-y-3 mb-8">
               {/* Language Row */}
-              <div className="flex flex-wrap items-center gap-2">
-                {LANGUAGES.map((lang) => (
-                  <button
-                    key={lang.code}
-                    onClick={() => {
-                      setSelectedLang(lang.code);
-                      setSelectedCategory("all");
-                      setVisibleCount(ITEMS_PER_PAGE);
-                    }}
-                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
-                      selectedLang === lang.code ? btnActive : btnInactive
-                    }`}
-                  >
-                    <span className="text-sm">{lang.flag}</span>
-                    {lang.label}
-                    {lang.code !== "all" && (
-                      <span className="text-[10px] opacity-60">
-                        ({allProducts.filter(p => (CATEGORY_LANG_MAP[p.category] || "en") === lang.code).length})
-                      </span>
-                    )}
-                  </button>
-                ))}
+              <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/10 border border-primary/30 shadow-[0_0_25px_-3px_hsl(199,89%,48%,0.2),inset_0_0_15px_-3px_hsl(199,89%,48%,0.1)] w-fit">
+                {LANGUAGES.map((lang, idx) => {
+                  const isActive = selectedLang === lang.code;
+                  return (
+                    <motion.button
+                      key={lang.code}
+                      onClick={() => {
+                        setSelectedLang(lang.code);
+                        setSelectedCategory("all");
+                        setVisibleCount(ITEMS_PER_PAGE);
+                      }}
+                      className={`${btnBase} ${isActive ? "border-emerald-500/50 bg-emerald-500/20" : "border-primary/50 bg-primary/20"}`}
+                      animate={isActive ? glowAnimActive : glowAnim}
+                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: idx * 0.3 }}
+                      whileHover={glowHover}
+                    >
+                      <span className="text-sm">{lang.flag}</span>{" "}
+                      {lang.label}
+                      {lang.code !== "all" && (
+                        <span className="text-[10px] opacity-60 ml-1">
+                          ({allProducts.filter(p => (CATEGORY_LANG_MAP[p.category] || "en") === lang.code).length})
+                        </span>
+                      )}
+                    </motion.button>
+                  );
+                })}
               </div>
 
-              {/* Specialty / Category Row */}
               <AnimatePresence>
                 {selectedLang !== "all" && availableCategories.length > 0 && (
                   <motion.div
@@ -203,29 +245,32 @@ const BooksPage = () => {
                     transition={{ duration: 0.25 }}
                     className="overflow-hidden"
                   >
-                    <div className="flex flex-wrap items-center gap-2 pr-6 border-r-2 border-emerald-500/30">
-                      <button
+                    <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/10 border border-primary/30 shadow-[0_0_25px_-3px_hsl(199,89%,48%,0.2),inset_0_0_15px_-3px_hsl(199,89%,48%,0.1)] w-fit mr-6 border-r-2 border-r-emerald-500/30">
+                      <motion.button
                         onClick={() => { setSelectedCategory("all"); setVisibleCount(ITEMS_PER_PAGE); }}
-                        className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
-                          selectedCategory === "all" ? btnActive : btnInactive
-                        }`}
+                        className={`${btnBase} ${selectedCategory === "all" ? "border-emerald-500/50 bg-emerald-500/20" : "border-primary/50 bg-primary/20"}`}
+                        animate={selectedCategory === "all" ? glowAnimActive : glowAnim}
+                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        whileHover={glowHover}
                       >
                         الكل ({filteredProducts.length})
-                      </button>
-                      {availableCategories.map((cat) => {
+                      </motion.button>
+                      {availableCategories.map((cat, idx) => {
                         const display = CATEGORY_DISPLAY[cat] || { label: cat, icon: "📄" };
+                        const isActive = selectedCategory === cat;
                         return (
-                          <button
+                          <motion.button
                             key={cat}
                             onClick={() => { setSelectedCategory(cat); setVisibleCount(ITEMS_PER_PAGE); }}
-                            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
-                              selectedCategory === cat ? btnActive : btnInactive
-                            }`}
+                            className={`${btnBase} ${isActive ? "border-emerald-500/50 bg-emerald-500/20" : "border-primary/50 bg-primary/20"}`}
+                            animate={isActive ? glowAnimActive : glowAnim}
+                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: idx * 0.2 }}
+                            whileHover={glowHover}
                           >
-                            <span className="text-sm">{display.icon}</span>
+                            <span className="text-sm">{display.icon}</span>{" "}
                             {display.label}
-                            <span className="text-[10px] opacity-60">({categoryCounts[cat] || 0})</span>
-                          </button>
+                            <span className="text-[10px] opacity-60 ml-1">({categoryCounts[cat] || 0})</span>
+                          </motion.button>
                         );
                       })}
                     </div>
