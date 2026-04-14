@@ -254,7 +254,7 @@ const BooksPage = () => {
                     {lang.label}
                     {lang.code !== "all" && (
                       <span className="text-[10px] opacity-60">
-                        ({allProducts.filter(p => lang.code === "all" || (CATEGORY_LANG_MAP[p.category] || "en") === lang.code).length})
+                        ({allProducts.filter(p => (CATEGORY_LANG_MAP[p.category] || "en") === lang.code).length})
                       </span>
                     )}
                   </button>
