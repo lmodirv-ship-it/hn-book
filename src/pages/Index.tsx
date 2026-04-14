@@ -20,6 +20,13 @@ const ITEMS_PER_PAGE = 100;
 
 const ALL_CATEGORIES = ["كتب", "بطاقات", "قوالب", "صور", "وثائق", "عروض", "أخرى"];
 
+const HIDDEN_FROM_NAV = new Set([
+  "التاريخ", "العلوم", "الطب", "الأدب العربي", "الدين الإسلامي",
+  "تطوير الذات", "الفلسفة والفكر", "اللغة العربية", "الاقتصاد والمال",
+  "التكنولوجيا", "Arabic literature", "Literature", "Philosophy",
+  "Biography & Autobiography", "Photography", "مطبخ الدار",
+]);
+
 const Index = () => {
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -51,7 +58,7 @@ const Index = () => {
     const dbCats = [...new Set(products.map((p) => p.category))];
     const merged = [...ALL_CATEGORIES];
     dbCats.forEach((c) => { if (!merged.includes(c)) merged.push(c); });
-    return merged.filter((c) => products.some((p) => p.category === c));
+    return merged.filter((c) => products.some((p) => p.category === c) && !HIDDEN_FROM_NAV.has(c));
   }, [products]);
 
   const productCounts = useMemo(() => {
