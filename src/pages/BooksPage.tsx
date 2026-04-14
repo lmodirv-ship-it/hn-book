@@ -6,8 +6,18 @@ import Footer from "@/components/Footer";
 import type { Product } from "@/lib/products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, ChevronDown, Loader2, Globe, BookOpen } from "lucide-react";
+import { Search, ChevronDown, Loader2, Globe, BookOpen, ArrowUpDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+
+type SortOption = "newest" | "price_asc" | "price_desc" | "name" | "bestseller";
+
+const SORT_OPTIONS: { code: SortOption; label: string; icon: string }[] = [
+  { code: "newest", label: "الأحدث", icon: "🕐" },
+  { code: "price_asc", label: "الأقل سعراً", icon: "💰" },
+  { code: "price_desc", label: "الأغلى سعراً", icon: "💎" },
+  { code: "name", label: "أبجدياً", icon: "🔤" },
+  { code: "bestseller", label: "الأكثر مبيعاً", icon: "⭐" },
+];
 
 const ITEMS_PER_PAGE = 60;
 
