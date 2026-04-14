@@ -31,14 +31,18 @@ serve(async (req) => {
       });
     }
 
-    const pdfData = await response.arrayBuffer();
+    const fileData = await response.arrayBuffer();
+    const contentType = response.headers.get("content-type") || "application/octet-stream";
+    const contentLength = response.headers.get("content-length") || fileData.byteLength.toString();
+    const contentDisposition = response.headers.get("content-disposition");
 
-    return new Response(pdfData, {
+    return new Response(fileData, {
       headers: {
         ...corsHeaders,
-        "Content-Type": "application/pdf",
-        "Content-Length": pdfData.byteLength.toString(),
-        "Cache-Control": "public, max-age=86400",
+        "Content-Type": contentType,
+        "Content-Length": contentLength,
+        "Cache-Control": response.headers.get("cache-control") || "public, max-age=86400",
+        ...(contentDisposition ? { "Content-Disposition": contentDisposition } : {}),
       },
     });
   } catch (error) {
