@@ -8,7 +8,7 @@ import Footer from "@/components/Footer";
 import type { Product } from "@/lib/products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, ChevronDown, Loader2, Globe, BookOpen, ArrowUpDown } from "lucide-react";
+import { Search, ChevronDown, Loader2, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { mapProductRowToProduct } from "@/lib/product-utils";
 
@@ -23,16 +23,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   "أخرى": "أخرى",
 };
 
-type SortOption = "newest" | "oldest" | "price_asc" | "price_desc" | "name_asc";
 type LangCode = "all" | "ar" | "fr" | "en";
-
-const SORT_OPTIONS: { code: SortOption; label: string; icon: string }[] = [
-  { code: "newest", label: "الأحدث", icon: "🕐" },
-  { code: "oldest", label: "الأقدم", icon: "📅" },
-  { code: "price_asc", label: "الأقل سعراً", icon: "💰" },
-  { code: "price_desc", label: "الأغلى سعراً", icon: "💎" },
-  { code: "name_asc", label: "أبجدياً", icon: "🔤" },
-];
 
 const LANGUAGES = [
   { code: "all" as LangCode, label: "الكل", flag: "🌍" },
@@ -83,7 +74,6 @@ const CategoryPage = () => {
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [selectedLang, setSelectedLang] = useState<LangCode>("all");
   const [selectedSubCategory, setSelectedSubCategory] = useState<string>("all");
 
@@ -171,24 +161,8 @@ const CategoryPage = () => {
       );
     }
 
-    // Sort
-    switch (sortBy) {
-      case "oldest":
-        result.reverse();
-        break;
-      case "price_asc":
-        result.sort((a, b) => a.price - b.price);
-        break;
-      case "price_desc":
-        result.sort((a, b) => b.price - a.price);
-        break;
-      case "name_asc":
-        result.sort((a, b) => a.name.localeCompare(b.name, "ar"));
-        break;
-    }
-
     return result;
-  }, [searchQuery, products, sortBy, selectedLang, selectedSubCategory]);
+  }, [searchQuery, products, selectedLang, selectedSubCategory]);
 
   const visibleProducts = filteredProducts.slice(0, visibleCount);
   const hasMore = visibleCount < filteredProducts.length;
@@ -223,10 +197,6 @@ const CategoryPage = () => {
             <div className="space-y-3 mb-8">
               {/* Language Row */}
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs text-muted-foreground flex items-center gap-1.5 ml-2">
-                  <Globe className="w-3.5 h-3.5" />
-                  اللغة:
-                </span>
                 {LANGUAGES.map((lang) => (
                   <button
                     key={lang.code}
@@ -259,10 +229,6 @@ const CategoryPage = () => {
                     className="overflow-hidden"
                   >
                     <div className="flex flex-wrap items-center gap-2 pr-6 border-r-2 border-emerald-500/30">
-                      <span className="text-xs text-muted-foreground flex items-center gap-1.5 ml-2">
-                        <BookOpen className="w-3.5 h-3.5" />
-                        التخصص:
-                      </span>
                       <button
                         onClick={() => { setSelectedSubCategory("all"); setVisibleCount(ITEMS_PER_PAGE); }}
                         className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
@@ -292,26 +258,6 @@ const CategoryPage = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
-
-              {/* Sort Row */}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs text-muted-foreground flex items-center gap-1.5 ml-2">
-                  <ArrowUpDown className="w-3.5 h-3.5" />
-                  الفرز:
-                </span>
-                {SORT_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.code}
-                    onClick={() => setSortBy(opt.code)}
-                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
-                      sortBy === opt.code ? btnActive : btnInactive
-                    }`}
-                  >
-                    <span className="text-sm">{opt.icon}</span>
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
 
               {/* Search */}
               <div className="relative max-w-md">
