@@ -252,30 +252,41 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                   )}
                 </React.Fragment>
               ))}
-              <motion.button
-                onClick={() => navigate("/auth")}
-                className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border border-primary/50 bg-primary/20 backdrop-blur-sm"
-                animate={{
-                  boxShadow: [
-                    "inset 0 0 8px -2px hsl(199,89%,48%,0.3), 0 0 10px -2px hsl(199,89%,48%,0.2)",
-                    "inset 0 0 20px -2px hsl(199,89%,48%,0.7), 0 0 25px -2px hsl(199,89%,48%,0.5)",
-                    "inset 0 0 8px -2px hsl(199,89%,48%,0.3), 0 0 10px -2px hsl(199,89%,48%,0.2)",
-                  ],
-                  borderColor: [
-                    "hsl(199,89%,48%,0.4)",
-                    "hsl(199,89%,48%,0.8)",
-                    "hsl(199,89%,48%,0.4)",
-                  ],
-                }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.9 }}
-                whileHover={{
-                  boxShadow: "inset 0 0 25px -2px hsl(199,89%,48%,0.85), 0 0 35px -2px hsl(199,89%,48%,0.6)",
-                  borderColor: "hsl(199,89%,48%,0.9)",
-                  scale: 1.05,
-                }}
-              >
-                {t("nav.getStarted")}
-              </motion.button>
+              {user ? (
+                <motion.button
+                  onClick={handleLogout}
+                  className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border border-destructive/50 bg-destructive/20 backdrop-blur-sm flex items-center gap-1"
+                  whileHover={{ scale: 1.05 }}
+                >
+                  <LogOut className="h-3 w-3" />
+                  خروج
+                </motion.button>
+              ) : (
+                <motion.button
+                  onClick={() => navigate("/auth")}
+                  className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border border-primary/50 bg-primary/20 backdrop-blur-sm"
+                  animate={{
+                    boxShadow: [
+                      "inset 0 0 8px -2px hsl(199,89%,48%,0.3), 0 0 10px -2px hsl(199,89%,48%,0.2)",
+                      "inset 0 0 20px -2px hsl(199,89%,48%,0.7), 0 0 25px -2px hsl(199,89%,48%,0.5)",
+                      "inset 0 0 8px -2px hsl(199,89%,48%,0.3), 0 0 10px -2px hsl(199,89%,48%,0.2)",
+                    ],
+                    borderColor: [
+                      "hsl(199,89%,48%,0.4)",
+                      "hsl(199,89%,48%,0.8)",
+                      "hsl(199,89%,48%,0.4)",
+                    ],
+                  }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.9 }}
+                  whileHover={{
+                    boxShadow: "inset 0 0 25px -2px hsl(199,89%,48%,0.85), 0 0 35px -2px hsl(199,89%,48%,0.6)",
+                    borderColor: "hsl(199,89%,48%,0.9)",
+                    scale: 1.05,
+                  }}
+                >
+                  {t("nav.getStarted")}
+                </motion.button>
+              )}
             </div>
 
             {/* Categories box */}
