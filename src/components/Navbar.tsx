@@ -339,14 +339,24 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
           >
             <nav className="flex flex-col gap-1.5 px-4 py-3">
               {navLinks.map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className="rounded-xl px-4 py-3 text-sm font-semibold text-white transition-all duration-300 bg-primary/10 border border-primary/20 hover:bg-primary/25 hover:border-primary/40 hover:shadow-[0_0_15px_-3px_hsl(199,89%,48%,0.3)] backdrop-blur-sm"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {link.label}
-                </a>
+                link.isRoute ? (
+                  <button
+                    key={link.href}
+                    onClick={() => { navigate(link.href); setMobileOpen(false); }}
+                    className="rounded-xl px-4 py-3 text-sm font-semibold text-white transition-all duration-300 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/25 hover:border-emerald-500/40 backdrop-blur-sm text-right"
+                  >
+                    {link.label}
+                  </button>
+                ) : (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    className="rounded-xl px-4 py-3 text-sm font-semibold text-white transition-all duration-300 bg-primary/10 border border-primary/20 hover:bg-primary/25 hover:border-primary/40 hover:shadow-[0_0_15px_-3px_hsl(199,89%,48%,0.3)] backdrop-blur-sm"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {link.label}
+                  </a>
+                )
               ))}
 
               {/* Mobile categories */}
