@@ -98,6 +98,7 @@ const BooksPage = () => {
   const [selectedLang, setSelectedLang] = useState<LangCode>("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const [detectedLang, setDetectedLang] = useState<LangCode>("ar");
 
