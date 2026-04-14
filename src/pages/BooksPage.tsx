@@ -6,8 +6,18 @@ import Footer from "@/components/Footer";
 import type { Product } from "@/lib/products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, ChevronDown, Loader2, Globe, BookOpen } from "lucide-react";
+import { Search, ChevronDown, Loader2, Globe, BookOpen, ArrowUpDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+
+type SortOption = "newest" | "price_asc" | "price_desc" | "name" | "bestseller";
+
+const SORT_OPTIONS: { code: SortOption; label: string; icon: string }[] = [
+  { code: "newest", label: "الأحدث", icon: "🕐" },
+  { code: "price_asc", label: "الأقل سعراً", icon: "💰" },
+  { code: "price_desc", label: "الأغلى سعراً", icon: "💎" },
+  { code: "name", label: "أبجدياً", icon: "🔤" },
+  { code: "bestseller", label: "الأكثر مبيعاً", icon: "⭐" },
+];
 
 const ITEMS_PER_PAGE = 60;
 
@@ -88,6 +98,7 @@ const BooksPage = () => {
   const [selectedLang, setSelectedLang] = useState<LangCode>("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const [detectedLang, setDetectedLang] = useState<LangCode>("ar");
 
@@ -186,8 +197,20 @@ const BooksPage = () => {
     return result;
   }, [allProducts, selectedLang, selectedCategory, searchQuery]);
 
-  const visibleProducts = filteredProducts.slice(0, visibleCount);
-  const hasMore = visibleCount < filteredProducts.length;
+  // Sort products
+  const sortedProducts = useMemo(() => {
+    const result = [...filteredProducts];
+    switch (sortBy) {
+      case "price_asc": return result.sort((a, b) => a.price - b.price);
+      case "price_desc": return result.sort((a, b) => b.price - a.price);
+      case "name": return result.sort((a, b) => a.name.localeCompare(b.name, "ar"));
+      case "bestseller": return result.sort((a, b) => (b.badge ? 1 : 0) - (a.badge ? 1 : 0));
+      default: return result; // newest - already sorted by created_at desc
+    }
+  }, [filteredProducts, sortBy]);
+
+  const visibleProducts = sortedProducts.slice(0, visibleCount);
+  const hasMore = visibleCount < sortedProducts.length;
 
   // Category counts
   const categoryCounts = useMemo(() => {
@@ -298,6 +321,28 @@ const BooksPage = () => {
                 })}
               </div>
 
+              {/* Sort Row */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted-foreground flex items-center gap-1.5 ml-2">
+                  <ArrowUpDown className="w-3.5 h-3.5" />
+                  الفرز:
+                </span>
+                {SORT_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.code}
+                    onClick={() => setSortBy(opt.code)}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
+                      sortBy === opt.code
+                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_12px_-3px_rgba(16,185,129,0.4)]"
+                        : "bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    <span className="text-sm">{opt.icon}</span>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
               {/* Search */}
               <div className="relative max-w-md">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
@@ -345,7 +390,7 @@ const BooksPage = () => {
                       className="gap-2 rounded-full px-8 py-5 border-border/20 hover:border-primary/20 hover:bg-card/40 transition-all"
                     >
                       <ChevronDown className="h-4 w-4" />
-                      تحميل المزيد ({filteredProducts.length - visibleCount} كتاب متبقي)
+                      تحميل المزيد ({sortedProducts.length - visibleCount} كتاب متبقي)
                     </Button>
                   </div>
                 )}
