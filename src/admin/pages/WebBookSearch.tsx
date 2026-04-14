@@ -53,7 +53,7 @@ const WebBookSearch = () => {
   const [importing, setImporting] = useState(false);
   const [books, setBooks] = useState<WebBook[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [stats, setStats] = useState<{ total: number; verified: number; imported: number } | null>(null);
+  const [stats, setStats] = useState<{ total: number; verified: number; imported: number; stored_locally?: number } | null>(null);
   const [importProgress, setImportProgress] = useState(0);
 
   const handleSearch = async () => {
@@ -162,7 +162,7 @@ const WebBookSearch = () => {
       });
       
       setBooks(updatedBooks);
-      setStats(prev => prev ? { ...prev, imported: data.imported } : null);
+      setStats(prev => prev ? { ...prev, imported: data.imported, stored_locally: data.stored_locally } : null);
 
       toast.success(`✅ تم استيراد ${data.imported} كتاب وتخزين ملفاتهم محلياً`);
     } catch (err: any) {
@@ -393,6 +393,16 @@ const WebBookSearch = () => {
                             <CheckCircle2 className="w-2.5 h-2.5 ml-0.5" /> مستورد — {book._code}
                           </Badge>
                         )}
+                        {book._imported && book._stored_locally && (
+                          <Badge variant="secondary" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                            <Download className="w-2.5 h-2.5 ml-0.5" /> مخزّن محلياً ✅
+                          </Badge>
+                        )}
+                        {book._imported && book._stored_locally === false && (
+                          <Badge variant="secondary" className="text-[10px] bg-orange-500/10 text-orange-400 border-orange-500/20">
+                            <AlertTriangle className="w-2.5 h-2.5 ml-0.5" /> بدون ملف ⚠️
+                          </Badge>
+                        )}
                         {book.language && (
                           <span className="text-[10px] text-muted-foreground">{book.language}</span>
                         )}
@@ -485,7 +495,7 @@ const WebBookSearch = () => {
                 <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-green-400">
-                    ✅ تم استيراد {stats.imported} كتاب — مع PDF والغلاف والمعلومات
+                    ✅ تم استيراد {stats.imported} كتاب — {stats.stored_locally || 0} مخزّن محلياً مع PDF والغلاف
                   </p>
                 </div>
                 <Button
