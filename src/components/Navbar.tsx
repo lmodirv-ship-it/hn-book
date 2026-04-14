@@ -51,6 +51,7 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
 
   const navLinks = [
     { href: "#products", label: t("nav.products") },
+    { href: "/books", label: "📚 كتب", isRoute: true },
     { href: "#features", label: t("nav.features") },
     { href: "#pricing", label: t("nav.pricing") },
   ];
