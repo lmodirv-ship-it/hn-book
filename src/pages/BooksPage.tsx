@@ -390,7 +390,7 @@ const BooksPage = () => {
                       className="gap-2 rounded-full px-8 py-5 border-border/20 hover:border-primary/20 hover:bg-card/40 transition-all"
                     >
                       <ChevronDown className="h-4 w-4" />
-                      تحميل المزيد ({filteredProducts.length - visibleCount} كتاب متبقي)
+                      تحميل المزيد ({sortedProducts.length - visibleCount} كتاب متبقي)
                     </Button>
                   </div>
                 )}
