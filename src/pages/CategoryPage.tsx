@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useParams } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import ParticleCanvas from "@/components/ParticleCanvas";
 import Navbar from "@/components/Navbar";
 import ProductCard from "@/components/ProductCard";
@@ -7,7 +8,7 @@ import Footer from "@/components/Footer";
 import type { Product } from "@/lib/products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, ChevronDown, Loader2, SlidersHorizontal, ArrowUpDown } from "lucide-react";
+import { Search, ChevronDown, Loader2, Globe, BookOpen, ArrowUpDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { mapProductRowToProduct } from "@/lib/product-utils";
 
@@ -23,22 +24,57 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 type SortOption = "newest" | "oldest" | "price_asc" | "price_desc" | "name_asc";
-type PriceFilter = "all" | "free" | "paid" | "under50" | "under100";
+type LangCode = "all" | "ar" | "fr" | "en";
 
-const SORT_LABELS: Record<SortOption, string> = {
-  newest: "الأحدث",
-  oldest: "الأقدم",
-  price_asc: "السعر: من الأقل",
-  price_desc: "السعر: من الأعلى",
-  name_asc: "الاسم أ-ي",
+const SORT_OPTIONS: { code: SortOption; label: string; icon: string }[] = [
+  { code: "newest", label: "الأحدث", icon: "🕐" },
+  { code: "oldest", label: "الأقدم", icon: "📅" },
+  { code: "price_asc", label: "الأقل سعراً", icon: "💰" },
+  { code: "price_desc", label: "الأغلى سعراً", icon: "💎" },
+  { code: "name_asc", label: "أبجدياً", icon: "🔤" },
+];
+
+const LANGUAGES = [
+  { code: "all" as LangCode, label: "الكل", flag: "🌍" },
+  { code: "ar" as LangCode, label: "العربية", flag: "🇸🇦" },
+  { code: "fr" as LangCode, label: "Français", flag: "🇫🇷" },
+  { code: "en" as LangCode, label: "English", flag: "🇬🇧" },
+];
+
+const CATEGORY_LANG_MAP: Record<string, LangCode> = {
+  "التاريخ": "ar",
+  "العلوم": "ar",
+  "الطب": "ar",
+  "الأدب العربي": "ar",
+  "الدين الإسلامي": "ar",
+  "تطوير الذات": "ar",
+  "الفلسفة والفكر": "ar",
+  "اللغة العربية": "ar",
+  "الاقتصاد والمال": "ar",
+  "التكنولوجيا": "ar",
+  "كتب": "ar",
+  "Arabic literature": "ar",
+  "Literature": "en",
+  "Philosophy": "en",
+  "Biography & Autobiography": "en",
 };
 
-const PRICE_LABELS: Record<PriceFilter, string> = {
-  all: "الكل",
-  free: "مجاني",
-  paid: "مدفوع",
-  under50: "أقل من 50 د.م",
-  under100: "أقل من 100 د.م",
+const CATEGORY_DISPLAY: Record<string, { label: string; icon: string }> = {
+  "التاريخ": { label: "التاريخ", icon: "🏛️" },
+  "العلوم": { label: "العلوم", icon: "🔬" },
+  "الطب": { label: "الطب", icon: "🏥" },
+  "الأدب العربي": { label: "الأدب", icon: "📜" },
+  "الدين الإسلامي": { label: "الدين", icon: "🕌" },
+  "تطوير الذات": { label: "تطوير الذات", icon: "🧠" },
+  "الفلسفة والفكر": { label: "الفلسفة", icon: "💭" },
+  "اللغة العربية": { label: "اللغة العربية", icon: "✍️" },
+  "الاقتصاد والمال": { label: "الاقتصاد", icon: "💰" },
+  "التكنولوجيا": { label: "التكنولوجيا", icon: "💻" },
+  "كتب": { label: "كتب عامة", icon: "📚" },
+  "Arabic literature": { label: "أدب عربي كلاسيكي", icon: "📖" },
+  "Literature": { label: "Literature", icon: "📕" },
+  "Philosophy": { label: "Philosophy", icon: "🤔" },
+  "Biography & Autobiography": { label: "Biography", icon: "👤" },
 };
 
 const CategoryPage = () => {
@@ -48,8 +84,8 @@ const CategoryPage = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
-  const [priceFilter, setPriceFilter] = useState<PriceFilter>("all");
-  const [showFilters, setShowFilters] = useState(false);
+  const [selectedLang, setSelectedLang] = useState<LangCode>("all");
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string>("all");
 
   const categoryName = category ? decodeURIComponent(category) : "";
   const categoryLabel = CATEGORY_LABELS[categoryName] || categoryName;
@@ -75,8 +111,55 @@ const CategoryPage = () => {
     fetchProducts();
   }, [categoryName]);
 
+  // Available subcategories for selected language
+  const availableSubCategories = useMemo(() => {
+    const cats = new Set<string>();
+    products.forEach(p => {
+      const lang = CATEGORY_LANG_MAP[p.category] || "en";
+      if (selectedLang === "all" || lang === selectedLang) {
+        cats.add(p.category);
+      }
+    });
+    return Array.from(cats).sort();
+  }, [products, selectedLang]);
+
+  // Language counts
+  const langCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    products.forEach(p => {
+      const lang = CATEGORY_LANG_MAP[p.category] || "en";
+      counts[lang] = (counts[lang] || 0) + 1;
+    });
+    return counts;
+  }, [products]);
+
+  // Subcategory counts
+  const subCatCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    products.forEach(p => {
+      const lang = CATEGORY_LANG_MAP[p.category] || "en";
+      if (selectedLang === "all" || lang === selectedLang) {
+        counts[p.category] = (counts[p.category] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [products, selectedLang]);
+
   const filteredProducts = useMemo(() => {
     let result = [...products];
+
+    // Language filter
+    if (selectedLang !== "all") {
+      result = result.filter(p => {
+        const lang = CATEGORY_LANG_MAP[p.category] || "en";
+        return lang === selectedLang;
+      });
+    }
+
+    // Subcategory filter
+    if (selectedSubCategory !== "all") {
+      result = result.filter(p => p.category === selectedSubCategory);
+    }
 
     // Search
     if (searchQuery.trim()) {
@@ -86,22 +169,6 @@ const CategoryPage = () => {
           p.name.toLowerCase().includes(q) ||
           p.shortDescription.toLowerCase().includes(q)
       );
-    }
-
-    // Price filter
-    switch (priceFilter) {
-      case "free":
-        result = result.filter((p) => p.price === 0);
-        break;
-      case "paid":
-        result = result.filter((p) => p.price > 0);
-        break;
-      case "under50":
-        result = result.filter((p) => p.price < 50);
-        break;
-      case "under100":
-        result = result.filter((p) => p.price < 100);
-        break;
     }
 
     // Sort
@@ -121,13 +188,16 @@ const CategoryPage = () => {
     }
 
     return result;
-  }, [searchQuery, products, sortBy, priceFilter]);
+  }, [searchQuery, products, sortBy, selectedLang, selectedSubCategory]);
 
   const visibleProducts = filteredProducts.slice(0, visibleCount);
   const hasMore = visibleCount < filteredProducts.length;
 
+  const btnActive = "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_12px_-3px_rgba(16,185,129,0.4)]";
+  const btnInactive = "bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-white";
+
   return (
-    <div className="relative min-h-screen noise-bg">
+    <div className="relative min-h-screen noise-bg" dir="rtl">
       <ParticleCanvas />
       <div className="relative z-10 pt-14">
         <Navbar
@@ -137,93 +207,125 @@ const CategoryPage = () => {
           productCounts={{}}
         />
 
-        <section className="relative py-20">
+        <section className="relative py-8 sm:py-12">
           <div className="container mx-auto px-4">
             {/* Header */}
-            <div className="flex flex-col gap-4 mb-8">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                  <h1 className="text-3xl font-bold text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
-                    {categoryLabel}
-                  </h1>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {filteredProducts.length} منتج
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <div className="relative flex-1 sm:w-64">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
-                    <Input
-                      placeholder="بحث..."
-                      value={searchQuery}
-                      onChange={(e) => {
-                        setSearchQuery(e.target.value);
-                        setVisibleCount(ITEMS_PER_PAGE);
-                      }}
-                      className="pl-10 rounded-xl bg-card/30 border-border/20 focus:border-primary/30 transition-colors"
-                    />
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setShowFilters(!showFilters)}
-                    className={`rounded-xl border-border/20 hover:border-primary/30 shrink-0 ${showFilters ? 'bg-primary/20 border-primary/40' : ''}`}
+            <div className="text-center mb-8">
+              <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+                {categoryLabel}
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {filteredProducts.length} منتج
+              </p>
+            </div>
+
+            {/* Filters */}
+            <div className="space-y-3 mb-8">
+              {/* Language Row */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted-foreground flex items-center gap-1.5 ml-2">
+                  <Globe className="w-3.5 h-3.5" />
+                  اللغة:
+                </span>
+                {LANGUAGES.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => {
+                      setSelectedLang(lang.code);
+                      setSelectedSubCategory("all");
+                      setVisibleCount(ITEMS_PER_PAGE);
+                    }}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
+                      selectedLang === lang.code ? btnActive : btnInactive
+                    }`}
                   >
-                    <SlidersHorizontal className="h-4 w-4" />
-                  </Button>
-                </div>
+                    <span className="text-sm">{lang.flag}</span>
+                    {lang.label}
+                    {lang.code !== "all" && langCounts[lang.code] ? (
+                      <span className="text-[10px] opacity-60">({langCounts[lang.code]})</span>
+                    ) : null}
+                  </button>
+                ))}
               </div>
 
-              {/* Filters bar */}
-              {showFilters && (
-                <div className="flex flex-col sm:flex-row gap-3 p-4 rounded-xl bg-black/60 border border-white/10 backdrop-blur-sm">
-                  {/* Sort */}
-                  <div className="flex-1">
-                    <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1.5">
-                      <ArrowUpDown className="h-3 w-3" />
-                      الترتيب
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {(Object.keys(SORT_LABELS) as SortOption[]).map((key) => (
-                        <button
-                          key={key}
-                          onClick={() => { setSortBy(key); setVisibleCount(ITEMS_PER_PAGE); }}
-                          className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
-                            sortBy === key
-                              ? "bg-primary/30 text-white border border-primary/60 shadow-[0_0_10px_-2px_hsl(199,89%,48%,0.4)]"
-                              : "bg-white/5 text-muted-foreground border border-white/10 hover:bg-white/10"
-                          }`}
-                        >
-                          {SORT_LABELS[key]}
-                        </button>
-                      ))}
+              {/* Subcategory Row */}
+              <AnimatePresence>
+                {selectedLang !== "all" && availableSubCategories.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="flex flex-wrap items-center gap-2 pr-6 border-r-2 border-emerald-500/30">
+                      <span className="text-xs text-muted-foreground flex items-center gap-1.5 ml-2">
+                        <BookOpen className="w-3.5 h-3.5" />
+                        التخصص:
+                      </span>
+                      <button
+                        onClick={() => { setSelectedSubCategory("all"); setVisibleCount(ITEMS_PER_PAGE); }}
+                        className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
+                          selectedSubCategory === "all" ? btnActive : btnInactive
+                        }`}
+                      >
+                        الكل
+                      </button>
+                      {availableSubCategories.map((cat) => {
+                        const display = CATEGORY_DISPLAY[cat] || { label: cat, icon: "📄" };
+                        const count = subCatCounts[cat] || 0;
+                        return (
+                          <button
+                            key={cat}
+                            onClick={() => { setSelectedSubCategory(cat); setVisibleCount(ITEMS_PER_PAGE); }}
+                            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
+                              selectedSubCategory === cat ? btnActive : btnInactive
+                            }`}
+                          >
+                            <span className="text-sm">{display.icon}</span>
+                            {display.label}
+                            <span className="text-[10px] opacity-60">({count})</span>
+                          </button>
+                        );
+                      })}
                     </div>
-                  </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-                  {/* Price filter */}
-                  <div className="flex-1">
-                    <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1.5">
-                      <SlidersHorizontal className="h-3 w-3" />
-                      السعر
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {(Object.keys(PRICE_LABELS) as PriceFilter[]).map((key) => (
-                        <button
-                          key={key}
-                          onClick={() => { setPriceFilter(key); setVisibleCount(ITEMS_PER_PAGE); }}
-                          className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
-                            priceFilter === key
-                              ? "bg-primary/30 text-white border border-primary/60 shadow-[0_0_10px_-2px_hsl(199,89%,48%,0.4)]"
-                              : "bg-white/5 text-muted-foreground border border-white/10 hover:bg-white/10"
-                          }`}
-                        >
-                          {PRICE_LABELS[key]}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Sort Row */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted-foreground flex items-center gap-1.5 ml-2">
+                  <ArrowUpDown className="w-3.5 h-3.5" />
+                  الفرز:
+                </span>
+                {SORT_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.code}
+                    onClick={() => setSortBy(opt.code)}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
+                      sortBy === opt.code ? btnActive : btnInactive
+                    }`}
+                  >
+                    <span className="text-sm">{opt.icon}</span>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Search */}
+              <div className="relative max-w-md">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
+                <Input
+                  placeholder="بحث..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setVisibleCount(ITEMS_PER_PAGE);
+                  }}
+                  className="pl-10 rounded-xl bg-card/30 border-border/20 focus:border-primary/30 transition-colors"
+                />
+              </div>
             </div>
 
             {loading ? (
