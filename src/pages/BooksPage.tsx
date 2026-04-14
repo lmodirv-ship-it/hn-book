@@ -22,13 +22,6 @@ const LANGUAGES = [
   { code: "en" as LangCode, label: "English", flag: "🇬🇧" },
 ];
 
-const SUBCATEGORIES: string[] = [
-  "التاريخ", "العلوم", "الطب", "الأدب العربي", "الدين الإسلامي",
-  "تطوير الذات", "الفلسفة والفكر", "اللغة العربية", "الاقتصاد والمال",
-  "التكنولوجيا", "كتب", "Arabic literature", "Literature", "Philosophy",
-  "Biography & Autobiography", "Photography", "مطبخ الدار",
-];
-
 const CATEGORY_LANG_MAP: Record<string, LangCode> = {
   "التاريخ": "ar",
   "العلوم": "ar",
@@ -69,16 +62,6 @@ const CATEGORY_DISPLAY: Record<string, { label: string; icon: string }> = {
   "Photography": { label: "Photography", icon: "📷" },
 };
 
-const COUNTRY_LANG: Record<string, LangCode> = {
-  SA: "ar", AE: "ar", EG: "ar", MA: "ar", DZ: "ar", TN: "ar",
-  LY: "ar", IQ: "ar", SY: "ar", JO: "ar", LB: "ar", KW: "ar",
-  QA: "ar", BH: "ar", OM: "ar", YE: "ar", SD: "ar", MR: "ar",
-  PS: "ar", DJ: "ar", SO: "ar", KM: "ar",
-  FR: "fr", BE: "fr", CH: "fr", CA: "fr", SN: "fr", CI: "fr",
-  ML: "fr", BF: "fr", NE: "fr", TD: "fr", CM: "fr", GA: "fr",
-  CG: "fr", CD: "fr", MG: "fr", HT: "fr", MC: "fr", LU: "fr",
-};
-
 function detectLanguage(): LangCode {
   const navLang = navigator.language?.toLowerCase() || "";
   if (navLang.startsWith("ar")) return "ar";
@@ -87,36 +70,12 @@ function detectLanguage(): LangCode {
   return "ar";
 }
 
-const glowAnim = {
-  boxShadow: [
-    "inset 0 0 8px -2px hsl(199,89%,48%,0.3), 0 0 10px -2px hsl(199,89%,48%,0.2)",
-    "inset 0 0 20px -2px hsl(199,89%,48%,0.7), 0 0 25px -2px hsl(199,89%,48%,0.5)",
-    "inset 0 0 8px -2px hsl(199,89%,48%,0.3), 0 0 10px -2px hsl(199,89%,48%,0.2)",
-  ],
-  borderColor: [
-    "hsl(199,89%,48%,0.4)",
-    "hsl(199,89%,48%,0.8)",
-    "hsl(199,89%,48%,0.4)",
-  ],
-};
-const glowAnimActive = {
-  boxShadow: [
-    "inset 0 0 15px -2px rgba(16,185,129,0.5), 0 0 20px -2px rgba(16,185,129,0.4)",
-    "inset 0 0 25px -2px rgba(16,185,129,0.85), 0 0 35px -2px rgba(16,185,129,0.65)",
-    "inset 0 0 15px -2px rgba(16,185,129,0.5), 0 0 20px -2px rgba(16,185,129,0.4)",
-  ],
-  borderColor: [
-    "rgba(16,185,129,0.5)",
-    "rgba(16,185,129,0.9)",
-    "rgba(16,185,129,0.5)",
-  ],
-};
-const glowHover = {
-  boxShadow: "inset 0 0 25px -2px hsl(199,89%,48%,0.85), 0 0 35px -2px hsl(199,89%,48%,0.6)",
-  borderColor: "hsl(199,89%,48%,0.9)",
-  scale: 1.05,
-};
-const btnBase = "rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border backdrop-blur-sm";
+const getFilterButtonClass = (active: boolean) =>
+  `rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border transition-all duration-200 hover:scale-105 ${
+    active
+      ? "border-emerald-500/50 bg-emerald-500/20 shadow-[0_0_18px_-5px_rgba(16,185,129,0.4)]"
+      : "border-primary/50 bg-primary/20 shadow-[0_0_16px_-6px_hsl(199,89%,48%,0.25)] hover:border-primary/80"
+  }`;
 
 const BooksPage = () => {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -127,39 +86,34 @@ const BooksPage = () => {
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
 
   useEffect(() => {
-    const detected = detectLanguage();
-    setSelectedLang(detected);
-    fetch("https://ipapi.co/json/")
-      .then(r => r.json())
-      .then(data => {
-        if (data?.country_code) {
-          const countryLang = COUNTRY_LANG[data.country_code] || "en";
-          setSelectedLang(countryLang);
-        }
-      })
-      .catch(() => {});
+    setSelectedLang(detectLanguage());
   }, []);
 
   useEffect(() => {
     const fetchBooks = async () => {
-      setLoading(true);
-      const { data } = await supabase
-        .from("products")
-        .select("*")
-        .eq("is_active", true)
-        .not("pdf_url", "is", null)
-        .neq("pdf_url", "")
-        .order("created_at", { ascending: false })
-        .limit(1000);
-      if (data) setAllProducts(data.map(mapProductRowToProduct));
-      setLoading(false);
+      try {
+        setLoading(true);
+        const { data } = await supabase
+          .from("products")
+          .select("*")
+          .eq("is_active", true)
+          .not("pdf_url", "is", null)
+          .neq("pdf_url", "")
+          .order("created_at", { ascending: false })
+          .limit(1000);
+
+        if (data) setAllProducts(data.map(mapProductRowToProduct));
+      } finally {
+        setLoading(false);
+      }
     };
+
     fetchBooks();
   }, []);
 
   const availableCategories = useMemo(() => {
     const cats = new Set<string>();
-    allProducts.forEach(p => {
+    allProducts.forEach((p) => {
       const lang = CATEGORY_LANG_MAP[p.category] || "en";
       if (selectedLang === "all" || lang === selectedLang) cats.add(p.category);
     });
@@ -168,7 +122,7 @@ const BooksPage = () => {
 
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    allProducts.forEach(p => {
+    allProducts.forEach((p) => {
       const lang = CATEGORY_LANG_MAP[p.category] || "en";
       if (selectedLang === "all" || lang === selectedLang) {
         counts[p.category] = (counts[p.category] || 0) + 1;
@@ -180,15 +134,15 @@ const BooksPage = () => {
   const filteredProducts = useMemo(() => {
     let result = allProducts;
     if (selectedLang !== "all") {
-      result = result.filter(p => (CATEGORY_LANG_MAP[p.category] || "en") === selectedLang);
+      result = result.filter((p) => (CATEGORY_LANG_MAP[p.category] || "en") === selectedLang);
     }
     if (selectedCategory !== "all") {
-      result = result.filter(p => p.category === selectedCategory);
+      result = result.filter((p) => p.category === selectedCategory);
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      result = result.filter(p =>
-        p.name.toLowerCase().includes(q) || p.shortDescription.toLowerCase().includes(q)
+      result = result.filter(
+        (p) => p.name.toLowerCase().includes(q) || p.shortDescription.toLowerCase().includes(q)
       );
     }
     return result;
@@ -205,33 +159,27 @@ const BooksPage = () => {
 
         <section className="relative py-8 sm:py-12">
           <div className="container mx-auto px-4">
-            {/* Filters */}
             <div className="space-y-3 mb-8">
-              {/* Language Row */}
               <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/10 border border-primary/30 shadow-[0_0_25px_-3px_hsl(199,89%,48%,0.2),inset_0_0_15px_-3px_hsl(199,89%,48%,0.1)] w-fit">
-                {LANGUAGES.map((lang, idx) => {
+                {LANGUAGES.map((lang) => {
                   const isActive = selectedLang === lang.code;
+                  const count = lang.code === "all"
+                    ? allProducts.length
+                    : allProducts.filter((p) => (CATEGORY_LANG_MAP[p.category] || "en") === lang.code).length;
+
                   return (
-                    <motion.button
+                    <button
                       key={lang.code}
                       onClick={() => {
                         setSelectedLang(lang.code);
                         setSelectedCategory("all");
                         setVisibleCount(ITEMS_PER_PAGE);
                       }}
-                      className={`${btnBase} ${isActive ? "border-emerald-500/50 bg-emerald-500/20" : "border-primary/50 bg-primary/20"}`}
-                      animate={isActive ? glowAnimActive : glowAnim}
-                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: idx * 0.3 }}
-                      whileHover={glowHover}
+                      className={getFilterButtonClass(isActive)}
                     >
-                      <span className="text-sm">{lang.flag}</span>{" "}
-                      {lang.label}
-                      {lang.code !== "all" && (
-                        <span className="text-[10px] opacity-60 ml-1">
-                          ({allProducts.filter(p => (CATEGORY_LANG_MAP[p.category] || "en") === lang.code).length})
-                        </span>
-                      )}
-                    </motion.button>
+                      <span className="text-sm">{lang.flag}</span> {lang.label}
+                      <span className="text-[10px] opacity-60 ml-1">({count})</span>
+                    </button>
                   );
                 })}
               </div>
@@ -245,32 +193,32 @@ const BooksPage = () => {
                     transition={{ duration: 0.25 }}
                     className="overflow-hidden"
                   >
-                    <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/10 border border-primary/30 shadow-[0_0_25px_-3px_hsl(199,89%,48%,0.2),inset_0_0_15px_-3px_hsl(199,89%,48%,0.1)] w-fit mr-6 border-r-2 border-r-emerald-500/30">
-                      <motion.button
-                        onClick={() => { setSelectedCategory("all"); setVisibleCount(ITEMS_PER_PAGE); }}
-                        className={`${btnBase} ${selectedCategory === "all" ? "border-emerald-500/50 bg-emerald-500/20" : "border-primary/50 bg-primary/20"}`}
-                        animate={selectedCategory === "all" ? glowAnimActive : glowAnim}
-                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                        whileHover={glowHover}
+                    <div className="flex flex-wrap items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/10 border border-primary/30 shadow-[0_0_25px_-3px_hsl(199,89%,48%,0.2),inset_0_0_15px_-3px_hsl(199,89%,48%,0.1)] w-fit mr-6 border-r-2 border-r-emerald-500/30">
+                      <button
+                        onClick={() => {
+                          setSelectedCategory("all");
+                          setVisibleCount(ITEMS_PER_PAGE);
+                        }}
+                        className={getFilterButtonClass(selectedCategory === "all")}
                       >
                         الكل ({filteredProducts.length})
-                      </motion.button>
-                      {availableCategories.map((cat, idx) => {
+                      </button>
+
+                      {availableCategories.map((cat) => {
                         const display = CATEGORY_DISPLAY[cat] || { label: cat, icon: "📄" };
                         const isActive = selectedCategory === cat;
                         return (
-                          <motion.button
+                          <button
                             key={cat}
-                            onClick={() => { setSelectedCategory(cat); setVisibleCount(ITEMS_PER_PAGE); }}
-                            className={`${btnBase} ${isActive ? "border-emerald-500/50 bg-emerald-500/20" : "border-primary/50 bg-primary/20"}`}
-                            animate={isActive ? glowAnimActive : glowAnim}
-                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: idx * 0.2 }}
-                            whileHover={glowHover}
+                            onClick={() => {
+                              setSelectedCategory(cat);
+                              setVisibleCount(ITEMS_PER_PAGE);
+                            }}
+                            className={getFilterButtonClass(isActive)}
                           >
-                            <span className="text-sm">{display.icon}</span>{" "}
-                            {display.label}
+                            <span className="text-sm">{display.icon}</span> {display.label}
                             <span className="text-[10px] opacity-60 ml-1">({categoryCounts[cat] || 0})</span>
-                          </motion.button>
+                          </button>
                         );
                       })}
                     </div>
@@ -278,13 +226,15 @@ const BooksPage = () => {
                 )}
               </AnimatePresence>
 
-              {/* Search */}
               <div className="relative max-w-md">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
                 <Input
                   placeholder="ابحث عن كتاب..."
                   value={searchQuery}
-                  onChange={(e) => { setSearchQuery(e.target.value); setVisibleCount(ITEMS_PER_PAGE); }}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setVisibleCount(ITEMS_PER_PAGE);
+                  }}
                   className="pl-10 rounded-xl bg-card/30 border-border/20 focus:border-primary/30 transition-colors"
                 />
               </div>
@@ -292,7 +242,6 @@ const BooksPage = () => {
               <p className="text-xs text-muted-foreground">{filteredProducts.length} كتاب</p>
             </div>
 
-            {/* Grid */}
             {loading ? (
               <div className="mt-20 flex flex-col items-center gap-3">
                 <Loader2 className="h-8 w-8 animate-spin text-primary/50" />

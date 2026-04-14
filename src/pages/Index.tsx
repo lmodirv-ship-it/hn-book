@@ -37,19 +37,23 @@ const Index = () => {
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("is_active", true)
-        .not("pdf_url", "is", null)
-        .neq("pdf_url", "")
-        .order("created_at", { ascending: false });
+      try {
+        const { data } = await supabase
+          .from("products")
+          .select("*")
+          .eq("is_active", true)
+          .not("pdf_url", "is", null)
+          .neq("pdf_url", "")
+          .order("created_at", { ascending: false })
+          .limit(1000);
 
-      if (data) {
-        const mapped: Product[] = data.map(mapProductRowToProduct);
-        setProducts(mapped);
+        if (data) {
+          const mapped: Product[] = data.map(mapProductRowToProduct);
+          setProducts(mapped);
+        }
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     fetchProducts();
   }, []);
