@@ -10,7 +10,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { query, count, autoImport } = await req.json();
+    const { query, count, autoImport, books: preSelectedBooks } = await req.json();
     if (!query || typeof query !== "string") {
       return new Response(JSON.stringify({ error: "يرجى إدخال كلمة البحث" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
