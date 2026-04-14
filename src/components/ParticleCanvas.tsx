@@ -5,6 +5,10 @@ const ParticleCanvas = () => {
   const animRef = useRef<number>(0);
 
   useEffect(() => {
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const isSmallScreen = window.innerWidth < 1024;
+    if (prefersReducedMotion || isSmallScreen) return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -17,20 +21,20 @@ const ParticleCanvas = () => {
     resize();
     window.addEventListener("resize", resize);
 
-    const particles = Array.from({ length: 15 }, () => ({
+    const particles = Array.from({ length: 10 }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.1,
-      vy: (Math.random() - 0.5) * 0.1,
-      size: Math.random() * 1.2 + 0.3,
-      opacity: Math.random() * 0.1 + 0.03,
+      vx: (Math.random() - 0.5) * 0.08,
+      vy: (Math.random() - 0.5) * 0.08,
+      size: Math.random() * 1 + 0.3,
+      opacity: Math.random() * 0.08 + 0.02,
       hue: Math.random() > 0.5 ? 199 : 170,
     }));
 
     let lastTime = 0;
 
     const animate = (time: number) => {
-      if (time - lastTime < 50) {
+      if (time - lastTime < 80) {
         animRef.current = requestAnimationFrame(animate);
         return;
       }
@@ -59,13 +63,7 @@ const ParticleCanvas = () => {
     };
   }, []);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      className="pointer-events-none fixed inset-0 z-0"
-      style={{ opacity: 0.3 }}
-    />
-  );
+  return <canvas ref={canvasRef} className="pointer-events-none fixed inset-0 z-0" style={{ opacity: 0.18 }} />;
 };
 
 export default ParticleCanvas;

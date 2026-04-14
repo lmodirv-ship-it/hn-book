@@ -37,8 +37,13 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
   const { t, locale, setLocale } = useI18n();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    let mounted = true;
+
+    const syncSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!mounted) return;
       setUser(session?.user ?? null);
+
       if (session?.user) {
         const { data } = await supabase
           .from("user_roles")
@@ -46,12 +51,37 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
           .eq("user_id", session.user.id)
           .eq("role", "admin")
           .maybeSingle();
-        setIsAdmin(!!data);
+
+        if (mounted) setIsAdmin(!!data);
+      } else {
+        setIsAdmin(false);
+      }
+    };
+
+    syncSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!mounted) return;
+      setUser(session?.user ?? null);
+
+      if (session?.user) {
+        const { data } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id)
+          .eq("role", "admin")
+          .maybeSingle();
+
+        if (mounted) setIsAdmin(!!data);
       } else {
         setIsAdmin(false);
       }
     });
-    return () => subscription.unsubscribe();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -88,56 +118,56 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled
-          ? "glass-glow shadow-[0_1px_30px_-8px_rgba(0,0,0,0.5)]"
-          : "bg-transparent"
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled ? "glass-glow shadow-[0_1px_20px_-8px_rgba(0,0,0,0.45)]" : "bg-transparent"
       }`}
-      style={{ borderBottom: scrolled ? undefined : 'none' }}
+      style={{ borderBottom: scrolled ? undefined : "none" }}
     >
-      {/* Main navbar row */}
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group shrink-0">
           <div className="logo-glow flex flex-col items-center">
-            <img src={hnLogo} alt="HN Groupe" className="h-20 w-20 rounded-full object-cover transition-transform duration-300 group-hover:scale-110 ring-2 ring-primary/40" />
+            <img
+              src={hnLogo}
+              alt="HN Groupe"
+              className="h-20 w-20 rounded-full object-cover transition-transform duration-300 group-hover:scale-110 ring-2 ring-primary/40"
+            />
           </div>
-          <span className="nav-glow-btn rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border border-primary/50 bg-primary/20 backdrop-blur-sm transition-transform duration-200">
+          <span className="nav-glow-btn rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border border-primary/50 bg-primary/20 transition-transform duration-200">
             HN-BOOK
           </span>
         </Link>
 
-        {/* Desktop nav */}
         <nav className="hidden items-center md:flex absolute left-1/2 -translate-x-1/2">
-          <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5 bg-black/80 backdrop-blur-xl border border-primary/20 shadow-[0_4px_30px_-5px_rgba(0,0,0,0.7),0_0_25px_-5px_hsl(199,89%,48%,0.15)]">
-            {/* Pages box */}
-            <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/10 border border-primary/30 shadow-[0_0_25px_-3px_hsl(199,89%,48%,0.2),inset_0_0_15px_-3px_hsl(199,89%,48%,0.1)]">
+          <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5 bg-card/95 border border-primary/20 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.55)]">
+            <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/10 border border-primary/30 shadow-[0_0_20px_-5px_hsl(199,89%,48%,0.15)]">
               {navLinks.map((link, idx) => (
                 <React.Fragment key={link.href}>
                   {link.isRoute ? (
                     <button
                       onClick={() => navigate(link.href)}
-                      className="nav-glow-green rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border border-emerald-500/50 bg-emerald-500/20 backdrop-blur-sm transition-transform duration-200"
+                      className="nav-glow-green rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border border-emerald-500/50 bg-emerald-500/20 transition-transform duration-200"
                     >
                       {link.label}
                     </button>
                   ) : (
                     <a
                       href={link.href}
-                      className="nav-glow-btn rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border border-primary/50 bg-primary/20 backdrop-blur-sm transition-transform duration-200"
+                      className="nav-glow-btn rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border border-primary/50 bg-primary/20 transition-transform duration-200"
                     >
                       {link.label}
                     </a>
                   )}
+
                   {idx === 0 && (
                     <div className="relative" ref={langRef}>
                       <button
                         onClick={() => setLangOpen(!langOpen)}
-                        className="nav-glow-btn rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-white border border-primary/50 bg-primary/20 backdrop-blur-sm flex items-center gap-1 transition-transform duration-200"
+                        className="nav-glow-btn rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-white border border-primary/50 bg-primary/20 flex items-center gap-1 transition-transform duration-200"
                       >
                         <Globe className="h-3 w-3" />
-                        {locales.find(l => l.code === locale)?.flag}
+                        {locales.find((l) => l.code === locale)?.flag}
                       </button>
+
                       <AnimatePresence>
                         {langOpen && (
                           <motion.div
@@ -145,12 +175,15 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -6, scale: 0.95 }}
                             transition={{ duration: 0.15 }}
-                            className="absolute start-0 top-full mt-2 w-36 rounded-xl p-1.5 shadow-dramatic bg-card/95 backdrop-blur-2xl border border-border/40 z-50"
+                            className="absolute start-0 top-full mt-2 w-36 rounded-xl p-1.5 shadow-dramatic bg-card border border-border/40 z-50"
                           >
                             {locales.map((l) => (
                               <button
                                 key={l.code}
-                                onClick={() => { setLocale(l.code); setLangOpen(false); }}
+                                onClick={() => {
+                                  setLocale(l.code);
+                                  setLangOpen(false);
+                                }}
                                 className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors hover:bg-muted/50 ${
                                   locale === l.code ? "text-primary font-medium bg-primary/5" : "text-foreground"
                                 }`}
@@ -166,10 +199,11 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                   )}
                 </React.Fragment>
               ))}
+
               {user ? (
                 <button
                   onClick={handleLogout}
-                  className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border border-destructive/50 bg-destructive/20 backdrop-blur-sm flex items-center gap-1 transition-transform duration-200 hover:scale-105"
+                  className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border border-destructive/50 bg-destructive/20 flex items-center gap-1 transition-transform duration-200 hover:scale-105"
                 >
                   <LogOut className="h-3 w-3" />
                   خروج
@@ -177,20 +211,23 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
               ) : (
                 <a
                   href="#"
-                  onClick={(e) => { e.preventDefault(); navigate("/auth"); }}
-                  className="nav-glow-btn rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border border-primary/50 bg-primary/20 backdrop-blur-sm transition-transform duration-200"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate("/auth");
+                  }}
+                  className="nav-glow-btn rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border border-primary/50 bg-primary/20 transition-transform duration-200"
                 >
                   {t("nav.getStarted")}
                 </a>
               )}
             </div>
 
-            {/* Categories box */}
             {allCategories.length > 0 && (
-              <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/10 border border-primary/30 shadow-[0_0_25px_-3px_hsl(199,89%,48%,0.2),inset_0_0_15px_-3px_hsl(199,89%,48%,0.1)]">
+              <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/10 border border-primary/30 shadow-[0_0_20px_-5px_hsl(199,89%,48%,0.15)]">
                 {allCategories.map((cat) => {
                   const isActive = activeCategory === cat;
                   const label = CATEGORY_LABELS[cat] || cat;
+
                   return (
                     <button
                       key={cat}
@@ -202,8 +239,8 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                           navigate(`/category/${encodeURIComponent(cat)}`);
                         }
                       }}
-                      className={`nav-glow-btn rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border bg-primary/20 backdrop-blur-sm transition-transform duration-200 ${
-                        isActive ? "border-primary/80" : "border-primary/50"
+                      className={`nav-glow-btn rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border bg-primary/20 transition-transform duration-200 ${
+                        isActive ? "border-primary/80 shadow-[0_0_22px_-6px_hsl(199,89%,48%,0.35)]" : "border-primary/50"
                       }`}
                     >
                       {label}
@@ -215,7 +252,6 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
           </div>
         </nav>
 
-        {/* Desktop actions */}
         <div className="hidden items-center gap-2.5 md:flex shrink-0">
           {user && (
             <Button
@@ -235,7 +271,6 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
           </Button>
         </div>
 
-        {/* Mobile toggle */}
         <Button
           variant="ghost"
           size="icon"
@@ -246,7 +281,6 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
         </Button>
       </div>
 
-      {/* Mobile menu */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
@@ -254,16 +288,19 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="overflow-hidden bg-background/95 backdrop-blur-2xl md:hidden"
-            style={{ borderTop: '1px solid hsl(199 89% 48% / 0.08)' }}
+            className="overflow-hidden bg-card/95 md:hidden"
+            style={{ borderTop: "1px solid hsl(199 89% 48% / 0.08)" }}
           >
             <nav className="flex flex-col gap-1.5 px-4 py-3">
-              {navLinks.map((link) => (
+              {navLinks.map((link) =>
                 link.isRoute ? (
                   <button
                     key={link.href}
-                    onClick={() => { navigate(link.href); setMobileOpen(false); }}
-                    className="rounded-xl px-4 py-3 text-sm font-semibold text-white transition-all duration-300 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/25 hover:border-emerald-500/40 backdrop-blur-sm text-right"
+                    onClick={() => {
+                      navigate(link.href);
+                      setMobileOpen(false);
+                    }}
+                    className="rounded-xl px-4 py-3 text-sm font-semibold text-white transition-all duration-300 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/25 hover:border-emerald-500/40 text-right"
                   >
                     {link.label}
                   </button>
@@ -271,20 +308,20 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                   <a
                     key={link.href}
                     href={link.href}
-                    className="rounded-xl px-4 py-3 text-sm font-semibold text-white transition-all duration-300 bg-primary/10 border border-primary/20 hover:bg-primary/25 hover:border-primary/40 hover:shadow-[0_0_15px_-3px_hsl(199,89%,48%,0.3)] backdrop-blur-sm"
+                    className="rounded-xl px-4 py-3 text-sm font-semibold text-white transition-all duration-300 bg-primary/10 border border-primary/20 hover:bg-primary/25 hover:border-primary/40 hover:shadow-[0_0_15px_-3px_hsl(199,89%,48%,0.3)]"
                     onClick={() => setMobileOpen(false)}
                   >
                     {link.label}
                   </a>
                 )
-              ))}
+              )}
 
-              {/* Mobile categories */}
               {allCategories.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-1">
                   {allCategories.map((cat) => {
                     const isActive = activeCategory === cat;
                     const label = CATEGORY_LABELS[cat] || cat;
+
                     return (
                       <button
                         key={cat}
@@ -297,7 +334,7 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                           }
                           setMobileOpen(false);
                         }}
-                        className={`rounded-xl px-3.5 py-2 text-xs font-semibold transition-all duration-300 backdrop-blur-sm ${
+                        className={`rounded-xl px-3.5 py-2 text-xs font-semibold transition-all duration-300 ${
                           isActive
                             ? "bg-primary/25 text-white border border-primary/50 shadow-[0_0_20px_-4px_hsl(199,89%,48%,0.4)]"
                             : "bg-primary/8 text-white/80 border border-primary/15 hover:bg-primary/20 hover:text-white hover:border-primary/35"
@@ -314,8 +351,10 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                 {locales.map((l) => (
                   <button
                     key={l.code}
-                    onClick={() => { setLocale(l.code); }}
-                    className={`rounded-xl px-3.5 py-2 text-xs font-semibold transition-all duration-300 backdrop-blur-sm ${
+                    onClick={() => {
+                      setLocale(l.code);
+                    }}
+                    className={`rounded-xl px-3.5 py-2 text-xs font-semibold transition-all duration-300 ${
                       locale === l.code
                         ? "bg-primary/25 text-white border border-primary/50 shadow-[0_0_15px_-3px_hsl(199,89%,48%,0.3)]"
                         : "bg-primary/8 text-white/80 border border-primary/15 hover:bg-primary/20 hover:text-white"
@@ -325,18 +364,25 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                   </button>
                 ))}
               </div>
+
               {user ? (
                 <button
-                  onClick={() => { handleLogout(); setMobileOpen(false); }}
-                  className="mt-1 w-full rounded-xl px-4 py-3 text-sm font-semibold text-destructive transition-all duration-300 bg-destructive/10 border border-destructive/20 hover:bg-destructive/25 hover:border-destructive/40 backdrop-blur-sm flex items-center justify-center gap-2"
+                  onClick={() => {
+                    handleLogout();
+                    setMobileOpen(false);
+                  }}
+                  className="mt-1 w-full rounded-xl px-4 py-3 text-sm font-semibold text-destructive transition-all duration-300 bg-destructive/10 border border-destructive/20 hover:bg-destructive/25 hover:border-destructive/40 flex items-center justify-center gap-2"
                 >
                   <LogOut className="h-4 w-4" />
                   خروج
                 </button>
               ) : (
                 <button
-                  onClick={() => { navigate("/auth"); setMobileOpen(false); }}
-                  className="mt-1 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white transition-all duration-300 bg-primary/10 border border-primary/20 hover:bg-primary/25 hover:border-primary/40 hover:shadow-[0_0_15px_-3px_hsl(199,89%,48%,0.3)] backdrop-blur-sm"
+                  onClick={() => {
+                    navigate("/auth");
+                    setMobileOpen(false);
+                  }}
+                  className="mt-1 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white transition-all duration-300 bg-primary/10 border border-primary/20 hover:bg-primary/25 hover:border-primary/40 hover:shadow-[0_0_15px_-3px_hsl(199,89%,48%,0.3)]"
                 >
                   {t("nav.getStarted")}
                 </button>
