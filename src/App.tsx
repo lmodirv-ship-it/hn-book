@@ -29,6 +29,8 @@ import SystemHealthCheck from "./admin/pages/SystemHealthCheck.tsx";
 import BookGeneration from "./admin/pages/BookGeneration.tsx";
 import WebBookSearch from "./admin/pages/WebBookSearch.tsx";
 import BulkPdfUpload from "./admin/pages/BulkPdfUpload.tsx";
+import DocumentProcessing from "./pages/DocumentProcessing.tsx";
+import DocumentProcessor from "./admin/pages/DocumentProcessor.tsx";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +48,7 @@ const App = () => (
             <Route path="/category/:category" element={<CategoryPage />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/read/:id" element={<BookReader />} />
+            <Route path="/document-processing" element={<DocumentProcessing />} />
             <Route path="/auth" element={<CustomerAuth />} />
             <Route path="/profile" element={<Profile />} />
             
@@ -59,6 +62,7 @@ const App = () => (
               <Route path="book-generation" element={<BookGeneration />} />
               <Route path="web-search" element={<WebBookSearch />} />
               <Route path="bulk-pdf" element={<BulkPdfUpload />} />
+              <Route path="doc-processor" element={<DocumentProcessor />} />
               <Route path="orders" element={<AdminOrders />} />
               <Route path="customers" element={<AdminCustomers />} />
               <Route path="earnings" element={<AdminEarnings />} />
