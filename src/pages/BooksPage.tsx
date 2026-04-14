@@ -197,8 +197,20 @@ const BooksPage = () => {
     return result;
   }, [allProducts, selectedLang, selectedCategory, searchQuery]);
 
-  const visibleProducts = filteredProducts.slice(0, visibleCount);
-  const hasMore = visibleCount < filteredProducts.length;
+  // Sort products
+  const sortedProducts = useMemo(() => {
+    const result = [...filteredProducts];
+    switch (sortBy) {
+      case "price_asc": return result.sort((a, b) => a.price - b.price);
+      case "price_desc": return result.sort((a, b) => b.price - a.price);
+      case "name": return result.sort((a, b) => a.name.localeCompare(b.name, "ar"));
+      case "bestseller": return result.sort((a, b) => (b.badge ? 1 : 0) - (a.badge ? 1 : 0));
+      default: return result; // newest - already sorted by created_at desc
+    }
+  }, [filteredProducts, sortBy]);
+
+  const visibleProducts = sortedProducts.slice(0, visibleCount);
+  const hasMore = visibleCount < sortedProducts.length;
 
   // Category counts
   const categoryCounts = useMemo(() => {
