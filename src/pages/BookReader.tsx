@@ -56,6 +56,7 @@ const BookReader = () => {
   const [loading, setLoading] = useState(true);
   const [resourceUrl, setResourceUrl] = useState<string | null>(null);
   const [resourceType, setResourceType] = useState<ResourceType | null>(null);
+  const [pdfLoadError, setPdfLoadError] = useState(false);
   const [textContent, setTextContent] = useState("");
 
   // PDF state
