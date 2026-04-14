@@ -304,19 +304,43 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks.`;
                 if (fileData.byteLength < 1024) {
                   console.log(`Rejected download for "${book.title}": file too small (${fileData.byteLength} bytes)`);
                 } else {
-                  const bucket = fileType === "pdf" ? "book-files" : "book-images";
-                  const path = `${folder}/${ref}/${ref}.${fileExt}`;
-
-                  const { error: upErr } = await supabase.storage
-                    .from(bucket)
-                    .upload(path, new Uint8Array(fileData), { contentType: ct || "application/pdf", upsert: true });
-                  if (!upErr) {
-                    storagePath = `${bucket}/${path}`;
-                    fileUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${path}`;
-                    storedLocally = true;
-                    console.log(`✅ Stored locally: "${book.title}" → ${path} (${fileData.byteLength} bytes)`);
+                  // CRITICAL: Validate PDF magic bytes — reject files that claim to be PDF but aren't
+                  if (fileType === "pdf") {
+                    const header = new Uint8Array(fileData.slice(0, 5));
+                    const magic = String.fromCharCode(...header);
+                    if (!magic.startsWith("%PDF")) {
+                      console.log(`Rejected download for "${book.title}": not a valid PDF (magic: ${magic})`);
+                    } else {
+                      // Valid PDF — proceed with upload
+                      const bucket = "book-files";
+                      const path = `${folder}/${ref}/${ref}.${fileExt}`;
+                      const { error: upErr } = await supabase.storage
+                        .from(bucket)
+                        .upload(path, new Uint8Array(fileData), { contentType: ct || "application/pdf", upsert: true });
+                      if (!upErr) {
+                        storagePath = `${bucket}/${path}`;
+                        fileUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${path}`;
+                        storedLocally = true;
+                        console.log(`✅ Stored locally: "${book.title}" → ${path} (${fileData.byteLength} bytes)`);
+                      } else {
+                        console.error(`Upload failed for "${book.title}":`, upErr.message);
+                      }
+                    }
                   } else {
-                    console.error(`Upload failed for "${book.title}":`, upErr.message);
+                    // Non-PDF file (image etc) — upload directly
+                    const bucket = "book-images";
+                    const path = `${folder}/${ref}/${ref}.${fileExt}`;
+                    const { error: upErr } = await supabase.storage
+                      .from(bucket)
+                      .upload(path, new Uint8Array(fileData), { contentType: ct, upsert: true });
+                    if (!upErr) {
+                      storagePath = `${bucket}/${path}`;
+                      fileUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${path}`;
+                      storedLocally = true;
+                      console.log(`✅ Stored locally: "${book.title}" → ${path} (${fileData.byteLength} bytes)`);
+                    } else {
+                      console.error(`Upload failed for "${book.title}":`, upErr.message);
+                    }
                   }
                 }
               } else {
