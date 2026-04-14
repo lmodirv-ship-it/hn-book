@@ -75,7 +75,32 @@ const BookReader = () => {
         .maybeSingle();
       if (!data) { setLoading(false); return; }
       setBook(data);
-      setPdfUrl(data.pdf_url);
+
+      // If PDF is hosted on our storage, use directly. Otherwise proxy it.
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
+      const isInternal = data.pdf_url?.includes(supabaseUrl) || data.pdf_url?.includes("supabase.co");
+      
+      if (isInternal || !data.pdf_url) {
+        setPdfUrl(data.pdf_url);
+      } else {
+        // Proxy external PDF through our edge function
+        try {
+          const res = await fetch(`${supabaseUrl}/functions/v1/proxy-pdf`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: data.pdf_url }),
+          });
+          if (res.ok) {
+            const blob = await res.blob();
+            setPdfUrl(URL.createObjectURL(blob));
+          } else {
+            // Fallback to direct URL
+            setPdfUrl(data.pdf_url);
+          }
+        } catch {
+          setPdfUrl(data.pdf_url);
+        }
+      }
       setLoading(false);
     };
     fetchBook();
