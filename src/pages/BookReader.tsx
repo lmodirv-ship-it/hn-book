@@ -14,6 +14,29 @@ import "react-pdf/dist/Page/TextLayer.css";
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
+type ResourceType = "pdf" | "text" | "image" | "embed";
+
+const getResourceTypeFromUrl = (url?: string | null): ResourceType | null => {
+  if (!url) return null;
+  const cleanUrl = url.split("?")[0].toLowerCase();
+
+  if (cleanUrl.endsWith(".pdf")) return "pdf";
+  if (/\.(txt|md|csv|json|xml|html?)$/.test(cleanUrl)) return "text";
+  if (/\.(png|jpe?g|webp|gif|svg|avif)$/.test(cleanUrl)) return "image";
+
+  return null;
+};
+
+const getResourceTypeFromContentType = (contentType?: string | null): ResourceType | null => {
+  const normalized = contentType?.toLowerCase() || "";
+
+  if (normalized.includes("pdf")) return "pdf";
+  if (normalized.startsWith("text/") || normalized.includes("json") || normalized.includes("xml")) return "text";
+  if (normalized.startsWith("image/")) return "image";
+
+  return null;
+};
+
 interface BookData {
   id: string;
   name: string;
@@ -31,7 +54,9 @@ const BookReader = () => {
   const navigate = useNavigate();
   const [book, setBook] = useState<BookData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [resourceUrl, setResourceUrl] = useState<string | null>(null);
+  const [resourceType, setResourceType] = useState<ResourceType | null>(null);
+  const [textContent, setTextContent] = useState("");
 
   // PDF state
   const [numPages, setNumPages] = useState(0);
@@ -63,47 +88,94 @@ const BookReader = () => {
   }, []);
 
   useEffect(() => {
-    const fetchBook = async () => {
-      if (!id) { setLoading(false); return; }
-      const { data } = await supabase
-        .from("products")
-        .select("id, name, description, category, image, pdf_url, reference_code")
-        .eq("is_active", true)
-        .not("pdf_url", "is", null)
-        .neq("pdf_url", "")
-        .eq("id", id)
-        .maybeSingle();
-      if (!data) { setLoading(false); return; }
-      setBook(data);
+    let objectUrlToRevoke: string | null = null;
 
-      // If PDF is hosted on our storage, use directly. Otherwise proxy it.
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
-      const isInternal = data.pdf_url?.includes(supabaseUrl) || data.pdf_url?.includes("supabase.co");
-      
-      if (isInternal || !data.pdf_url) {
-        setPdfUrl(data.pdf_url);
-      } else {
-        // Proxy external PDF through our edge function
-        try {
-          const res = await fetch(`${supabaseUrl}/functions/v1/proxy-pdf`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ url: data.pdf_url }),
-          });
-          if (res.ok) {
-            const blob = await res.blob();
-            setPdfUrl(URL.createObjectURL(blob));
-          } else {
-            // Fallback to direct URL
-            setPdfUrl(data.pdf_url);
-          }
-        } catch {
-          setPdfUrl(data.pdf_url);
-        }
+    const fetchBook = async () => {
+      if (!id) {
+        setLoading(false);
+        return;
       }
-      setLoading(false);
+
+      try {
+        const { data } = await supabase
+          .from("products")
+          .select("id, name, description, category, image, pdf_url, reference_code")
+          .eq("is_active", true)
+          .not("pdf_url", "is", null)
+          .neq("pdf_url", "")
+          .eq("id", id)
+          .maybeSingle();
+
+        if (!data) return;
+
+        setBook(data);
+        setResourceUrl(null);
+        setResourceType(null);
+        setTextContent("");
+
+        if (!data.pdf_url) return;
+
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
+        const isInternal = data.pdf_url.includes(supabaseUrl) || data.pdf_url.includes("supabase.co");
+        const inferredType = getResourceTypeFromUrl(data.pdf_url);
+
+        if (isInternal && (inferredType === "pdf" || inferredType === "image")) {
+          setResourceUrl(data.pdf_url);
+          setResourceType(inferredType);
+          return;
+        }
+
+        const response = await fetch(
+          isInternal ? data.pdf_url : `${supabaseUrl}/functions/v1/proxy-pdf`,
+          isInternal
+            ? undefined
+            : {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: data.pdf_url }),
+              }
+        );
+
+        if (!response.ok) {
+          setResourceUrl(data.pdf_url);
+          setResourceType(inferredType || "embed");
+          return;
+        }
+
+        const detectedType = getResourceTypeFromContentType(response.headers.get("content-type")) || inferredType;
+
+        if (detectedType === "text") {
+          setTextContent(await response.text());
+          setResourceType("text");
+          return;
+        }
+
+        if (detectedType === "pdf" && isInternal) {
+          setResourceUrl(data.pdf_url);
+          setResourceType("pdf");
+          return;
+        }
+
+        if (detectedType === "image" && isInternal) {
+          setResourceUrl(data.pdf_url);
+          setResourceType("image");
+          return;
+        }
+
+        const blob = await response.blob();
+        objectUrlToRevoke = URL.createObjectURL(blob);
+        setResourceUrl(objectUrlToRevoke);
+        setResourceType(detectedType || "embed");
+      } finally {
+        setLoading(false);
+      }
     };
+
     fetchBook();
+
+    return () => {
+      if (objectUrlToRevoke) URL.revokeObjectURL(objectUrlToRevoke);
+    };
   }, [id]);
 
   const onDocumentLoadSuccess = useCallback(({ numPages: total }: { numPages: number }) => {
@@ -235,13 +307,89 @@ const BookReader = () => {
     );
   }
 
-  if (!pdfUrl) {
+  if (!book.pdf_url) {
     return (
       <div className="min-h-screen bg-[#1a1a2e] flex flex-col items-center justify-center gap-6 px-4" dir="rtl">
         <BookOpen className="w-12 h-12 text-gray-500" />
         <div className="text-center space-y-2">
           <h1 className="text-lg font-bold text-white">{book.name}</h1>
-          <p className="text-gray-400 text-sm">لا يوجد ملف PDF متاح للمطالعة</p>
+          <p className="text-gray-400 text-sm">لا يوجد ملف قابل للمطالعة</p>
+        </div>
+        <button onClick={() => navigate(`/product/${id}`)} className="text-emerald-400 hover:underline text-sm">
+          العودة لصفحة المنتج
+        </button>
+      </div>
+    );
+  }
+
+  const readerHeader = (
+    <header className="flex-shrink-0 h-12 bg-[#16213e]/95 backdrop-blur border-b border-white/5 flex items-center justify-between px-3 z-50">
+      <div className="flex items-center gap-3 min-w-0">
+        <button
+          onClick={() => navigate(`/product/${id}`)}
+          className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 transition-colors"
+        >
+          <Home className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="flex items-center gap-1 min-w-0 max-w-[70%]">
+        <p className="text-xs font-medium text-gray-300 truncate">{book.name}</p>
+        <span className="text-[10px] text-gray-500 flex-shrink-0">
+          {book.category} · {book.reference_code}
+        </span>
+      </div>
+
+      <div className="w-8" />
+    </header>
+  );
+
+  if (resourceType === "text") {
+    return (
+      <div className="h-screen bg-[#1a1a2e] flex flex-col overflow-hidden" dir="rtl">
+        {readerHeader}
+        <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+          <article className="mx-auto max-w-4xl rounded-2xl border border-white/5 bg-[#16213e] p-5 text-sm leading-8 text-gray-200 whitespace-pre-wrap sm:p-8">
+            {textContent}
+          </article>
+        </div>
+      </div>
+    );
+  }
+
+  if (resourceType === "image" && resourceUrl) {
+    return (
+      <div className="h-screen bg-[#1a1a2e] flex flex-col overflow-hidden" dir="rtl">
+        {readerHeader}
+        <div className="flex-1 overflow-auto p-4 sm:p-6 flex items-center justify-center">
+          <img src={resourceUrl} alt={book.name} className="max-h-full max-w-full rounded-2xl shadow-2xl" />
+        </div>
+      </div>
+    );
+  }
+
+  if (resourceType === "embed" && resourceUrl) {
+    return (
+      <div className="h-screen bg-[#1a1a2e] flex flex-col overflow-hidden" dir="rtl">
+        {readerHeader}
+        <div className="flex-1 p-2 sm:p-4">
+          <iframe
+            src={resourceUrl}
+            title={book.name}
+            className="h-full w-full rounded-2xl border border-white/5 bg-white"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (!resourceUrl) {
+    return (
+      <div className="min-h-screen bg-[#1a1a2e] flex flex-col items-center justify-center gap-6 px-4" dir="rtl">
+        <BookOpen className="w-12 h-12 text-gray-500" />
+        <div className="text-center space-y-2">
+          <h1 className="text-lg font-bold text-white">{book.name}</h1>
+          <p className="text-gray-400 text-sm">تعذر تجهيز الملف للقراءة داخل الموقع</p>
         </div>
         <button onClick={() => navigate(`/product/${id}`)} className="text-emerald-400 hover:underline text-sm">
           العودة لصفحة المنتج
@@ -400,7 +548,7 @@ const BookReader = () => {
 
           {/* Pages container */}
           <Document
-            file={pdfUrl}
+            file={resourceUrl}
             onLoadSuccess={onDocumentLoadSuccess}
             loading={
               <div className="flex flex-col items-center gap-4">
@@ -413,7 +561,7 @@ const BookReader = () => {
                 <BookOpen className="w-12 h-12 text-gray-500" />
                 <p className="text-gray-300 font-medium">تعذر تحميل الكتاب</p>
                 <a
-                  href={pdfUrl}
+                  href={resourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-emerald-400 hover:underline text-sm"
