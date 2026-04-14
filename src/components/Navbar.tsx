@@ -1,11 +1,12 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import hnLogo from "@/assets/hn-logo.jpeg";
-import { ShoppingCart, Menu, X, ArrowRight, Globe, Sparkles } from "lucide-react";
+import { ShoppingCart, Menu, X, ArrowRight, Globe, Sparkles, LogOut, User } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useI18n, locales } from "@/lib/i18n";
+import { supabase } from "@/integrations/supabase/client";
 
 interface NavbarProps {
   categories?: string[];
