@@ -19,7 +19,7 @@ const LANGUAGES = [
   { code: "en", label: "English", flag: "🇬🇧" },
 ] as const;
 
-type LangCode = typeof LANGUAGES[number]["code"];
+type LangCode = "all" | "ar" | "fr" | "en";
 
 // Map categories to languages
 const CATEGORY_LANG_MAP: Record<string, LangCode> = {
