@@ -215,6 +215,8 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks.`;
 
     // Step 3: If autoImport, download and save to database
     if (autoImport) {
+      // Use pre-selected books if provided, otherwise use search results
+      const booksToImport = (preSelectedBooks && preSelectedBooks.length > 0) ? preSelectedBooks : verifiedBooks;
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const supabase = createClient(supabaseUrl, supabaseKey);
