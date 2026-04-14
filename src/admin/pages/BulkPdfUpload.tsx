@@ -7,8 +7,11 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+import {
+  buildBookPdfStoragePath,
+  ensureProductReferenceCode,
+  getBookFilePublicUrl,
+} from "@/lib/reference-code";
 
 interface PendingFile {
   file: File;
@@ -67,6 +70,7 @@ const BulkPdfUpload = () => {
       .filter((f) => f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf"))
       .map((file) => {
         const baseName = file.name.replace(/\.pdf$/i, "").trim();
+        const normalizedRef = baseName.toUpperCase();
         // Try matching by badge (e.g. HNB-0081)
         const badgeMatch = prods.find(
           (p) => p.badge && p.badge.toLowerCase() === baseName.toLowerCase()
@@ -82,7 +86,7 @@ const BulkPdfUpload = () => {
         const matched = badgeMatch || refMatch || nameMatch;
         return {
           file,
-          refCode: baseName,
+          refCode: normalizedRef,
           matchedProductId: matched?.id || null,
           matchedProductName: matched?.name || null,
           status: matched ? ("pending" as const) : ("manual" as const),
@@ -140,17 +144,24 @@ const BulkPdfUpload = () => {
       setFiles((prev) => prev.map((ff, idx) => (idx === i ? { ...ff, status: "uploading" } : ff)));
 
       try {
-        const storagePath = `${f.matchedProductId}/${Date.now()}.pdf`;
+        const matchedProduct = products.find((product) => product.id === f.matchedProductId);
+        const resolvedReferenceCode = await ensureProductReferenceCode(
+          f.matchedProductId,
+          matchedProduct?.reference_code,
+          f.refCode
+        );
+        const storagePath = buildBookPdfStoragePath(resolvedReferenceCode);
+
         const { error: uploadError } = await supabase.storage
           .from("book-files")
           .upload(storagePath, f.file, { upsert: true });
         if (uploadError) throw uploadError;
 
-        const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/book-files/${storagePath}`;
+        const publicUrl = getBookFilePublicUrl(storagePath);
 
         await supabase
           .from("products")
-          .update({ pdf_url: publicUrl } as any)
+          .update({ pdf_url: publicUrl, reference_code: resolvedReferenceCode } as never)
           .eq("id", f.matchedProductId);
 
         await supabase
@@ -162,14 +173,25 @@ const BulkPdfUpload = () => {
         await supabase.from("product_files").insert({
           product_id: f.matchedProductId,
           file_type: "pdf" as any,
-          file_name: f.file.name,
+          file_name: `${resolvedReferenceCode}.pdf`,
           file_size: f.file.size,
           storage_path: `book-files/${storagePath}`,
           public_url: publicUrl,
           is_primary: true,
         });
 
-        setFiles((prev) => prev.map((ff, idx) => (idx === i ? { ...ff, status: "done" } : ff)));
+        setProducts((prev) =>
+          prev.map((product) =>
+            product.id === f.matchedProductId
+              ? { ...product, pdf_url: publicUrl, reference_code: resolvedReferenceCode }
+              : product
+          )
+        );
+        setFiles((prev) =>
+          prev.map((ff, idx) =>
+            idx === i ? { ...ff, refCode: resolvedReferenceCode, status: "done" } : ff
+          )
+        );
         success++;
       } catch (err: any) {
         setFiles((prev) =>
@@ -207,7 +229,7 @@ const BulkPdfUpload = () => {
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl font-extrabold text-foreground">📤 رفع PDF بالجملة</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          سمّ الملفات بالكود (مثل HNB-0081.pdf) للربط التلقائي، أو اختر المنتج يدوياً
+          سمّ الملفات بالمرجع (مثل B123456.pdf) للربط التلقائي، أو اختر المنتج يدوياً
         </p>
         {loaded && (
           <p className="text-xs text-muted-foreground mt-1">

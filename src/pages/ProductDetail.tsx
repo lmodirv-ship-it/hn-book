@@ -14,6 +14,7 @@ import BookCover from "@/components/BookCover";
 import ProductCard from "@/components/ProductCard";
 import { supabase } from "@/integrations/supabase/client";
 import type { Product } from "@/lib/products";
+import { mapProductRowToProduct } from "@/lib/product-utils";
 
 interface ProductFile {
   id: string;
@@ -41,23 +42,12 @@ const ProductDetail = () => {
         .select("*")
         .eq("id", id)
         .eq("is_active", true)
+        .not("pdf_url", "is", null)
+        .neq("pdf_url", "")
         .single();
 
       if (data) {
-        const mapped: Product = {
-          id: data.id,
-          name: data.name,
-          description: data.description || "",
-          shortDescription: data.short_description || "",
-          price: Number(data.price),
-          originalPrice: data.original_price ? Number(data.original_price) : undefined,
-          category: data.category,
-          image: data.image || "",
-          features: data.features || [],
-          badge: data.badge || undefined,
-          isFlashDeal: data.is_flash_deal || false,
-          dealEndsIn: data.deal_ends_in || undefined,
-        };
+        const mapped = mapProductRowToProduct(data);
         setProduct(mapped);
 
         // Fetch product files (images)
@@ -68,11 +58,9 @@ const ProductDetail = () => {
 
         if (files) {
           setProductFiles(files);
-          // Check if product has a PDF file
-          const pdfExists = !!data.pdf_url || files.some(f => f.file_type === "pdf" || f.file_name.toLowerCase().endsWith(".pdf"));
-          setHasPdf(pdfExists);
+          setHasPdf(true);
         } else {
-          setHasPdf(!!data.pdf_url);
+          setHasPdf(true);
         }
 
         // Fetch related products
@@ -80,27 +68,14 @@ const ProductDetail = () => {
           .from("products")
           .select("*")
           .eq("is_active", true)
+          .not("pdf_url", "is", null)
+          .neq("pdf_url", "")
           .eq("category", data.category)
           .neq("id", data.id)
           .limit(4);
 
         if (related) {
-          setRelatedProducts(
-            related.map((p) => ({
-              id: p.id,
-              name: p.name,
-              description: p.description || "",
-              shortDescription: p.short_description || "",
-              price: Number(p.price),
-              originalPrice: p.original_price ? Number(p.original_price) : undefined,
-              category: p.category,
-              image: p.image || "",
-              features: p.features || [],
-              badge: p.badge || undefined,
-              isFlashDeal: p.is_flash_deal || false,
-              dealEndsIn: p.deal_ends_in || undefined,
-            }))
-          );
+          setRelatedProducts(related.map(mapProductRowToProduct));
         }
       }
       setLoading(false);

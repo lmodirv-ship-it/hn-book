@@ -1,20 +1,29 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FileText, Upload, X, Loader2, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  buildBookPdfStoragePath,
+  ensureProductReferenceCode,
+  getBookFilePublicUrl,
+  isReferenceCodeValid,
+} from "@/lib/reference-code";
 
 interface BookPdfUploadProps {
   productId: string;
   currentPdfUrl: string | null;
-  onPdfUpdated: (url: string) => void;
+  referenceCode?: string | null;
+  onPdfUpdated: (url: string, referenceCode?: string) => void;
 }
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-
-export const BookPdfUpload = ({ productId, currentPdfUrl, onPdfUpdated }: BookPdfUploadProps) => {
+export const BookPdfUpload = ({ productId, currentPdfUrl, referenceCode, onPdfUpdated }: BookPdfUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(currentPdfUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setPdfUrl(currentPdfUrl);
+  }, [currentPdfUrl]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -29,7 +38,8 @@ export const BookPdfUpload = ({ productId, currentPdfUrl, onPdfUpdated }: BookPd
 
     setUploading(true);
     try {
-      const storagePath = `${productId}/${Date.now()}.pdf`;
+      const resolvedReferenceCode = await ensureProductReferenceCode(productId, referenceCode);
+      const storagePath = buildBookPdfStoragePath(resolvedReferenceCode);
 
       const { error: uploadError } = await supabase.storage
         .from("book-files")
@@ -37,12 +47,12 @@ export const BookPdfUpload = ({ productId, currentPdfUrl, onPdfUpdated }: BookPd
 
       if (uploadError) throw uploadError;
 
-      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/book-files/${storagePath}`;
+      const publicUrl = getBookFilePublicUrl(storagePath);
 
       // Update product pdf_url field
       const { error: updateError } = await supabase
         .from("products")
-        .update({ pdf_url: publicUrl } as any)
+        .update({ pdf_url: publicUrl, reference_code: resolvedReferenceCode } as never)
         .eq("id", productId);
 
       if (updateError) throw updateError;
@@ -58,7 +68,7 @@ export const BookPdfUpload = ({ productId, currentPdfUrl, onPdfUpdated }: BookPd
       await supabase.from("product_files").insert({
         product_id: productId,
         file_type: "pdf" as any,
-        file_name: file.name,
+        file_name: `${resolvedReferenceCode}.pdf`,
         file_size: file.size,
         storage_path: `book-files/${storagePath}`,
         public_url: publicUrl,
@@ -66,8 +76,8 @@ export const BookPdfUpload = ({ productId, currentPdfUrl, onPdfUpdated }: BookPd
       });
 
       setPdfUrl(publicUrl);
-      onPdfUpdated(publicUrl);
-      toast.success("تم رفع ملف PDF بنجاح");
+      onPdfUpdated(publicUrl, resolvedReferenceCode);
+      toast.success(`تم رفع ملف PDF بنجاح · المرجع ${resolvedReferenceCode}`);
     } catch (err: any) {
       console.error(err);
       toast.error("فشل رفع الملف: " + (err.message || "خطأ غير معروف"));
@@ -79,7 +89,9 @@ export const BookPdfUpload = ({ productId, currentPdfUrl, onPdfUpdated }: BookPd
   const handleRemove = async () => {
     setUploading(true);
     try {
-      if (pdfUrl?.includes("book-files/")) {
+      if (isReferenceCodeValid(referenceCode)) {
+        await supabase.storage.from("book-files").remove([buildBookPdfStoragePath(referenceCode!.trim().toUpperCase())]);
+      } else if (pdfUrl?.includes("book-files/")) {
         const path = pdfUrl.split("book-files/")[1];
         await supabase.storage.from("book-files").remove([path]);
       }
@@ -106,6 +118,11 @@ export const BookPdfUpload = ({ productId, currentPdfUrl, onPdfUpdated }: BookPd
   return (
     <div className="space-y-3">
       <label className="text-sm font-medium text-foreground">ملف الكتاب (PDF)</label>
+      <p className="text-[11px] text-muted-foreground">
+        {isReferenceCodeValid(referenceCode)
+          ? `سيتم حفظ الملف داخل المجلد المرجعي: ${referenceCode}`
+          : "سيُنشأ رقم مرجعي تلقائياً عند رفع ملف PDF"}
+      </p>
 
       {pdfUrl ? (
         <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-secondary/20">
