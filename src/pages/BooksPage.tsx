@@ -285,42 +285,54 @@ const BooksPage = () => {
                 ))}
               </div>
 
-              {/* Category Filter Row */}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs text-muted-foreground flex items-center gap-1.5 ml-2">
-                  <BookOpen className="w-3.5 h-3.5" />
-                  التخصص:
-                </span>
-                <button
-                  onClick={() => { setSelectedCategory("all"); setVisibleCount(ITEMS_PER_PAGE); }}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
-                    selectedCategory === "all"
-                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_12px_-3px_rgba(16,185,129,0.4)]"
-                      : "bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-white"
-                  }`}
-                >
-                  الكل ({filteredProducts.length})
-                </button>
-                {availableCategories.map((cat) => {
-                  const display = CATEGORY_DISPLAY[cat] || { label: cat, icon: "📄" };
-                  const count = categoryCounts[cat] || 0;
-                  return (
-                    <button
-                      key={cat}
-                      onClick={() => { setSelectedCategory(cat); setVisibleCount(ITEMS_PER_PAGE); }}
-                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
-                        selectedCategory === cat
-                          ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_12px_-3px_rgba(16,185,129,0.4)]"
-                          : "bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-white"
-                      }`}
-                    >
-                      <span className="text-sm">{display.icon}</span>
-                      {display.label}
-                      <span className="text-[10px] opacity-60">({count})</span>
-                    </button>
-                  );
-                })}
-              </div>
+              {/* Category Filter Row - only when a specific language is selected */}
+              <AnimatePresence>
+                {selectedLang !== "all" && availableCategories.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="flex flex-wrap items-center gap-2 pr-6 border-r-2 border-emerald-500/30">
+                      <span className="text-xs text-muted-foreground flex items-center gap-1.5 ml-2">
+                        <BookOpen className="w-3.5 h-3.5" />
+                        التخصص:
+                      </span>
+                      <button
+                        onClick={() => { setSelectedCategory("all"); setVisibleCount(ITEMS_PER_PAGE); }}
+                        className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
+                          selectedCategory === "all"
+                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_12px_-3px_rgba(16,185,129,0.4)]"
+                            : "bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-white"
+                        }`}
+                      >
+                        الكل ({filteredProducts.length})
+                      </button>
+                      {availableCategories.map((cat) => {
+                        const display = CATEGORY_DISPLAY[cat] || { label: cat, icon: "📄" };
+                        const count = categoryCounts[cat] || 0;
+                        return (
+                          <button
+                            key={cat}
+                            onClick={() => { setSelectedCategory(cat); setVisibleCount(ITEMS_PER_PAGE); }}
+                            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
+                              selectedCategory === cat
+                                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_12px_-3px_rgba(16,185,129,0.4)]"
+                                : "bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-white"
+                            }`}
+                          >
+                            <span className="text-sm">{display.icon}</span>
+                            {display.label}
+                            <span className="text-[10px] opacity-60">({count})</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Sort Row */}
               <div className="flex flex-wrap items-center gap-2">
