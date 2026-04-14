@@ -353,6 +353,7 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
               <User className="h-4 w-4" />
             </Button>
           )}
+          <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/40">
             <ShoppingCart className="h-4 w-4" />
             <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[9px] font-bold text-accent-foreground">
               0
