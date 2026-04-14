@@ -10,7 +10,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { query, count, autoImport } = await req.json();
+    const { query, count, autoImport, books: preSelectedBooks } = await req.json();
     if (!query || typeof query !== "string") {
       return new Response(JSON.stringify({ error: "يرجى إدخال كلمة البحث" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -215,6 +215,8 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks.`;
 
     // Step 3: If autoImport, download and save to database
     if (autoImport) {
+      // Use pre-selected books if provided, otherwise use search results
+      const booksToImport = (preSelectedBooks && preSelectedBooks.length > 0) ? preSelectedBooks : verifiedBooks;
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const supabase = createClient(supabaseUrl, supabaseKey);
@@ -231,7 +233,7 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks.`;
       };
 
       const imported = [];
-      for (const book of verifiedBooks) {
+      for (const book of booksToImport) {
         if (!book._verified) {
           imported.push({ ...book, _imported: false, _reason: "رابط غير متاح" });
           continue;

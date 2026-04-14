@@ -121,8 +121,8 @@ const WebBookSearch = () => {
       const token = sessionData?.session?.access_token;
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
 
-      // Filter selected books and re-search with autoImport
-      const selectedBooks = Array.from(selected).map(i => books[i]).filter(Boolean);
+      // Send the actual selected books for import
+      const selectedBooks = Array.from(selected).map(i => books[i]).filter(b => b && b._verified);
 
       // Simulate progress
       const progressInterval = setInterval(() => {
@@ -137,7 +137,7 @@ const WebBookSearch = () => {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ query: query.trim(), count: selected.size, autoImport: true }),
+          body: JSON.stringify({ query: query.trim(), count: selectedBooks.length, autoImport: true, books: selectedBooks }),
         }
       );
 
@@ -150,10 +150,20 @@ const WebBookSearch = () => {
       }
 
       const data = await response.json();
-      setBooks(data.books || []);
+      
+      // Merge imported results back into the full books list
+      const importedMap = new Map<string, WebBook>();
+      (data.books || []).forEach((b: WebBook) => importedMap.set(b.title, b));
+      
+      const updatedBooks = books.map(b => {
+        const imported = importedMap.get(b.title);
+        return imported || b;
+      });
+      
+      setBooks(updatedBooks);
       setStats(prev => prev ? { ...prev, imported: data.imported } : null);
 
-      toast.success(`✅ تم استيراد ${data.imported} كتاب بنجاح`);
+      toast.success(`✅ تم استيراد ${data.imported} كتاب وتخزين ملفاتهم محلياً`);
     } catch (err: any) {
       toast.error(err.message || "فشل الاستيراد");
     } finally {
