@@ -9,6 +9,7 @@ import Index from "./pages/Index.tsx";
 import ProductDetail from "./pages/ProductDetail.tsx";
 import CategoryPage from "./pages/CategoryPage.tsx";
 import BookReader from "./pages/BookReader.tsx";
+import BooksPage from "./pages/BooksPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import CustomerAuth from "./pages/CustomerAuth.tsx";
 import Profile from "./pages/Profile.tsx";
