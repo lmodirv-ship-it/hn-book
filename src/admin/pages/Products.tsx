@@ -14,6 +14,7 @@ import { toast } from "sonner";
 interface Product {
   id: string;
   name: string;
+  reference_code: string | null;
   short_description: string | null;
   price: number;
   original_price: number | null;
@@ -36,7 +37,7 @@ const AdminProducts = () => {
   const fetchProducts = async () => {
     const { data } = await supabase
       .from("products")
-      .select("id, name, short_description, price, original_price, category, image, is_active, badge, pdf_url")
+      .select("id, name, reference_code, short_description, price, original_price, category, image, is_active, badge, pdf_url")
       .order("created_at", { ascending: false });
     setProducts(data || []);
     setLoading(false);
@@ -75,12 +76,20 @@ const AdminProducts = () => {
     }
   };
 
-  const handlePdfUpdated = (productId: string, url: string) => {
+  const handlePdfUpdated = (productId: string, url: string, referenceCode?: string) => {
     setProducts((prev) =>
-      prev.map((p) => (p.id === productId ? { ...p, pdf_url: url || null } : p))
+      prev.map((p) => (
+        p.id === productId
+          ? { ...p, pdf_url: url || null, reference_code: referenceCode ?? p.reference_code }
+          : p
+      ))
     );
     if (editProduct?.id === productId) {
-      setEditProduct((prev) => prev ? { ...prev, pdf_url: url || null } : null);
+      setEditProduct((prev) => prev ? {
+        ...prev,
+        pdf_url: url || null,
+        reference_code: referenceCode ?? prev.reference_code,
+      } : null);
     }
   };
 
@@ -138,6 +147,7 @@ const AdminProducts = () => {
             <thead>
               <tr className="border-b border-border bg-secondary/30">
                 <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">المنتج</th>
+                <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">المرجع</th>
                 <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">التصنيف</th>
                 <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">السعر</th>
                 <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">الأيقونة</th>
@@ -165,6 +175,9 @@ const AdminProducts = () => {
                       )}
                       <span className="font-medium text-foreground truncate max-w-[180px]">{p.name}</span>
                     </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="font-mono text-xs text-foreground/80">{p.reference_code || "—"}</span>
                   </td>
                   <td className="py-3 px-4">
                     <span className="text-xs px-2 py-1 rounded-full bg-secondary text-muted-foreground">{p.category}</span>
@@ -266,7 +279,7 @@ const AdminProducts = () => {
             <div className="space-y-6">
               <div>
                 <p className="text-sm font-medium text-foreground">{editProduct.name}</p>
-                <p className="text-xs text-muted-foreground">{editProduct.category} · ${editProduct.price}</p>
+                <p className="text-xs text-muted-foreground">{editProduct.category} · ${editProduct.price} · {editProduct.reference_code || "بدون مرجع"}</p>
               </div>
               <ProductImageUpload
                 productId={editProduct.id}
@@ -277,7 +290,8 @@ const AdminProducts = () => {
                 <BookPdfUpload
                   productId={editProduct.id}
                   currentPdfUrl={editProduct.pdf_url}
-                  onPdfUpdated={(url) => handlePdfUpdated(editProduct.id, url)}
+                  referenceCode={editProduct.reference_code}
+                  onPdfUpdated={(url, referenceCode) => handlePdfUpdated(editProduct.id, url, referenceCode)}
                 />
               </div>
             </div>

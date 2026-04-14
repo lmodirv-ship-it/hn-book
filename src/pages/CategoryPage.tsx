@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, ChevronDown, Loader2, SlidersHorizontal, ArrowUpDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { mapProductRowToProduct } from "@/lib/product-utils";
 
 const ITEMS_PER_PAGE = 100;
 
@@ -61,25 +62,12 @@ const CategoryPage = () => {
         .select("*")
         .eq("is_active", true)
         .eq("category", categoryName)
+        .not("pdf_url", "is", null)
+        .neq("pdf_url", "")
         .order("created_at", { ascending: false });
 
       if (data) {
-        const mapped: Product[] = data.map((p) => ({
-          id: p.id,
-          name: p.name,
-          description: p.description || "",
-          shortDescription: p.short_description || "",
-          price: Number(p.price),
-          originalPrice: p.original_price ? Number(p.original_price) : undefined,
-          category: p.category,
-          image: p.image || "",
-          features: p.features || [],
-          badge: p.badge || undefined,
-          isFlashDeal: p.is_flash_deal || false,
-          dealEndsIn: p.deal_ends_in || undefined,
-          referenceCode: (p as any).reference_code || undefined,
-          pdfUrl: p.pdf_url || undefined,
-        }));
+        const mapped: Product[] = data.map(mapProductRowToProduct);
         setProducts(mapped);
       }
       setLoading(false);

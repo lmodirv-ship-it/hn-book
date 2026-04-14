@@ -68,21 +68,14 @@ const BookReader = () => {
       const { data } = await supabase
         .from("products")
         .select("id, name, description, category, image, pdf_url, reference_code")
+        .eq("is_active", true)
+        .not("pdf_url", "is", null)
+        .neq("pdf_url", "")
         .eq("id", id)
         .maybeSingle();
       if (!data) { setLoading(false); return; }
       setBook(data);
-      if (data.pdf_url) {
-        setPdfUrl(data.pdf_url);
-      } else {
-        const { data: files } = await supabase
-          .from("product_files")
-          .select("public_url, file_name")
-          .eq("product_id", data.id)
-          .or("file_type.eq.pdf,file_name.ilike.%.pdf")
-          .limit(1);
-        if (files && files.length > 0) setPdfUrl(files[0].public_url);
-      }
+      setPdfUrl(data.pdf_url);
       setLoading(false);
     };
     fetchBook();
