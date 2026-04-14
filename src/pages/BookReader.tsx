@@ -568,6 +568,7 @@ const BookReader = () => {
           <Document
             file={resourceUrl}
             onLoadSuccess={onDocumentLoadSuccess}
+            onLoadError={() => setPdfLoadError(true)}
             loading={
               <div className="flex flex-col items-center gap-4">
                 <div className="w-12 h-12 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
@@ -577,15 +578,21 @@ const BookReader = () => {
             error={
               <div className="flex flex-col items-center gap-4 text-center px-4">
                 <BookOpen className="w-12 h-12 text-gray-500" />
-                <p className="text-gray-300 font-medium">تعذر تحميل الكتاب</p>
-                <a
-                  href={resourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-emerald-400 hover:underline text-sm"
-                >
-                  فتح الكتاب في نافذة جديدة
-                </a>
+                <p className="text-gray-300 font-medium">تعذر عرض هذا الملف — قد يكون تالفاً أو بصيغة غير مدعومة</p>
+                <p className="text-gray-500 text-xs max-w-md">يمكنك محاولة فتحه مباشرة في نافذة جديدة أو العودة لصفحة المنتج</p>
+                <div className="flex gap-3">
+                  <a
+                    href={resourceUrl || book?.pdf_url || "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-emerald-400 hover:underline text-sm"
+                  >
+                    فتح في نافذة جديدة ↗
+                  </a>
+                  <button onClick={() => navigate(`/product/${id}`)} className="text-blue-400 hover:underline text-sm">
+                    العودة لصفحة المنتج
+                  </button>
+                </div>
               </div>
             }
           >
