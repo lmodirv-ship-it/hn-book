@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import ParticleCanvas from "@/components/ParticleCanvas";
 import Navbar from "@/components/Navbar";
 import ProductCard from "@/components/ProductCard";
