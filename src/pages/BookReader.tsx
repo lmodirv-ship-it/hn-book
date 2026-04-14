@@ -384,16 +384,33 @@ const BookReader = () => {
   }
 
   if (!resourceUrl) {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
+    const isLocalFile = book.pdf_url?.includes(supabaseUrl) || book.pdf_url?.includes("supabase.co");
+
     return (
       <div className="min-h-screen bg-[#1a1a2e] flex flex-col items-center justify-center gap-6 px-4" dir="rtl">
         <BookOpen className="w-12 h-12 text-gray-500" />
         <div className="text-center space-y-2">
           <h1 className="text-lg font-bold text-white">{book.name}</h1>
-          <p className="text-gray-400 text-sm">تعذر تجهيز الملف للقراءة داخل الموقع</p>
+          {isLocalFile ? (
+            <p className="text-gray-400 text-sm">تعذر تحميل الملف من الخادم — يرجى المحاولة لاحقاً</p>
+          ) : (
+            <div className="space-y-1">
+              <p className="text-gray-400 text-sm">هذا الكتاب يعتمد على رابط خارجي غير متاح حالياً</p>
+              <p className="text-gray-500 text-xs">الملف لم يُخزّن محلياً أثناء الاستيراد — يمكن إعادة استيراده من لوحة التحكم</p>
+            </div>
+          )}
         </div>
-        <button onClick={() => navigate(`/product/${id}`)} className="text-emerald-400 hover:underline text-sm">
-          العودة لصفحة المنتج
-        </button>
+        <div className="flex gap-3">
+          <button onClick={() => navigate(`/product/${id}`)} className="text-emerald-400 hover:underline text-sm">
+            العودة لصفحة المنتج
+          </button>
+          {book.pdf_url && (
+            <a href={book.pdf_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline text-sm">
+              فتح الرابط الخارجي ↗
+            </a>
+          )}
+        </div>
       </div>
     );
   }
