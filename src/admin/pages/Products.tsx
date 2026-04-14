@@ -67,12 +67,20 @@ const AdminProducts = () => {
     toast.success("تم حذف المنتج");
   };
 
-  const handleImageUpdated = (productId: string, url: string) => {
+  const handleImageUpdated = (productId: string, url: string, referenceCode?: string) => {
     setProducts((prev) =>
-      prev.map((p) => (p.id === productId ? { ...p, image: url || null } : p))
+      prev.map((p) => (
+        p.id === productId
+          ? { ...p, image: url || null, reference_code: referenceCode ?? p.reference_code }
+          : p
+      ))
     );
     if (editProduct?.id === productId) {
-      setEditProduct((prev) => prev ? { ...prev, image: url || null } : null);
+      setEditProduct((prev) => prev ? {
+        ...prev,
+        image: url || null,
+        reference_code: referenceCode ?? prev.reference_code,
+      } : null);
     }
   };
 
@@ -284,7 +292,8 @@ const AdminProducts = () => {
               <ProductImageUpload
                 productId={editProduct.id}
                 currentImage={editProduct.image}
-                onImageUpdated={(url) => handleImageUpdated(editProduct.id, url)}
+                referenceCode={editProduct.reference_code}
+                onImageUpdated={(url, ref) => handleImageUpdated(editProduct.id, url, ref)}
               />
               <div className="border-t border-border pt-4">
                 <BookPdfUpload
