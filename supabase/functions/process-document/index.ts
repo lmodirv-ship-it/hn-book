@@ -162,6 +162,12 @@ serve(async (req) => {
 
   try {
     const contentType = req.headers.get("content-type") || "";
+
+    if (!contentType) {
+      return new Response(JSON.stringify({ error: "Content-Type header is required" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     let fileBytes: Uint8Array;
     let fileName: string;
     let mimeType: string;
