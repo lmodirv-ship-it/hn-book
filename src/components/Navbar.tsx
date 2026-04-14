@@ -1,11 +1,12 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import hnLogo from "@/assets/hn-logo.jpeg";
-import { ShoppingCart, Menu, X, ArrowRight, Globe, Sparkles } from "lucide-react";
+import { ShoppingCart, Menu, X, ArrowRight, Globe, Sparkles, LogOut, User } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useI18n, locales } from "@/lib/i18n";
+import { supabase } from "@/integrations/supabase/client";
 
 interface NavbarProps {
   categories?: string[];
@@ -30,8 +31,35 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const langRef = useRef<HTMLDivElement>(null);
   const { t, locale, setLocale } = useI18n();
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        const { data } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id)
+          .eq("role", "admin")
+          .maybeSingle();
+        setIsAdmin(!!data);
+      } else {
+        setIsAdmin(false);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setIsAdmin(false);
+    navigate("/");
+  };
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 10);
@@ -224,30 +252,41 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                   )}
                 </React.Fragment>
               ))}
-              <motion.button
-                onClick={() => navigate("/auth")}
-                className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border border-primary/50 bg-primary/20 backdrop-blur-sm"
-                animate={{
-                  boxShadow: [
-                    "inset 0 0 8px -2px hsl(199,89%,48%,0.3), 0 0 10px -2px hsl(199,89%,48%,0.2)",
-                    "inset 0 0 20px -2px hsl(199,89%,48%,0.7), 0 0 25px -2px hsl(199,89%,48%,0.5)",
-                    "inset 0 0 8px -2px hsl(199,89%,48%,0.3), 0 0 10px -2px hsl(199,89%,48%,0.2)",
-                  ],
-                  borderColor: [
-                    "hsl(199,89%,48%,0.4)",
-                    "hsl(199,89%,48%,0.8)",
-                    "hsl(199,89%,48%,0.4)",
-                  ],
-                }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.9 }}
-                whileHover={{
-                  boxShadow: "inset 0 0 25px -2px hsl(199,89%,48%,0.85), 0 0 35px -2px hsl(199,89%,48%,0.6)",
-                  borderColor: "hsl(199,89%,48%,0.9)",
-                  scale: 1.05,
-                }}
-              >
-                {t("nav.getStarted")}
-              </motion.button>
+              {user ? (
+                <motion.button
+                  onClick={handleLogout}
+                  className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border border-destructive/50 bg-destructive/20 backdrop-blur-sm flex items-center gap-1"
+                  whileHover={{ scale: 1.05 }}
+                >
+                  <LogOut className="h-3 w-3" />
+                  خروج
+                </motion.button>
+              ) : (
+                <motion.button
+                  onClick={() => navigate("/auth")}
+                  className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border border-primary/50 bg-primary/20 backdrop-blur-sm"
+                  animate={{
+                    boxShadow: [
+                      "inset 0 0 8px -2px hsl(199,89%,48%,0.3), 0 0 10px -2px hsl(199,89%,48%,0.2)",
+                      "inset 0 0 20px -2px hsl(199,89%,48%,0.7), 0 0 25px -2px hsl(199,89%,48%,0.5)",
+                      "inset 0 0 8px -2px hsl(199,89%,48%,0.3), 0 0 10px -2px hsl(199,89%,48%,0.2)",
+                    ],
+                    borderColor: [
+                      "hsl(199,89%,48%,0.4)",
+                      "hsl(199,89%,48%,0.8)",
+                      "hsl(199,89%,48%,0.4)",
+                    ],
+                  }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.9 }}
+                  whileHover={{
+                    boxShadow: "inset 0 0 25px -2px hsl(199,89%,48%,0.85), 0 0 35px -2px hsl(199,89%,48%,0.6)",
+                    borderColor: "hsl(199,89%,48%,0.9)",
+                    scale: 1.05,
+                  }}
+                >
+                  {t("nav.getStarted")}
+                </motion.button>
+              )}
             </div>
 
             {/* Categories box */}
@@ -304,7 +343,16 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
 
         {/* Desktop actions */}
         <div className="hidden items-center gap-2.5 md:flex shrink-0">
-
+          {user && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/40"
+              onClick={() => navigate(isAdmin ? "/admin" : "/profile")}
+            >
+              <User className="h-4 w-4" />
+            </Button>
+          )}
           <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/40">
             <ShoppingCart className="h-4 w-4" />
             <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[9px] font-bold text-accent-foreground">
@@ -405,12 +453,22 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                   </button>
                 ))}
               </div>
-              <button
-                onClick={() => { navigate("/auth"); setMobileOpen(false); }}
-                className="mt-1 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white transition-all duration-300 bg-primary/10 border border-primary/20 hover:bg-primary/25 hover:border-primary/40 hover:shadow-[0_0_15px_-3px_hsl(199,89%,48%,0.3)] backdrop-blur-sm"
-              >
-                {t("nav.getStarted")}
-              </button>
+              {user ? (
+                <button
+                  onClick={() => { handleLogout(); setMobileOpen(false); }}
+                  className="mt-1 w-full rounded-xl px-4 py-3 text-sm font-semibold text-destructive transition-all duration-300 bg-destructive/10 border border-destructive/20 hover:bg-destructive/25 hover:border-destructive/40 backdrop-blur-sm flex items-center justify-center gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  خروج
+                </button>
+              ) : (
+                <button
+                  onClick={() => { navigate("/auth"); setMobileOpen(false); }}
+                  className="mt-1 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white transition-all duration-300 bg-primary/10 border border-primary/20 hover:bg-primary/25 hover:border-primary/40 hover:shadow-[0_0_15px_-3px_hsl(199,89%,48%,0.3)] backdrop-blur-sm"
+                >
+                  {t("nav.getStarted")}
+                </button>
+              )}
             </nav>
           </motion.div>
         )}
