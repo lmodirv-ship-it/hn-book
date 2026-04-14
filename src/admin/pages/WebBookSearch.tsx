@@ -32,6 +32,7 @@ interface WebBook {
   _product_id?: string;
   _code?: string;
   _reason?: string;
+  _stored_locally?: boolean;
 }
 
 const SOURCE_COLORS: Record<string, string> = {

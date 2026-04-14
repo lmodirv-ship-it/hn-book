@@ -6,6 +6,20 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+/** Returns true if content-type looks like a real downloadable file (not HTML) */
+function isValidFileContentType(ct: string | null): boolean {
+  if (!ct) return false;
+  const t = ct.toLowerCase();
+  return (
+    t.includes("pdf") ||
+    t.includes("epub") ||
+    t.includes("image/") ||
+    t.includes("octet-stream") ||
+    t.includes("zip") ||
+    t.includes("svg")
+  );
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -30,13 +44,11 @@ serve(async (req) => {
       let gbUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=${Math.min(bookCount, 40)}&orderBy=relevance${gbKeyParam}`;
       console.log("Google Books: searching...");
       let gbResp = await fetch(gbUrl);
-      // If API key is blocked (403), retry without key
       if (!gbResp.ok && GOOGLE_BOOKS_API_KEY) {
         console.log("Google Books: API key blocked, retrying without key...");
         gbUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=${Math.min(bookCount, 40)}&orderBy=relevance`;
         gbResp = await fetch(gbUrl);
       }
-      console.log("Google Books status:", gbResp.status);
       console.log("Google Books status:", gbResp.status);
       if (gbResp.ok) {
         const gbData = await gbResp.json();
@@ -77,7 +89,7 @@ serve(async (req) => {
             _has_epub: epubInfo.isAvailable || false,
           });
         }
-        console.log(`Google Books: found ${googleBooksResults.length} free ebooks`);
+        console.log(`Google Books: found ${googleBooksResults.length} ebooks`);
       } else {
         const errText = await gbResp.text();
         console.error("Google Books API failed:", gbResp.status, errText);
@@ -138,10 +150,8 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks.`;
       const errText = await response.text();
       console.error("Gemini API error:", response.status, errText);
       if (response.status === 429) {
-        // If Gemini fails but we have Google Books results, return those
         if (googleBooksResults.length > 0) {
           const books = googleBooksResults;
-          // Continue to verification step below
           const verifiedBooks: any[] = [];
           for (const book of books) {
             if (book._has_pdf || book._has_epub) {
@@ -193,7 +203,6 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks.`;
     // Step 2: Verify URLs are accessible
     const verifiedBooks = [];
     for (const book of books) {
-      // Google Books with PDF/epub available are pre-verified
       if (book._has_pdf || book._has_epub) {
         book._verified = true;
         verifiedBooks.push(book);
@@ -215,13 +224,11 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks.`;
 
     // Step 3: If autoImport, download and save to database
     if (autoImport) {
-      // Use pre-selected books if provided, otherwise use search results
       const booksToImport = (preSelectedBooks && preSelectedBooks.length > 0) ? preSelectedBooks : verifiedBooks;
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const supabase = createClient(supabaseUrl, supabaseKey);
 
-      // Category → storage folder mapping
       const categoryFolder = (cat: string): string => {
         const c = (cat || "").toLowerCase();
         if (c.includes("شعار") || c.includes("logo")) return "logos";
@@ -235,7 +242,7 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks.`;
       const imported = [];
       for (const book of booksToImport) {
         if (!book._verified) {
-          imported.push({ ...book, _imported: false, _reason: "رابط غير متاح" });
+          imported.push({ ...book, _imported: false, _reason: "رابط غير متاح", _stored_locally: false });
           continue;
         }
 
@@ -260,73 +267,103 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks.`;
           }).select().single();
 
           if (insertErr || !product) {
-            imported.push({ ...book, _imported: false, _reason: insertErr?.message || "فشل الإدراج" });
+            imported.push({ ...book, _imported: false, _reason: insertErr?.message || "فشل الإدراج", _stored_locally: false });
             continue;
           }
 
           const ref = product.reference_code || product.id.substring(0, 8);
 
-          // Step B: Download & upload main file using reference_code as folder + filename
+          // Step B: Download & upload main file — VALIDATE content-type
           let fileUrl: string | null = null;
           let storagePath: string | null = null;
           let fileExt = "pdf";
           let fileType = "pdf";
+          let storedLocally = false;
 
           try {
-            const dlResp = await fetch(book.download_url);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+            const dlResp = await fetch(book.download_url, { signal: controller.signal });
+            clearTimeout(timeoutId);
+
             if (dlResp.ok) {
               const ct = dlResp.headers.get("content-type") || "";
-              if (ct.includes("image")) {
-                fileExt = ct.includes("png") ? "png" : "jpg";
-                fileType = "image";
-              } else if (ct.includes("svg")) {
-                fileExt = "svg";
-                fileType = "image";
-              }
 
-              const fileData = await dlResp.arrayBuffer();
-              const bucket = fileType === "pdf" ? "book-files" : "book-images";
-              const path = `${folder}/${ref}/${ref}.${fileExt}`;
+              // CRITICAL: Reject HTML responses — these are login/redirect pages, not real files
+              if (ct.includes("text/html") || ct.includes("text/plain")) {
+                console.log(`Rejected download for "${book.title}": content-type is ${ct} (not a file)`);
+                // Don't save pdf_url — it's not a real file
+              } else if (isValidFileContentType(ct)) {
+                if (ct.includes("image")) {
+                  fileExt = ct.includes("png") ? "png" : ct.includes("svg") ? "svg" : "jpg";
+                  fileType = "image";
+                }
 
-              const { error: upErr } = await supabase.storage
-                .from(bucket)
-                .upload(path, new Uint8Array(fileData), { contentType: ct || "application/pdf", upsert: true });
-              if (!upErr) {
-                storagePath = `${bucket}/${path}`;
-                fileUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${path}`;
+                const fileData = await dlResp.arrayBuffer();
+                // Additional check: reject suspiciously small files (< 1KB likely error pages)
+                if (fileData.byteLength < 1024) {
+                  console.log(`Rejected download for "${book.title}": file too small (${fileData.byteLength} bytes)`);
+                } else {
+                  const bucket = fileType === "pdf" ? "book-files" : "book-images";
+                  const path = `${folder}/${ref}/${ref}.${fileExt}`;
+
+                  const { error: upErr } = await supabase.storage
+                    .from(bucket)
+                    .upload(path, new Uint8Array(fileData), { contentType: ct || "application/pdf", upsert: true });
+                  if (!upErr) {
+                    storagePath = `${bucket}/${path}`;
+                    fileUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${path}`;
+                    storedLocally = true;
+                    console.log(`✅ Stored locally: "${book.title}" → ${path} (${fileData.byteLength} bytes)`);
+                  } else {
+                    console.error(`Upload failed for "${book.title}":`, upErr.message);
+                  }
+                }
+              } else {
+                console.log(`Rejected download for "${book.title}": unknown content-type ${ct}`);
               }
+            } else {
+              console.log(`Download failed for "${book.title}": HTTP ${dlResp.status}`);
             }
-          } catch (dlErr) {
-            console.error(`Download failed for ${book.title}:`, dlErr);
+          } catch (dlErr: any) {
+            console.error(`Download error for "${book.title}":`, dlErr.message);
           }
 
-          // Step C: Download & upload cover image using same reference_code folder
+          // Step C: Download & upload cover image
           let coverUrl = book.cover_url || null;
           if (coverUrl) {
             try {
-              const coverResp = await fetch(coverUrl);
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 8000);
+              const coverResp = await fetch(coverUrl, { signal: controller.signal });
+              clearTimeout(timeoutId);
               if (coverResp.ok) {
-                const coverData = await coverResp.arrayBuffer();
-                const coverPath = `${folder}/${ref}/${ref}-cover.jpg`;
-                const { error: coverErr } = await supabase.storage
-                  .from("book-images")
-                  .upload(coverPath, new Uint8Array(coverData), { contentType: "image/jpeg", upsert: true });
-                if (!coverErr) {
-                  coverUrl = `${supabaseUrl}/storage/v1/object/public/book-images/${coverPath}`;
+                const coverCt = coverResp.headers.get("content-type") || "";
+                if (coverCt.includes("image")) {
+                  const coverData = await coverResp.arrayBuffer();
+                  if (coverData.byteLength > 500) {
+                    const coverPath = `${folder}/${ref}/${ref}-cover.jpg`;
+                    const { error: coverErr } = await supabase.storage
+                      .from("book-images")
+                      .upload(coverPath, new Uint8Array(coverData), { contentType: "image/jpeg", upsert: true });
+                    if (!coverErr) {
+                      coverUrl = `${supabaseUrl}/storage/v1/object/public/book-images/${coverPath}`;
+                    }
+                  }
                 }
               }
             } catch { /* use original cover URL */ }
           }
 
-          // Step D: Update product with file URLs
+          // Step D: Update product — only set pdf_url if stored locally
           await supabase.from("products").update({
             image: coverUrl,
-            pdf_url: fileUrl,
+            pdf_url: storedLocally ? fileUrl : null, // CRITICAL: don't save broken external URLs
             badge: ref,
           }).eq("id", product.id);
 
           // Step E: Register file in product_files table
-          if (fileUrl && storagePath) {
+          if (fileUrl && storagePath && storedLocally) {
             await supabase.from("product_files").insert({
               product_id: product.id,
               file_type: fileType as any,
@@ -349,9 +386,16 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks.`;
             });
           }
 
-          imported.push({ ...book, _imported: true, _product_id: product.id, _code: ref });
+          imported.push({
+            ...book,
+            _imported: true,
+            _product_id: product.id,
+            _code: ref,
+            _stored_locally: storedLocally,
+            _reason: storedLocally ? undefined : "تم إنشاء المنتج لكن الملف لم يُخزّن محلياً (رابط خارجي غير صالح)",
+          });
         } catch (err: any) {
-          imported.push({ ...book, _imported: false, _reason: err.message });
+          imported.push({ ...book, _imported: false, _reason: err.message, _stored_locally: false });
         }
       }
 
@@ -359,6 +403,7 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks.`;
         success: true, query, total: books.length,
         verified: verifiedBooks.filter((b: any) => b._verified).length,
         imported: imported.filter((b: any) => b._imported).length,
+        stored_locally: imported.filter((b: any) => b._stored_locally).length,
         books: imported,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
