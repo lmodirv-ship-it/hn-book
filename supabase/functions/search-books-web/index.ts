@@ -233,7 +233,7 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks.`;
       };
 
       const imported = [];
-      for (const book of verifiedBooks) {
+      for (const book of booksToImport) {
         if (!book._verified) {
           imported.push({ ...book, _imported: false, _reason: "رابط غير متاح" });
           continue;
