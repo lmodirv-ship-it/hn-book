@@ -102,8 +102,6 @@ const BookReader = () => {
           .from("products")
           .select("id, name, description, category, image, pdf_url, reference_code")
           .eq("is_active", true)
-          .not("pdf_url", "is", null)
-          .neq("pdf_url", "")
           .eq("id", id)
           .maybeSingle();
 
