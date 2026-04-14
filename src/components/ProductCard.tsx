@@ -156,14 +156,17 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
 
               {/* Read button */}
               {product.pdfUrl && (
-                <Link
-                  to={`/read/${product.id}`}
-                  onClick={(e) => e.stopPropagation()}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = `/read/${product.id}`;
+                  }}
                   className="mt-2 flex items-center justify-center gap-1.5 w-full py-2 rounded-lg text-xs font-semibold text-primary bg-primary/10 border border-primary/20 hover:bg-primary/20 hover:border-primary/40 transition-all"
                 >
                   <BookOpen className="h-3.5 w-3.5" />
                   مطالعة
-                </Link>
+                </button>
               )}
             </div>
           </div>
