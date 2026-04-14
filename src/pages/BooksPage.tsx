@@ -97,8 +97,6 @@ const BooksPage = () => {
           .from("products")
           .select("*")
           .eq("is_active", true)
-          .not("pdf_url", "is", null)
-          .neq("pdf_url", "")
           .order("created_at", { ascending: false })
           .limit(1000);
 
