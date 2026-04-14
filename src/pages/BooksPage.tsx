@@ -321,6 +321,28 @@ const BooksPage = () => {
                 })}
               </div>
 
+              {/* Sort Row */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted-foreground flex items-center gap-1.5 ml-2">
+                  <ArrowUpDown className="w-3.5 h-3.5" />
+                  الفرز:
+                </span>
+                {SORT_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.code}
+                    onClick={() => setSortBy(opt.code)}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
+                      sortBy === opt.code
+                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_12px_-3px_rgba(16,185,129,0.4)]"
+                        : "bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    <span className="text-sm">{opt.icon}</span>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
               {/* Search */}
               <div className="relative max-w-md">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
