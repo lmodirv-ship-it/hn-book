@@ -444,12 +444,22 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
                   </button>
                 ))}
               </div>
-              <button
-                onClick={() => { navigate("/auth"); setMobileOpen(false); }}
-                className="mt-1 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white transition-all duration-300 bg-primary/10 border border-primary/20 hover:bg-primary/25 hover:border-primary/40 hover:shadow-[0_0_15px_-3px_hsl(199,89%,48%,0.3)] backdrop-blur-sm"
-              >
-                {t("nav.getStarted")}
-              </button>
+              {user ? (
+                <button
+                  onClick={() => { handleLogout(); setMobileOpen(false); }}
+                  className="mt-1 w-full rounded-xl px-4 py-3 text-sm font-semibold text-destructive transition-all duration-300 bg-destructive/10 border border-destructive/20 hover:bg-destructive/25 hover:border-destructive/40 backdrop-blur-sm flex items-center justify-center gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  خروج
+                </button>
+              ) : (
+                <button
+                  onClick={() => { navigate("/auth"); setMobileOpen(false); }}
+                  className="mt-1 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white transition-all duration-300 bg-primary/10 border border-primary/20 hover:bg-primary/25 hover:border-primary/40 hover:shadow-[0_0_15px_-3px_hsl(199,89%,48%,0.3)] backdrop-blur-sm"
+                >
+                  {t("nav.getStarted")}
+                </button>
+              )}
             </nav>
           </motion.div>
         )}
