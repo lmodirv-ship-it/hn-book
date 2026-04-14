@@ -42,8 +42,6 @@ const ProductDetail = () => {
         .select("*")
         .eq("id", id)
         .eq("is_active", true)
-        .not("pdf_url", "is", null)
-        .neq("pdf_url", "")
         .single();
 
       if (data) {
@@ -68,8 +66,6 @@ const ProductDetail = () => {
           .from("products")
           .select("*")
           .eq("is_active", true)
-          .not("pdf_url", "is", null)
-          .neq("pdf_url", "")
           .eq("category", data.category)
           .neq("id", data.id)
           .limit(4);

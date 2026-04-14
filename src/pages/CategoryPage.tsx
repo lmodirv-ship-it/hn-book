@@ -88,8 +88,6 @@ const CategoryPage = () => {
         .select("*")
         .eq("is_active", true)
         .eq("category", categoryName)
-        .not("pdf_url", "is", null)
-        .neq("pdf_url", "")
         .order("created_at", { ascending: false });
 
       if (data) {

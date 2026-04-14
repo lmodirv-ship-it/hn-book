@@ -14,9 +14,7 @@ const HeroSection = () => {
       const { count } = await supabase
         .from("products")
         .select("*", { count: "exact", head: true })
-        .eq("is_active", true)
-        .not("pdf_url", "is", null)
-        .neq("pdf_url", "");
+        .eq("is_active", true);
       setProductCount(count || 0);
     };
     fetchCount();
