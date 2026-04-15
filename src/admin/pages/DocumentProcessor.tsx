@@ -37,17 +37,18 @@ const DocumentProcessor = () => {
   useEffect(() => { loadSavedDocs(); }, []);
 
   const loadSavedDocs = async () => {
-    const { data } = await supabase
-      .from("processed_documents")
+    const { data, error } = await supabase
+      .from("processed_documents" as any)
       .select("*")
       .order("created_at", { ascending: false })
       .limit(50);
-    if (data) setSavedDocs(data);
+    if (error) console.error("Load saved docs error:", error);
+    if (data) setSavedDocs(data as any[]);
   };
 
   const saveToDb = async (doc: ProcessedDoc) => {
     const { data: { user } } = await supabase.auth.getUser();
-    await supabase.from("processed_documents").insert({
+    const { error } = await supabase.from("processed_documents" as any).insert({
       user_id: user?.id || null,
       file_name: doc.fileName,
       engines_used: doc.enginesUsed,
@@ -56,7 +57,8 @@ const DocumentProcessor = () => {
       confidence: doc.result.confidence || null,
       metadata: doc.result.metadata || {},
       custom_prompt: customPrompt || null,
-    } as any);
+    });
+    if (error) console.error("Save to DB error:", error);
     loadSavedDocs();
   };
 
