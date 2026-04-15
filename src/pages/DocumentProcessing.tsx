@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { Upload, FileText, Loader2, Copy, Download, Sparkles, Eye, Globe, Cpu, CheckCircle2 } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Upload, FileText, Loader2, Copy, Download, Sparkles, Eye, Globe, Cpu, CheckCircle2, History, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,6 +16,16 @@ interface ProcessingResult {
   metadata?: any;
 }
 
+interface SavedDoc {
+  id: string;
+  file_name: string;
+  engines_used: string[];
+  extracted_text: string;
+  structured_data: any;
+  confidence: number;
+  created_at: string;
+}
+
 const DocumentProcessing = () => {
   const [file, setFile] = useState<File | null>(null);
   const [url, setUrl] = useState("");
@@ -25,7 +35,37 @@ const DocumentProcessing = () => {
   const [selectedEngines, setSelectedEngines] = useState<string[]>(["gemini"]);
   const [customPrompt, setCustomPrompt] = useState("");
   const [activeTab, setActiveTab] = useState<"upload" | "url">("upload");
+  const [history, setHistory] = useState<SavedDoc[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { loadHistory(); }, []);
+
+  const loadHistory = async () => {
+    const { data } = await supabase
+      .from("processed_documents")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(20);
+    if (data) setHistory(data as SavedDoc[]);
+  };
+
+  const saveResult = async (fileName: string, res: ProcessingResult, engines: string[], fileSizeKb?: number) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from("processed_documents").insert({
+      user_id: user?.id || null,
+      file_name: fileName,
+      file_type: file?.type || "url",
+      file_size_kb: fileSizeKb || null,
+      engines_used: engines,
+      extracted_text: res.text,
+      structured_data: res.structured_data || {},
+      confidence: res.confidence || null,
+      metadata: res.metadata || {},
+      custom_prompt: customPrompt || null,
+    } as any);
+    loadHistory();
+  };
 
   const toggleEngine = (engine: string) => {
     setSelectedEngines(prev =>
