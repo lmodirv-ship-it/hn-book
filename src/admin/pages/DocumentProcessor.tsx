@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { Upload, FileText, Loader2, Copy, Download, Eye, Globe, Cpu, CheckCircle2, RotateCcw, Trash2 } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Upload, FileText, Loader2, Copy, Download, Eye, Globe, Cpu, CheckCircle2, RotateCcw, Trash2, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
