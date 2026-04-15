@@ -48,7 +48,7 @@ const DocumentProcessing = () => {
       .order("created_at", { ascending: false })
       .limit(20);
     if (error) console.error("Load history error:", error);
-    if (data) setHistory(data as SavedDoc[]);
+    if (data) setHistory(data as unknown as SavedDoc[]);
   };
 
   const saveResult = async (fileName: string, res: ProcessingResult, engines: string[], fileSizeKb?: number) => {
