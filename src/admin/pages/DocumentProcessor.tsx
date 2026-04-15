@@ -30,7 +30,35 @@ const DocumentProcessor = () => {
   const [selectedEngines, setSelectedEngines] = useState<string[]>(["gemini"]);
   const [customPrompt, setCustomPrompt] = useState("");
   const [selectedDoc, setSelectedDoc] = useState<ProcessedDoc | null>(null);
+  const [savedDocs, setSavedDocs] = useState<any[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { loadSavedDocs(); }, []);
+
+  const loadSavedDocs = async () => {
+    const { data } = await supabase
+      .from("processed_documents")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (data) setSavedDocs(data);
+  };
+
+  const saveToDb = async (doc: ProcessedDoc) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from("processed_documents").insert({
+      user_id: user?.id || null,
+      file_name: doc.fileName,
+      engines_used: doc.enginesUsed,
+      extracted_text: doc.result.text,
+      structured_data: doc.result.structured_data || {},
+      confidence: doc.result.confidence || null,
+      metadata: doc.result.metadata || {},
+      custom_prompt: customPrompt || null,
+    } as any);
+    loadSavedDocs();
+  };
 
   const toggleEngine = (engine: string) => {
     setSelectedEngines(prev =>
