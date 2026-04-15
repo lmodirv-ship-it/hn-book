@@ -405,6 +405,56 @@ const DocumentProcessing = () => {
             )}
           </Card>
         )}
+
+        {/* History Section */}
+        <div className="mt-8">
+          <button
+            onClick={() => setShowHistory(!showHistory)}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+          >
+            <History className="w-4 h-4" />
+            سجل المعالجات ({history.length})
+          </button>
+
+          {showHistory && history.length > 0 && (
+            <div className="space-y-2">
+              {history.map((doc) => (
+                <Card
+                  key={doc.id}
+                  className="p-4 border-border bg-card/50 cursor-pointer hover:bg-card transition-colors"
+                  onClick={() => {
+                    setResult({
+                      engine: (doc.engines_used || []).join(" + "),
+                      text: doc.extracted_text || "",
+                      structured_data: doc.structured_data,
+                      confidence: doc.confidence,
+                    });
+                    setEnginesUsed(doc.engines_used || []);
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-4 h-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground truncate max-w-xs">{doc.file_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(doc.created_at).toLocaleDateString("ar")} · {(doc.engines_used || []).join(" + ")}
+                        </p>
+                      </div>
+                    </div>
+                    {doc.confidence && (
+                      <span className="text-xs text-muted-foreground">{Math.round(doc.confidence * 100)}%</span>
+                    )}
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {showHistory && history.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-4">لا توجد معالجات سابقة</p>
+          )}
+        </div>
       </div>
 
       <Footer />
