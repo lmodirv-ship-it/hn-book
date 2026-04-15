@@ -185,6 +185,54 @@ export type Database = {
         }
         Relationships: []
       }
+      processed_documents: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          custom_prompt: string | null
+          engines_used: string[] | null
+          extracted_text: string | null
+          file_name: string
+          file_size_kb: number | null
+          file_type: string | null
+          id: string
+          metadata: Json | null
+          structured_data: Json | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          custom_prompt?: string | null
+          engines_used?: string[] | null
+          extracted_text?: string | null
+          file_name: string
+          file_size_kb?: number | null
+          file_type?: string | null
+          id?: string
+          metadata?: Json | null
+          structured_data?: Json | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          custom_prompt?: string | null
+          engines_used?: string[] | null
+          extracted_text?: string | null
+          file_name?: string
+          file_size_kb?: number | null
+          file_type?: string | null
+          id?: string
+          metadata?: Json | null
+          structured_data?: Json | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       product_files: {
         Row: {
           created_at: string
