@@ -42,17 +42,18 @@ const DocumentProcessing = () => {
   useEffect(() => { loadHistory(); }, []);
 
   const loadHistory = async () => {
-    const { data } = await supabase
-      .from("processed_documents")
+    const { data, error } = await supabase
+      .from("processed_documents" as any)
       .select("*")
       .order("created_at", { ascending: false })
       .limit(20);
+    if (error) console.error("Load history error:", error);
     if (data) setHistory(data as SavedDoc[]);
   };
 
   const saveResult = async (fileName: string, res: ProcessingResult, engines: string[], fileSizeKb?: number) => {
     const { data: { user } } = await supabase.auth.getUser();
-    await supabase.from("processed_documents").insert({
+    const { error } = await supabase.from("processed_documents" as any).insert({
       user_id: user?.id || null,
       file_name: fileName,
       file_type: file?.type || "url",
@@ -63,7 +64,8 @@ const DocumentProcessing = () => {
       confidence: res.confidence || null,
       metadata: res.metadata || {},
       custom_prompt: customPrompt || null,
-    } as any);
+    });
+    if (error) console.error("Save result error:", error);
     loadHistory();
   };
 
