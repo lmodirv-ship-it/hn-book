@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { Upload, FileText, Loader2, Copy, Download, Eye, Globe, Cpu, CheckCircle2, RotateCcw, Trash2 } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Upload, FileText, Loader2, Copy, Download, Eye, Globe, Cpu, CheckCircle2, RotateCcw, Trash2, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,7 +30,35 @@ const DocumentProcessor = () => {
   const [selectedEngines, setSelectedEngines] = useState<string[]>(["gemini"]);
   const [customPrompt, setCustomPrompt] = useState("");
   const [selectedDoc, setSelectedDoc] = useState<ProcessedDoc | null>(null);
+  const [savedDocs, setSavedDocs] = useState<any[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { loadSavedDocs(); }, []);
+
+  const loadSavedDocs = async () => {
+    const { data } = await supabase
+      .from("processed_documents")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (data) setSavedDocs(data);
+  };
+
+  const saveToDb = async (doc: ProcessedDoc) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from("processed_documents").insert({
+      user_id: user?.id || null,
+      file_name: doc.fileName,
+      engines_used: doc.enginesUsed,
+      extracted_text: doc.result.text,
+      structured_data: doc.result.structured_data || {},
+      confidence: doc.result.confidence || null,
+      metadata: doc.result.metadata || {},
+      custom_prompt: customPrompt || null,
+    } as any);
+    loadSavedDocs();
+  };
 
   const toggleEngine = (engine: string) => {
     setSelectedEngines(prev =>
@@ -76,6 +104,7 @@ const DocumentProcessor = () => {
           };
           setProcessedDocs(prev => [doc, ...prev]);
           if (i === 0) setSelectedDoc(doc);
+          await saveToDb(doc);
         }
       } catch (err: any) {
         toast({ title: `فشل: ${file.name}`, description: err.message, variant: "destructive" });
@@ -283,6 +312,46 @@ const DocumentProcessor = () => {
               ))}
             </div>
           )}
+
+          {/* Saved History */}
+          <div className="mt-4">
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
+            >
+              <History className="w-4 h-4" />
+              السجل المحفوظ ({savedDocs.length})
+            </button>
+            {showHistory && savedDocs.length > 0 && (
+              <div className="space-y-2 max-h-60 overflow-auto">
+                {savedDocs.map((doc: any) => (
+                  <button
+                    key={doc.id}
+                    onClick={() => setSelectedDoc({
+                      id: doc.id,
+                      fileName: doc.file_name,
+                      result: {
+                        engine: (doc.engines_used || []).join(" + "),
+                        text: doc.extracted_text || "",
+                        structured_data: doc.structured_data,
+                        confidence: doc.confidence,
+                        metadata: doc.metadata,
+                      },
+                      enginesUsed: doc.engines_used || [],
+                      timestamp: new Date(doc.created_at),
+                    })}
+                    className="w-full flex items-center gap-3 p-3 rounded-lg text-sm bg-card hover:bg-secondary border border-border transition-all"
+                  >
+                    <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <span className="truncate text-foreground">{doc.file_name}</span>
+                    <span className="text-xs text-muted-foreground mr-auto">
+                      {new Date(doc.created_at).toLocaleDateString("ar")}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
