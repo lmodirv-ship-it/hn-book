@@ -119,6 +119,9 @@ const DocumentProcessing = () => {
       if (data?.success) {
         setResult(data.result);
         setEnginesUsed(data.engines_used || []);
+        const fileName = file?.name || url || "document";
+        const fileSizeKb = file ? Math.round(file.size / 1024) : undefined;
+        await saveResult(fileName, data.result, data.engines_used || [], fileSizeKb);
         toast({ title: "تمت المعالجة بنجاح ✨", description: `تم استخدام: ${(data.engines_used || []).join(" + ")}` });
       } else {
         throw new Error(data?.error || "فشلت المعالجة");
