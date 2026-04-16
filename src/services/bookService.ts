@@ -174,16 +174,29 @@ export const bookService = {
 
   /** Get a single book by ID */
   async getById(id: string): Promise<ApiResult<Book>> {
-    const { data, error } = await db.from("products").select("*").eq("id", id).single();
+    const { data, error } = await db.from("products").select("*").eq("id", id).maybeSingle();
     if (error) return fail(error.message);
+    if (!data) return fail("الكتاب غير موجود");
     return ok(mapRow(data));
   },
 
-  /** Get a single book by slug */
+  /** Get a single book by slug, falling back to reference_code */
   async getBySlug(slug: string): Promise<ApiResult<Book>> {
-    const { data, error } = await db.from("products").select("*").eq("slug", slug).single();
+    // Try slug first
+    const { data, error } = await db.from("products").select("*").eq("slug", slug).maybeSingle();
     if (error) return fail(error.message);
-    return ok(mapRow(data));
+    if (data) return ok(mapRow(data));
+
+    // Fallback: try reference_code (case-insensitive: hnb-9669 → HNB-9669)
+    const upper = slug.toUpperCase();
+    const { data: refData, error: refError } = await db
+      .from("products")
+      .select("*")
+      .ilike("reference_code", upper)
+      .maybeSingle();
+    if (refError) return fail(refError.message);
+    if (!refData) return fail("الكتاب غير موجود");
+    return ok(mapRow(refData));
   },
 
   /** Create a new book */
