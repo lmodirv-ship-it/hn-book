@@ -30,6 +30,9 @@ const CheckoutPage = () => {
   const navigate = useNavigate();
   const { items, totalPrice, clearCart, itemCount } = useCart();
   const [submitting, setSubmitting] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponResult, setCouponResult] = useState<CouponValidation | null>(null);
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -39,6 +42,31 @@ const CheckoutPage = () => {
     paymentMethod: "cod",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const discountAmount = couponResult?.isValid ? couponResult.discountAmount : 0;
+  const finalTotal = Math.max(0, totalPrice - discountAmount);
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setValidatingCoupon(true);
+    const result = await couponService.validate(couponCode, totalPrice);
+    setValidatingCoupon(false);
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+    setCouponResult(result.data!);
+    if (result.data!.isValid) {
+      toast.success(result.data!.message);
+    } else {
+      toast.error(result.data!.message);
+    }
+  };
+
+  const removeCoupon = () => {
+    setCouponCode("");
+    setCouponResult(null);
+  };
 
   const validate = (): boolean => {
     const e: Record<string, string> = {};
