@@ -112,6 +112,7 @@ const BooksPage = () => {
       setError("تعذر تحميل الكتب حالياً. حاول مرة أخرى.");
     } finally {
       setLoading(false);
+      setPageTransitioning(false);
     }
   }, []);
 
