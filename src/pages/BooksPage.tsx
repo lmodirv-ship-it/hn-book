@@ -134,6 +134,8 @@ const BooksPage = () => {
       limit: PAGE_SIZE,
       offset,
       ...(search.trim() ? { search: search.trim() } : {}),
+      ...(selectedLanguage !== "all" ? { language: selectedLanguage } : {}),
+      ...(selectedCategory !== "all" ? { category: selectedCategory } : {}),
     };
 
     try {
