@@ -58,6 +58,26 @@ export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: Pr
     setGeneratedBooks([]); setAutoCount("5"); setGenerating(false);
   };
 
+  // Auto-detect category when name or description changes
+  const runAutoDetect = (newName: string, newDesc: string) => {
+    if (!newName.trim()) return;
+    const suggestion = detectCategory(newName, newDesc, categoryNames);
+    if (suggestion.matchedKeywords.length > 0) {
+      setCategory(suggestion.category);
+      setCategorySuggested(true);
+    }
+  };
+
+  const handleNameChange = (val: string) => {
+    setName(val);
+    runAutoDetect(val, description);
+  };
+
+  const handleDescChange = (val: string) => {
+    setDescription(val);
+    runAutoDetect(name, val);
+  };
+
   const handleManualSave = async () => {
     if (!name.trim() || !price) {
       toast.error("يرجى ملء الاسم والسعر");
