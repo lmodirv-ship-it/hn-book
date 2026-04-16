@@ -45,7 +45,11 @@ export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: Pr
   const [categorySuggested, setCategorySuggested] = useState(false);
   const [badge, setBadge] = useState("");
   const [features, setFeatures] = useState("");
-
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
   // Auto state
   const [autoCategory, setAutoCategory] = useState(categoryNames[0] || "كتب عامة");
   const [autoCount, setAutoCount] = useState("5");
