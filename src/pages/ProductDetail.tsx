@@ -558,7 +558,7 @@ const ProductDetail = () => {
                         className="w-full gap-2.5 text-base font-semibold h-14 rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:scale-[1.01] active:scale-[0.99] transition-all"
                         asChild
                       >
-                        <Link to={`/read/${product.id}`}>
+                        <Link to={`/read/${product.slug || product.id}`}>
                           <BookOpen className="h-5 w-5" />
                           {product.price === 0 ? "اقرأ الآن مجاناً" : "اقرأ الآن"}
                         </Link>
@@ -567,7 +567,7 @@ const ProductDetail = () => {
                     {hasPdf && (
                       <div className="grid grid-cols-2 gap-2">
                         <Button variant="outline" size="lg" className="gap-2 text-sm font-semibold h-12 rounded-xl" asChild>
-                          <Link to={`/read/${product.id}`}>
+                          <Link to={`/read/${product.slug || product.id}`}>
                             <Eye className="h-4 w-4" /> مطالعة
                           </Link>
                         </Button>

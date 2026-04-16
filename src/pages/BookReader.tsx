@@ -75,7 +75,7 @@ const pageFlipVariants = {
 const pageFlipTransition = { duration: 0.5, ease: [0.645, 0.045, 0.355, 1.0] };
 
 const BookReader = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id: slugOrId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [book, setBook] = useState<BookData | null>(null);
   const [loading, setLoading] = useState(true);
