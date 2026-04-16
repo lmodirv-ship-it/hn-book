@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { BookOpen, ChevronLeft, ChevronRight, Search, Bookmark, BookmarkCheck, Sun, Moon, Eye, EyeOff, Settings, Maximize2, Minimize2, List, Highlighter as HighlighterIcon } from "lucide-react";
 import { bookService } from "@/services";
+import { accessService } from "@/services/accessService";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
