@@ -55,25 +55,30 @@ const BulkPdfUpload = () => {
     try {
       updateFile(i, { status: "uploading" });
 
-      // 1. Create product record via bookService
+      // 1. Upload PDF to storage FIRST (no product record needed)
+      const uploadResult = await storageService.uploadPdfOnly(current.file);
+      if (uploadResult.error) throw new Error(uploadResult.error);
+
+      const { publicUrl, referenceCode } = uploadResult.data!;
+
+      // 2. Create book record with REAL data (no placeholders)
       const createResult = await bookService.create({
         name: current.title,
         category: current.category,
         price: 0,
-        pdfUrl: "pending",
-        image: "/placeholder.svg",
+        pdfUrl: publicUrl,
+        image: publicUrl, // Use PDF URL as temporary image until cover is added
       });
 
-      if (createResult.error) throw new Error(createResult.error);
-      const product = createResult.data!;
+      if (createResult.error) {
+        // Cleanup: remove uploaded PDF since book creation failed
+        await storageService.removeBookPdf("", publicUrl, referenceCode);
+        throw new Error(createResult.error);
+      }
 
-      // 2. Upload PDF via storageService (updates pdf_url + reference_code)
-      const pdfResult = await storageService.uploadBookPdf(
-        product.id,
-        current.file,
-        product.referenceCode
-      );
-      if (pdfResult.error) throw new Error(pdfResult.error);
+      // 3. Update product with reference_code
+      const product = createResult.data!;
+      await bookService.update(product.id, { pdfUrl: publicUrl } as any);
 
       updateFile(i, { status: "done" });
       return true;
