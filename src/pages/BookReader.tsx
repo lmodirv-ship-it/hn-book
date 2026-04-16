@@ -887,10 +887,10 @@ const BookReader = () => {
               {/* View modes */}
               <div className={`flex items-center gap-0.5 ${isDarkTheme ? "bg-white/5" : "bg-gray-100"} rounded-xl p-0.5`}>
                 {([
-                  { mode: "single" as ViewMode, label: "صفحة", svg: <rect x="6" y="3" width="12" height="18" rx="1" /> },
+                  { mode: "single" as ViewMode, label: "صفحة", svg: <rect x="6" y="3" width="12" height="18" rx="1" />, desktop: false },
                   { mode: "double" as ViewMode, label: "صفحتين", svg: <><rect x="2" y="3" width="9" height="18" rx="1" /><rect x="13" y="3" width="9" height="18" rx="1" /></>, desktop: true },
-                  { mode: "scroll" as ViewMode, label: "تمرير", svg: <><rect x="6" y="2" width="12" height="20" rx="1" /><line x1="9" y1="7" x2="15" y2="7" /><line x1="9" y1="11" x2="15" y2="11" /><line x1="9" y1="15" x2="15" y2="15" /></> },
-                ] as const).map(({ mode, label, svg, desktop }) => (
+                  { mode: "scroll" as ViewMode, label: "تمرير", svg: <><rect x="6" y="2" width="12" height="20" rx="1" /><line x1="9" y1="7" x2="15" y2="7" /><line x1="9" y1="11" x2="15" y2="11" /><line x1="9" y1="15" x2="15" y2="15" /></>, desktop: false },
+                ]).map(({ mode, label, svg, desktop }) => (
                   <Tooltip key={mode}>
                     <TooltipTrigger asChild>
                       <button
