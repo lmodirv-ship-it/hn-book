@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, ChevronLeft, ChevronRight, Search, Bookmark, BookmarkCheck, Sun, Moon, Eye, EyeOff, Settings, Maximize2, Minimize2, List, Highlighter as HighlighterIcon } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, Search, Bookmark, BookmarkCheck, Sun, Moon, Eye, EyeOff, Settings, Maximize2, Minimize2, List, Highlighter as HighlighterIcon, Lock as LockIcon } from "lucide-react";
 import { bookService } from "@/services";
 import { accessService } from "@/services/accessService";
 import { Document, Page, pdfjs } from "react-pdf";
@@ -446,7 +446,7 @@ const BookReader = () => {
   if (accessBlocked) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-4" style={readerBgStyle} dir="rtl">
-        <Lock className="w-12 h-12 text-primary/60" />
+        <LockIcon className="w-12 h-12 text-primary/60" />
         <h1 className={`text-lg font-bold ${textColor}`}>{book.name}</h1>
         <p className={`${subTextColor} text-sm`}>يجب شراء الكتاب أو الاشتراك للقراءة</p>
         <div className="flex gap-3">
