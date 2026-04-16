@@ -2,7 +2,7 @@ import { useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Upload, FileText, Check, Loader2, AlertCircle,
-  Zap, Database,
+  Zap, Database, RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -244,42 +244,92 @@ const BulkPdfUpload = () => {
         </div>
       )}
 
-      {/* DB Jobs history */}
-      {dbStats.done > 0 && !queueActive && (
-        <div className="rounded-xl border border-border/50 bg-card/50 px-4 py-3">
-          <p className="text-xs text-muted-foreground mb-2 font-medium">📚 الكتب المنشأة مؤخراً</p>
-          <div className="space-y-1.5">
-            {dbJobs
-              .filter((j) => j.status === "done")
-              .slice(0, 5)
-              .map((j) => (
-                <div key={j.id} className="flex items-center gap-2 text-xs">
-                  <span className="flex-shrink-0">✅</span>
-                  <span className="text-foreground truncate">{(j.result as any)?.title || j.file_name}</span>
-                  <span className="text-muted-foreground text-[10px]">{(j.result as any)?.referenceCode}</span>
-                </div>
-              ))}
+      {/* Summary panel */}
+      {(dbStats.done > 0 || dbStats.errors > 0) && !queueActive && (
+        <motion.div
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border border-border bg-card p-4 space-y-4"
+        >
+          {/* Stats summary */}
+          <div className="flex items-center gap-4">
+            <p className="text-sm font-semibold text-foreground">📊 ملخص</p>
+            <div className="flex items-center gap-3 text-xs">
+              {dbStats.done > 0 && (
+                <span className="px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">
+                  ✅ نجح: {dbStats.done}
+                </span>
+              )}
+              {dbStats.errors > 0 && (
+                <span className="px-2.5 py-1 rounded-full bg-destructive/10 text-destructive font-medium">
+                  ❌ فشل: {dbStats.errors}
+                </span>
+              )}
+              {dbStats.pending > 0 && (
+                <span className="px-2.5 py-1 rounded-full bg-secondary text-muted-foreground font-medium">
+                  ⏳ معلّق: {dbStats.pending}
+                </span>
+              )}
+            </div>
           </div>
-        </div>
-      )}
 
-      {/* Error jobs */}
-      {dbStats.errors > 0 && !queueActive && (
-        <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3">
-          <p className="text-xs text-destructive mb-2 font-medium">❌ مهام فشلت</p>
-          <div className="space-y-1.5">
-            {dbJobs
-              .filter((j) => j.status === "error")
-              .slice(0, 5)
-              .map((j) => (
-                <div key={j.id} className="flex items-center gap-2 text-xs">
-                  <span className="flex-shrink-0">❌</span>
-                  <span className="text-foreground truncate">{(j.result as any)?.title || j.file_name}</span>
-                  <span className="text-destructive text-[10px]">{(j.result as any)?.error}</span>
-                </div>
-              ))}
-          </div>
-        </div>
+          {/* Done jobs */}
+          {dbStats.done > 0 && (
+            <div>
+              <p className="text-xs text-muted-foreground mb-1.5 font-medium">📚 كتب تم إنشاؤها</p>
+              <div className="space-y-1">
+                {dbJobs
+                  .filter((j) => j.status === "done")
+                  .slice(0, 8)
+                  .map((j) => (
+                    <div key={j.id} className="flex items-center gap-2 text-xs">
+                      <span>✅</span>
+                      <span className="text-foreground truncate">{(j.result as any)?.title || j.file_name}</span>
+                      <span className="text-muted-foreground text-[10px]">{(j.result as any)?.referenceCode}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Error jobs with retry */}
+          {dbStats.errors > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-xs text-destructive font-medium">❌ مهام فشلت</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-[11px] gap-1 text-primary"
+                  onClick={retryFailed}
+                >
+                  <RotateCcw className="w-3 h-3" /> إعادة الكل
+                </Button>
+              </div>
+              <div className="space-y-1">
+                {dbJobs
+                  .filter((j) => j.status === "error")
+                  .slice(0, 8)
+                  .map((j) => (
+                    <div key={j.id} className="flex items-center gap-2 text-xs group">
+                      <span>❌</span>
+                      <span className="text-foreground truncate flex-1">{(j.result as any)?.title || j.file_name}</span>
+                      <span className="text-destructive text-[10px] truncate max-w-[120px]">
+                        {(j.result as any)?.error}
+                      </span>
+                      <button
+                        onClick={() => retryJob(j.id)}
+                        className="opacity-0 group-hover:opacity-100 text-primary hover:text-primary/80 transition-opacity"
+                        title="إعادة المحاولة"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </motion.div>
       )}
 
       {/* Actions */}
