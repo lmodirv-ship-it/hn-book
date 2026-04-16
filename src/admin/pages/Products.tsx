@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ProductImageUpload } from "@/admin/components/ProductImageUpload";
 import { BookPdfUpload } from "@/admin/components/BookPdfUpload";
 import { ProductCreateDialog } from "@/admin/components/ProductCreateDialog";
-import { calculateSuggestedPrice } from "@/lib/pricing";
+import { calculateSuggestedPrice } from "@/lib/pricing-static";
 import { supabase } from "@/integrations/supabase/client";
 
 import { toast } from "sonner";
