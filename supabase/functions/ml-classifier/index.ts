@@ -133,22 +133,109 @@ async function handleTrain(supabase: any) {
   });
 }
 
+// ── Built-in rules (used when no model or as baseline) ──
+interface RuleResult { type: string; confidence: number; reason: string }
+
+function classifyByRules(width: number | null, height: number | null, fileType: string | null, fileSizeKB: number | null, filename: string | null): RuleResult {
+  const w = width || 0, h = height || 0;
+  const ratio = h > 0 ? w / h : 0;
+  const maxDim = Math.max(w, h), minDim = Math.min(w, h);
+  const name = (filename || "").toLowerCase();
+
+  // Keyword rules (highest priority)
+  const kwRules: [string[], string][] = [
+    [["carte", "visite", "business-card", "card", "بطاقة"], "card"],
+    [["logo", "logotype", "شعار", "icon"], "logo"],
+    [["flyer", "tract", "leaflet", "فلاير", "نشرة", "brochure"], "flyer"],
+    [["poster", "affiche", "ملصق"], "poster"],
+    [["menu", "قائمة", "carte-menu"], "menu"],
+    [["tablou", "tableau", "wall-art", "تابلو", "لوحة", "art"], "tablou"],
+    [["banner", "بانر", "header"], "banner"],
+    [["sticker", "ملصق-صغير"], "sticker"],
+    [["social", "instagram", "facebook", "post", "story"], "social"],
+  ];
+
+  for (const [keywords, type] of kwRules) {
+    for (const kw of keywords) {
+      if (name.includes(kw)) {
+        return { type, confidence: 0.85, reason: `كلمة مفتاحية: ${kw}` };
+      }
+    }
+  }
+
+  if (!w || !h) {
+    // File type fallback
+    if (fileType === "pdf") {
+      if ((fileSizeKB || 0) > 5000) return { type: "book", confidence: 0.7, reason: "PDF كبير" };
+      return { type: "document", confidence: 0.5, reason: "PDF عام" };
+    }
+    return { type: "other", confidence: 0.2, reason: "لا توجد أبعاد" };
+  }
+
+  // Card: small landscape ~85x55mm (1050x600px at 300dpi)
+  if (minDim >= 400 && minDim <= 900 && maxDim >= 700 && maxDim <= 1400 && ratio >= 1.3 && ratio <= 2.2) {
+    return { type: "card", confidence: 0.8, reason: `أبعاد بطاقة: ${w}×${h}px` };
+  }
+
+  // Logo: square-ish, small
+  if (ratio >= 0.8 && ratio <= 1.25 && maxDim <= 1200 && minDim >= 100) {
+    return { type: "logo", confidence: 0.7, reason: `شعار مربع: ${w}×${h}px` };
+  }
+
+  // Social story: 9:16
+  if (ratio >= 0.5 && ratio <= 0.6 && h >= 1800) {
+    return { type: "social", confidence: 0.75, reason: `ستوري: ${w}×${h}px` };
+  }
+
+  // Tablou/Poster: large high-res
+  if (maxDim >= 3000) {
+    return { type: "tablou", confidence: 0.75, reason: `صورة عالية الدقة: ${w}×${h}px` };
+  }
+
+  // Flyer A4: ratio ~0.7, 2400-4200px
+  if (ratio >= 0.6 && ratio <= 0.8 && maxDim >= 2400 && maxDim <= 4200) {
+    return { type: "flyer", confidence: 0.65, reason: `أبعاد A4: ${w}×${h}px` };
+  }
+
+  // Banner: very wide or tall
+  if (ratio >= 3 || ratio <= 0.33) {
+    return { type: "banner", confidence: 0.7, reason: `بانر: ${w}×${h}px` };
+  }
+
+  // Large landscape
+  if (maxDim >= 2000 && ratio >= 1.2) {
+    return { type: "poster", confidence: 0.55, reason: `صورة أفقية كبيرة: ${w}×${h}px` };
+  }
+
+  // Medium image
+  if ((fileSizeKB || 0) > 500 && maxDim >= 1000) {
+    return { type: "tablou", confidence: 0.45, reason: `صورة متوسطة: ${w}×${h}px` };
+  }
+
+  return { type: "other", confidence: 0.2, reason: `أبعاد غير محددة: ${w}×${h}px` };
+}
+
 // ── PREDICT: Use model stats + rules to classify ──
 async function handlePredict(supabase: any, params: any) {
   const { width, height, file_type, file_size_kb, filename } = params;
 
-  // Load model
+  // Always run rules first as baseline
+  const ruleResult = classifyByRules(width, height, file_type, file_size_kb, filename);
+
+  // Load learned model
   const { data: models } = await supabase
     .from("classification_model")
     .select("*")
     .gt("sample_count", 0);
 
   if (!models || models.length === 0) {
+    // No model trained — return rules result
     return jsonResponse({
-      predicted_type: "other",
-      confidence: 0.1,
-      reason: "لا يوجد نموذج مدرب — يتم استخدام القواعد الافتراضية",
-      source: "fallback",
+      predicted_type: ruleResult.type,
+      confidence: ruleResult.confidence,
+      reason: ruleResult.reason,
+      source: "rules",
+      needs_confirmation: ruleResult.confidence < 0.5,
     });
   }
 
