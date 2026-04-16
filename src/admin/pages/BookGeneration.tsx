@@ -260,7 +260,68 @@ const BookGeneration = () => {
     });
   };
 
+  // Smart route: process file for Tablou target
+  const processTablouFile = async (file: File): Promise<ProcessedItem[]> => {
+    const ext = file.name.split(".").pop()?.toLowerCase() || "";
+    const isImage = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "avif"].includes(ext);
+    if (!isImage) {
+      return [{ success: false, fileName: file.name, error: "التابلوهات تقبل صور فقط", targetType: "tablou" }];
+    }
+    setStatusMessage("جاري رفع التابلو...");
+    try {
+      const id = await tablouService.smartUpload(file);
+      const title = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      return [{
+        success: true,
+        id,
+        name: title,
+        category: "تابلوهات",
+        fileName: file.name,
+        fileSizeKB: Math.round(file.size / 1024),
+        fileExt: ext,
+        targetType: "tablou",
+      }];
+    } catch (err: any) {
+      return [{ success: false, fileName: file.name, error: err.message, targetType: "tablou" }];
+    }
+  };
+
+  // Smart route: process file for Card Template target
+  const processCardFile = async (file: File): Promise<ProcessedItem[]> => {
+    const ext = file.name.split(".").pop()?.toLowerCase() || "";
+    const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(ext);
+    if (!isImage) {
+      return [{ success: false, fileName: file.name, error: "قوالب البطاقات تقبل صور فقط", targetType: "cards" }];
+    }
+    setStatusMessage("جاري رفع قالب البطاقة...");
+    try {
+      const path = `card-templates/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from("book-images").upload(path, file);
+      if (uploadErr) throw new Error(uploadErr.message);
+      const { data: urlData } = supabase.storage.from("book-images").getPublicUrl(path);
+      const name = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      await printService.createTemplate(name, urlData.publicUrl, "business");
+      return [{
+        success: true,
+        name,
+        category: "بطاقات",
+        cover: urlData.publicUrl,
+        fileName: file.name,
+        fileSizeKB: Math.round(file.size / 1024),
+        fileExt: ext,
+        targetType: "cards",
+      }];
+    } catch (err: any) {
+      return [{ success: false, fileName: file.name, error: err.message, targetType: "cards" }];
+    }
+  };
+
   const processFile = async (file: File): Promise<ProcessedItem[]> => {
+    // Route to correct handler based on target type
+    if (targetType === "tablou") return processTablouFile(file);
+    if (targetType === "cards") return processCardFile(file);
+
+    // Default: books/products (existing logic)
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData?.session?.access_token;
