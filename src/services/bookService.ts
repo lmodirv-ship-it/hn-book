@@ -205,15 +205,15 @@ export const bookService = {
 
   /** Create a new book */
   async create(input: BookCreateInput): Promise<ApiResult<Book>> {
-    // ── Current: Supabase ──
+    // Client-side validation — DB trigger also enforces this
+    if (!input.name?.trim()) return fail("اسم الكتاب مطلوب");
+    if (!input.pdfUrl?.trim()) return fail("ملف PDF مطلوب");
+    if (!input.image?.trim()) return fail("صورة الغلاف مطلوبة");
+
     const dbInput = toDb(input) as any;
     const { data, error } = await db.from("products").insert(dbInput).select().single();
     if (error) return fail(error.message);
     return ok(mapRow(data));
-
-    // ── Future: REST API ──
-    // const book = await apiClient.post("/books", input);
-    // return ok(mapRow(book));
   },
 
   /** Upload a book with file (FormData) */

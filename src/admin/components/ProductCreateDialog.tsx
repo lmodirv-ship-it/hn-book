@@ -79,8 +79,12 @@ export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: Pr
   };
 
   const handleManualSave = async () => {
-    if (!name.trim() || !price) {
-      toast.error("يرجى ملء الاسم والسعر");
+    if (!name.trim()) {
+      toast.error("يرجى إدخال اسم الكتاب");
+      return;
+    }
+    if (!price) {
+      toast.error("يرجى إدخال السعر");
       return;
     }
     setSaving(true);
