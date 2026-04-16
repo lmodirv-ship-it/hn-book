@@ -16,6 +16,8 @@ import CheckoutPage from "./pages/CheckoutPage.tsx";
 import OrderConfirmation from "./pages/OrderConfirmation.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import CustomerAuth from "./pages/CustomerAuth.tsx";
+import ForgotPassword from "./pages/ForgotPassword.tsx";
+import ResetPassword from "./pages/ResetPassword.tsx";
 import Profile from "./pages/Profile.tsx";
 import MyOrders from "./pages/MyOrders.tsx";
 import AdminLayout from "./admin/layouts/AdminLayout.tsx";
@@ -84,6 +86,8 @@ const App = () => (
             <Route path="/read/:id" element={<BookReader />} />
             <Route path="/document-processing" element={<DocumentProcessing />} />
             <Route path="/auth" element={<CustomerAuth />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/my-orders" element={<MyOrders />} />
             
