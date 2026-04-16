@@ -6,6 +6,7 @@ import {
   Menu, X, Shield, BookOpen, Tag, LayoutDashboard,
   ShoppingCart, FileText, LogOut, Ticket, Activity, ShieldCheck, FolderUp, Globe, ScanText, DollarSign,
   Bell, AlertTriangle, XCircle, Database, Crown, CreditCard, Printer, Image, Frame, Brain,
+  ToggleRight, MonitorDot,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

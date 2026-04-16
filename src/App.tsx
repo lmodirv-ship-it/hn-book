@@ -111,6 +111,9 @@ const App = () => (
               <Route path="logos" element={<LogosAdmin />} />
               <Route path="tablou" element={<TablouAdmin />} />
               <Route path="ai-classifier" element={<AIClassifier />} />
+              <Route path="features" element={<FeatureManager />} />
+              <Route path="monitoring" element={<SystemMonitoring />} />
+              <Route path="api-integrations" element={<ApiIntegrationsAdmin />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />
