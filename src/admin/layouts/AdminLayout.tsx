@@ -223,6 +223,84 @@ const AdminLayout = () => {
             </h2>
           </div>
           <div className="flex items-center gap-2">
+            {/* Alerts Bell */}
+            <div className="relative">
+              <button
+                onClick={() => setAlertsOpen(!alertsOpen)}
+                className="relative p-2 rounded-lg hover:bg-secondary transition-colors"
+              >
+                <Bell className={`w-4.5 h-4.5 ${alerts.filter(a => !dismissedAlerts.has(a.id)).length > 0 ? "text-amber-500" : "text-muted-foreground"}`} />
+                {alerts.filter(a => !dismissedAlerts.has(a.id)).length > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 rounded-full bg-red-500 text-[9px] text-white font-bold flex items-center justify-center">
+                    {alerts.filter(a => !dismissedAlerts.has(a.id)).length}
+                  </span>
+                )}
+              </button>
+
+              <AnimatePresence>
+                {alertsOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                    className="absolute left-0 top-full mt-2 w-80 rounded-xl border border-border bg-card shadow-xl z-50 overflow-hidden"
+                  >
+                    <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                      <button onClick={() => setAlertsOpen(false)} className="p-1 hover:bg-secondary rounded">
+                        <X className="w-3.5 h-3.5 text-muted-foreground" />
+                      </button>
+                      <h4 className="text-xs font-bold text-foreground">🔔 تنبيهات النظام</h4>
+                    </div>
+                    <div className="max-h-72 overflow-y-auto">
+                      {alerts.length === 0 ? (
+                        <div className="p-6 text-center">
+                          <p className="text-xs text-muted-foreground">✅ لا توجد تنبيهات</p>
+                        </div>
+                      ) : (
+                        alerts.map((alert) => (
+                          <div
+                            key={alert.id}
+                            className={`flex items-start gap-3 px-4 py-3 border-b border-border/50 last:border-0 ${
+                              dismissedAlerts.has(alert.id) ? "opacity-40" : ""
+                            } ${alert.severity === "critical" ? "bg-red-500/5" : ""}`}
+                          >
+                            <span className="text-lg mt-0.5">{alert.icon}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <Badge className={`text-[9px] h-4 ${
+                                  alert.severity === "critical" ? "bg-red-500/20 text-red-500" : "bg-yellow-500/20 text-yellow-500"
+                                }`}>
+                                  {alert.severity === "critical" ? "حرج" : "تحذير"}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-foreground">{alert.message}</p>
+                            </div>
+                            {!dismissedAlerts.has(alert.id) && (
+                              <button
+                                onClick={() => setDismissedAlerts(prev => new Set([...prev, alert.id]))}
+                                className="p-1 hover:bg-secondary rounded text-muted-foreground"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    {alerts.length > 0 && (
+                      <div className="px-4 py-2 border-t border-border">
+                        <button
+                          onClick={() => { navigate("/admin/health-check"); setAlertsOpen(false); }}
+                          className="text-[11px] text-primary hover:underline w-full text-center"
+                        >
+                          فتح صفحة الإصلاح التلقائي →
+                        </button>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
             <Button
               variant="outline"
               size="sm"
