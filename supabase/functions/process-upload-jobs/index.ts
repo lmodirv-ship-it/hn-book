@@ -8,6 +8,20 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts"
 
 const BATCH_SIZE = 3;
 
+// ── Smart pricing (inline for Deno) ──
+function calculatePrice(pageCount: number | null, category: string): number {
+  if (!pageCount || pageCount <= 0) return 0;
+  const multipliers: Record<string, number> = {
+    "الطب": 1.8, "العلوم": 1.5, "الدين الإسلامي": 1.0,
+    "التاريخ": 1.2, "الأدب العربي": 1.1, "تطوير الذات": 1.3,
+    "كتب": 1.0, "أخرى": 1.0, "Literature": 1.2,
+    "Philosophy": 1.3, "Biography & Autobiography": 1.2, "Arabic literature": 1.1,
+  };
+  const m = multipliers[category] ?? 1.0;
+  const raw = pageCount * 0.15 * m;
+  return Math.min(500, Math.max(0, Math.round(raw / 5) * 5));
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -96,7 +110,7 @@ Deno.serve(async (req) => {
           .insert({
             name: title || job.file_name,
             category: category || "كتب",
-            price: 0,
+            price: calculatePrice(pageCount, category || "كتب"),
             pdf_url: pdfUrl,
             image: image,
             reference_code: referenceCode || null,
