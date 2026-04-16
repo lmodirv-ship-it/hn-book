@@ -54,6 +54,17 @@ export const accessService = {
 
     const userId = session.user.id;
 
+    // Admins can access all books
+    const { data: adminRole } = await db
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (adminRole) {
+      return { canAccess: true, reason: "subscribed", isLoggedIn: true };
+    }
+
     // Check purchase and subscription in parallel
     const [purchaseRes, subRes] = await Promise.all([
       db.from("purchases").select("id").eq("user_id", userId).eq("book_id", bookId).maybeSingle(),
