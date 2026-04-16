@@ -805,7 +805,7 @@ const BookGeneration = () => {
                 className="shrink-0 border-green-500/30 text-green-400 hover:bg-green-500/10"
                 onClick={() => window.location.href = targetType === "tablou" ? "/admin/tablou" : targetType === "cards" ? "/admin/card-templates" : "/admin/products"}
               >
-                {targetType === "tablou" ? "عرض التابلوهات" : targetType === "cards" ? "عرض القوالب" : "عرض المنتجات"}
+                {targetType === "auto" ? "عرض المنتجات" : targetType === "tablou" ? "عرض التابلوهات" : targetType === "cards" ? "عرض القوالب" : "عرض المنتجات"}
               </Button>
             </div>
           )}
