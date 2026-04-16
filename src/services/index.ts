@@ -18,6 +18,8 @@ export { categoryService } from "./categoryService";
 export { readerService } from "./readerService";
 export { storageService } from "./storageService";
 export { accessService } from "./accessService";
+export { aiService } from "./aiService";
+export type { ClassifyInput, ClassifyResult, AIEngineStatus } from "./aiService";
 
 // Re-export types
 export type {
