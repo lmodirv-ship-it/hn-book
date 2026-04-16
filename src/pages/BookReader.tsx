@@ -8,10 +8,11 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
 import ReaderHeader from "@/components/reader/ReaderHeader";
-import ReaderSidebar from "@/components/reader/ReaderSidebar";
+import SmartSidebar from "@/components/reader/SmartSidebar";
 import ReaderToolbar from "@/components/reader/ReaderToolbar";
 import ReaderSearchBar from "@/components/reader/ReaderSearchBar";
 import { useBookmarks } from "@/components/reader/useBookmarks";
+import { useNotes } from "@/components/reader/useNotes";
 import { useReadingProgress } from "@/components/reader/useReadingProgress";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -46,6 +47,45 @@ interface BookData {
   reference_code: string | null;
 }
 
+// Page flip animation variants
+const pageFlipVariants = {
+  enterFromRight: {
+    rotateY: -90,
+    opacity: 0,
+    scale: 0.92,
+    x: 60,
+  },
+  enterFromLeft: {
+    rotateY: 90,
+    opacity: 0,
+    scale: 0.92,
+    x: -60,
+  },
+  center: {
+    rotateY: 0,
+    opacity: 1,
+    scale: 1,
+    x: 0,
+  },
+  exitToLeft: {
+    rotateY: 90,
+    opacity: 0,
+    scale: 0.92,
+    x: -60,
+  },
+  exitToRight: {
+    rotateY: -90,
+    opacity: 0,
+    scale: 0.92,
+    x: 60,
+  },
+};
+
+const pageFlipTransition = {
+  duration: 0.5,
+  ease: [0.645, 0.045, 0.355, 1.0], // cubic-bezier for book-like feel
+};
+
 const BookReader = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -68,24 +108,45 @@ const BookReader = () => {
   const [pageInputValue, setPageInputValue] = useState("");
   const [pageFlipDir, setPageFlipDir] = useState<"left" | "right" | null>(null);
   const [isDarkTheme, setIsDarkTheme] = useState(true);
+  const [isFocusMode, setIsFocusMode] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const focusTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Hooks
   const { bookmarks, addBookmark, removeBookmark, isBookmarked } = useBookmarks(id);
+  const { notes, addNote, removeNote } = useNotes(id);
   const { getSaved, save, restored, setRestored } = useReadingProgress(id);
 
-  // Responsive
+  // Responsive detection
   useEffect(() => {
-    const check = () => { if (window.innerWidth < 768) setViewMode("single"); };
+    const check = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) setViewMode("single");
+    };
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Restore reading progress once PDF is loaded
+  // Auto-hide UI in focus mode after inactivity
+  useEffect(() => {
+    if (!isFocusMode) return;
+    const handleMove = () => {
+      setIsFocusMode(false);
+      if (focusTimeoutRef.current) clearTimeout(focusTimeoutRef.current);
+    };
+    // Show UI briefly on any interaction
+    window.addEventListener("mousemove", handleMove, { once: true });
+    return () => window.removeEventListener("mousemove", handleMove);
+  }, [isFocusMode]);
+
+  // Restore reading progress
   useEffect(() => {
     if (numPages > 0 && !restored) {
       const saved = getSaved();
@@ -194,7 +255,7 @@ const BookReader = () => {
     if (currentPage + step <= numPages) {
       setPageFlipDir("left");
       setCurrentPage(p => Math.min(numPages, p + step));
-      setTimeout(() => setPageFlipDir(null), 400);
+      setTimeout(() => setPageFlipDir(null), 550);
     }
   }, [currentPage, numPages, viewMode]);
 
@@ -203,7 +264,7 @@ const BookReader = () => {
     if (currentPage > 1) {
       setPageFlipDir("right");
       setCurrentPage(p => Math.max(1, p - step));
-      setTimeout(() => setPageFlipDir(null), 400);
+      setTimeout(() => setPageFlipDir(null), 550);
     }
   }, [currentPage, viewMode]);
 
@@ -212,21 +273,45 @@ const BookReader = () => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight") prevPage();
       else if (e.key === "ArrowLeft") nextPage();
-      else if (e.key === "f" || e.key === "F") toggleFullscreen();
-      else if ((e.ctrlKey || e.metaKey) && e.key === "f") {
-        e.preventDefault();
-        setShowSearch(true);
+      else if (e.key === "f" || e.key === "F") {
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          setShowSearch(true);
+        } else {
+          toggleFullscreen();
+        }
+      } else if (e.key === "Escape") {
+        if (isFocusMode) setIsFocusMode(false);
+        if (showSearch) setShowSearch(false);
+        if (showSidebar) setShowSidebar(false);
       }
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [nextPage, prevPage]);
+  }, [nextPage, prevPage, isFocusMode, showSearch, showSidebar]);
 
-  // Touch
-  const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
+  // Enhanced touch for mobile - with swipe detection
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
   const handleTouchEnd = (e: React.TouchEvent) => {
-    const diff = touchStartX.current - e.changedTouches[0].clientX;
-    if (Math.abs(diff) > 50) { if (diff > 0) prevPage(); else nextPage(); }
+    const dx = touchStartX.current - e.changedTouches[0].clientX;
+    const dy = touchStartY.current - e.changedTouches[0].clientY;
+    // Only trigger page flip if horizontal swipe > vertical
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      if (dx > 0) prevPage(); else nextPage();
+    }
+    // Tap center to toggle focus mode on mobile
+    if (Math.abs(dx) < 10 && Math.abs(dy) < 10 && isMobile) {
+      const screenW = window.innerWidth;
+      const tapX = e.changedTouches[0].clientX;
+      // Tap in middle third toggles focus
+      if (tapX > screenW * 0.3 && tapX < screenW * 0.7) {
+        setIsFocusMode(!isFocusMode);
+      }
+    }
   };
 
   const toggleFullscreen = useCallback(() => {
@@ -253,13 +338,16 @@ const BookReader = () => {
   }, [isTTSPlaying, currentPage]);
 
   const pageWidth = useMemo(() => {
-    const baseWidth = viewMode === "double" ? 380 : viewMode === "scroll" ? 700 : 600;
-    if (typeof window !== "undefined") {
-      const factor = viewMode === "double" ? 0.42 : 0.85;
-      return Math.min(baseWidth, window.innerWidth * factor) * zoom;
+    if (typeof window === "undefined") return 600;
+    const w = window.innerWidth;
+    if (isMobile) {
+      // Mobile: near full width
+      return (w - 16) * zoom;
     }
-    return baseWidth * zoom;
-  }, [viewMode, zoom]);
+    const baseWidth = viewMode === "double" ? 380 : viewMode === "scroll" ? 700 : 600;
+    const factor = viewMode === "double" ? 0.42 : 0.85;
+    return Math.min(baseWidth, w * factor) * zoom;
+  }, [viewMode, zoom, isMobile]);
 
   // Theme colors
   const readerBg = isDarkTheme ? "bg-[#1a1a2e]" : "bg-[#f0ece4]";
@@ -268,9 +356,8 @@ const BookReader = () => {
   const subTextColor = isDarkTheme ? "text-gray-400" : "text-gray-500";
   const linkColor = isDarkTheme ? "text-emerald-400" : "text-primary";
 
-  // Simple reusable header for non-PDF views
   const simpleHeader = (
-    <header className={`flex-shrink-0 h-12 ${isDarkTheme ? "bg-[#16213e]/95" : "bg-white/95"} backdrop-blur border-b ${isDarkTheme ? "border-white/5" : "border-gray-200"} flex items-center justify-between px-3 z-50`}>
+    <header className={`flex-shrink-0 h-11 ${isDarkTheme ? "bg-[#16213e]/95" : "bg-white/95"} backdrop-blur border-b ${isDarkTheme ? "border-white/5" : "border-gray-200"} flex items-center justify-between px-3 z-50`}>
       <button onClick={() => navigate(`/product/${id}`)} className={`p-1.5 rounded-lg ${subTextColor} hover:opacity-80`}>
         <BookOpen className="w-4 h-4" />
       </button>
@@ -314,7 +401,6 @@ const BookReader = () => {
     );
   }
 
-  // Text resource
   if (resourceType === "text") {
     return (
       <div className={`h-screen ${readerBg} flex flex-col overflow-hidden`} dir="rtl">
@@ -328,7 +414,6 @@ const BookReader = () => {
     );
   }
 
-  // Image resource
   if (resourceType === "image" && resourceUrl) {
     return (
       <div className={`h-screen ${readerBg} flex flex-col overflow-hidden`} dir="rtl">
@@ -340,7 +425,6 @@ const BookReader = () => {
     );
   }
 
-  // Embed fallback
   if (resourceType === "embed" && resourceUrl) {
     return (
       <div className={`h-screen ${readerBg} flex flex-col overflow-hidden`} dir="rtl">
@@ -352,7 +436,6 @@ const BookReader = () => {
     );
   }
 
-  // No resource URL fallback
   if (!resourceUrl) {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
     const isLocalFile = book.pdf_url?.includes(supabaseUrl) || book.pdf_url?.includes("supabase.co");
@@ -362,9 +445,9 @@ const BookReader = () => {
         <div className="text-center space-y-2">
           <h1 className={`text-lg font-bold ${textColor}`}>{book.name}</h1>
           {isLocalFile ? (
-            <p className={`${subTextColor} text-sm`}>تعذر تحميل الملف من الخادم — يرجى المحاولة لاحقاً</p>
+            <p className={`${subTextColor} text-sm`}>تعذر تحميل الملف من الخادم</p>
           ) : (
-            <p className={`${subTextColor} text-sm`}>هذا الكتاب يعتمد على رابط خارجي غير متاح حالياً</p>
+            <p className={`${subTextColor} text-sm`}>رابط خارجي غير متاح حالياً</p>
           )}
         </div>
         <div className="flex gap-3">
@@ -379,60 +462,97 @@ const BookReader = () => {
 
   // === PDF READER ===
   const glowColor = isDarkTheme ? "rgba(16, 185, 129, 0.08)" : "rgba(0, 0, 0, 0.05)";
-  const arrowBg = isDarkTheme ? "bg-black/30 hover:bg-black/50 text-white/70 hover:text-white" : "bg-white/70 hover:bg-white text-gray-600 hover:text-gray-900 shadow-md";
+  const arrowBg = isDarkTheme
+    ? "bg-black/40 hover:bg-black/60 text-white/70 hover:text-white"
+    : "bg-white/80 hover:bg-white text-gray-600 hover:text-gray-900 shadow-md";
 
-  // Scroll mode pages to render (lazy)
   const scrollPages = useMemo(() => {
     if (viewMode !== "scroll") return [];
     return Array.from({ length: numPages }, (_, i) => i + 1);
   }, [viewMode, numPages]);
 
+  // Determine flip animation
+  const getInitialAnim = () => {
+    if (!pageFlipDir) return { opacity: 0.8, scale: 0.98 };
+    return pageFlipDir === "left" ? pageFlipVariants.enterFromRight : pageFlipVariants.enterFromLeft;
+  };
+
+  const getExitAnim = () => {
+    if (!pageFlipDir) return { opacity: 0.8, scale: 0.98 };
+    return pageFlipDir === "left" ? pageFlipVariants.exitToLeft : pageFlipVariants.exitToRight;
+  };
+
+  // Mobile mini progress bar for focus mode
+  const progress = numPages > 0 ? (currentPage / numPages) * 100 : 0;
+
   return (
     <div className={`h-screen ${readerBg} flex flex-col overflow-hidden select-none`} dir="rtl">
-      {/* Header */}
-      <ReaderHeader
-        bookId={book.id}
-        bookName={book.name}
-        category={book.category}
-        referenceCode={book.reference_code}
-        isFullscreen={isFullscreen}
-        showSidebar={showSidebar}
-        showSearch={showSearch}
-        isBookmarked={isBookmarked(currentPage)}
-        isDarkTheme={isDarkTheme}
-        onToggleSidebar={() => setShowSidebar(!showSidebar)}
-        onToggleSearch={() => setShowSearch(!showSearch)}
-        onToggleFullscreen={toggleFullscreen}
-        onToggleBookmark={() => {
-          if (isBookmarked(currentPage)) removeBookmark(currentPage);
-          else addBookmark(currentPage);
-        }}
-        onToggleTheme={() => setIsDarkTheme(!isDarkTheme)}
-      />
+      {/* Header - hidden in focus mode */}
+      <AnimatePresence>
+        {!isFocusMode && (
+          <motion.div
+            initial={{ y: -48, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -48, opacity: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            <ReaderHeader
+              bookId={book.id}
+              bookName={book.name}
+              category={book.category}
+              referenceCode={book.reference_code}
+              isFullscreen={isFullscreen}
+              showSidebar={showSidebar}
+              showSearch={showSearch}
+              isBookmarked={isBookmarked(currentPage)}
+              isDarkTheme={isDarkTheme}
+              isFocusMode={isFocusMode}
+              onToggleSidebar={() => setShowSidebar(!showSidebar)}
+              onToggleSearch={() => setShowSearch(!showSearch)}
+              onToggleFullscreen={toggleFullscreen}
+              onToggleBookmark={() => {
+                if (isBookmarked(currentPage)) removeBookmark(currentPage);
+                else addBookmark(currentPage);
+              }}
+              onToggleTheme={() => setIsDarkTheme(!isDarkTheme)}
+              onToggleFocusMode={() => setIsFocusMode(!isFocusMode)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Search */}
-      <ReaderSearchBar
-        show={showSearch}
-        isDarkTheme={isDarkTheme}
-        numPages={numPages}
-        pdfDocument={pdfDocument}
-        onClose={() => setShowSearch(false)}
-        onGoToPage={goToPage}
-      />
+      {/* Search - hidden in focus mode */}
+      {!isFocusMode && (
+        <ReaderSearchBar
+          show={showSearch}
+          isDarkTheme={isDarkTheme}
+          numPages={numPages}
+          pdfDocument={pdfDocument}
+          onClose={() => setShowSearch(false)}
+          onGoToPage={goToPage}
+        />
+      )}
 
       {/* Main */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Sidebar */}
-        <ReaderSidebar
-          show={showSidebar}
-          numPages={numPages}
-          currentPage={currentPage}
-          bookmarks={bookmarks}
-          isDarkTheme={isDarkTheme}
-          onGoToPage={goToPage}
-          onClose={() => setShowSidebar(false)}
-          onRemoveBookmark={removeBookmark}
-        />
+        {/* Smart Sidebar */}
+        {!isFocusMode && (
+          <SmartSidebar
+            show={showSidebar}
+            numPages={numPages}
+            currentPage={currentPage}
+            bookmarks={bookmarks}
+            notes={notes}
+            bookDescription={book.description}
+            isDarkTheme={isDarkTheme}
+            isMobile={isMobile}
+            onGoToPage={goToPage}
+            onClose={() => setShowSidebar(false)}
+            onRemoveBookmark={removeBookmark}
+            onAddNote={addNote}
+            onRemoveNote={removeNote}
+          />
+        )}
 
         {/* Book display */}
         <div
@@ -441,28 +561,28 @@ const BookReader = () => {
           onTouchStart={viewMode !== "scroll" ? handleTouchStart : undefined}
           onTouchEnd={viewMode !== "scroll" ? handleTouchEnd : undefined}
         >
-          {/* Navigation arrows (not in scroll mode) */}
-          {viewMode !== "scroll" && (
+          {/* Navigation arrows - hidden on mobile in focus mode, always visible on desktop */}
+          {viewMode !== "scroll" && !(isMobile && isFocusMode) && (
             <>
               <button
                 onClick={nextPage}
                 disabled={currentPage >= numPages}
-                className={`absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 z-20 p-2 sm:p-3 rounded-full ${arrowBg} disabled:opacity-20 transition-all backdrop-blur-sm`}
+                className={`absolute left-1 sm:left-4 top-1/2 -translate-y-1/2 z-20 p-1.5 sm:p-3 rounded-full ${arrowBg} disabled:opacity-20 transition-all backdrop-blur-sm`}
               >
-                <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+                <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6" />
               </button>
               <button
                 onClick={prevPage}
                 disabled={currentPage <= 1}
-                className={`absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 z-20 p-2 sm:p-3 rounded-full ${arrowBg} disabled:opacity-20 transition-all backdrop-blur-sm`}
+                className={`absolute right-1 sm:right-4 top-1/2 -translate-y-1/2 z-20 p-1.5 sm:p-3 rounded-full ${arrowBg} disabled:opacity-20 transition-all backdrop-blur-sm`}
               >
-                <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+                <ChevronRight className="w-4 h-4 sm:w-6 sm:h-6" />
               </button>
             </>
           )}
 
-          {/* Glow (not in scroll mode) */}
-          {viewMode !== "scroll" && (
+          {/* Glow */}
+          {viewMode !== "scroll" && !isMobile && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div
                 className="rounded-2xl opacity-30"
@@ -491,14 +611,13 @@ const BookReader = () => {
                 <p className={`${textColor} font-medium`}>تعذر عرض هذا الملف</p>
                 <div className="flex gap-3">
                   <a href={resourceUrl || book?.pdf_url || "#"} target="_blank" rel="noopener noreferrer" className={`${linkColor} hover:underline text-sm`}>فتح في نافذة جديدة ↗</a>
-                  <button onClick={() => navigate(`/product/${id}`)} className="text-blue-400 hover:underline text-sm">العودة لصفحة المنتج</button>
+                  <button onClick={() => navigate(`/product/${id}`)} className="text-blue-400 hover:underline text-sm">العودة</button>
                 </div>
               </div>
             }
           >
             {viewMode === "scroll" ? (
-              /* Continuous scroll mode */
-              <div ref={scrollContainerRef} className="flex flex-col items-center gap-4 py-6 px-4">
+              <div ref={scrollContainerRef} className="flex flex-col items-center gap-2 sm:gap-4 py-4 sm:py-6 px-1 sm:px-4">
                 {scrollPages.map((pageNum) => (
                   <div key={pageNum} className={`${pageBg} shadow-xl rounded-lg overflow-hidden`}>
                     <Page
@@ -517,24 +636,27 @@ const BookReader = () => {
                 ))}
               </div>
             ) : (
-              /* Single / Double page mode */
-              <AnimatePresence mode="wait">
+              /* Enhanced page flip animation */
+              <AnimatePresence mode="wait" initial={false}>
                 <motion.div
                   key={displayPage}
-                  initial={{ rotateY: pageFlipDir === "left" ? -15 : pageFlipDir === "right" ? 15 : 0, opacity: 0.7, scale: 0.97 }}
-                  animate={{ rotateY: 0, opacity: 1, scale: 1 }}
-                  exit={{ rotateY: pageFlipDir === "left" ? 15 : -15, opacity: 0.7, scale: 0.97 }}
-                  transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  initial={getInitialAnim()}
+                  animate={pageFlipVariants.center}
+                  exit={getExitAnim()}
+                  transition={pageFlipTransition}
                   className="flex"
-                  style={{ perspective: "1200px" }}
+                  style={{ perspective: "1200px", transformStyle: "preserve-3d" }}
                 >
                   {viewMode === "double" ? (
-                    <div className="flex shadow-2xl rounded-lg overflow-hidden">
+                    <div className="flex shadow-2xl rounded-lg overflow-hidden" style={{ transformStyle: "preserve-3d" }}>
+                      {/* Right page (RTL) */}
                       <div className={`${pageBg} relative`} style={{ boxShadow: "inset -4px 0 12px rgba(0,0,0,0.08)" }}>
                         <Page pageNumber={displayPage} width={pageWidth} renderTextLayer={true} renderAnnotationLayer={true} className="book-page" />
                         <div className="absolute inset-y-0 left-0 w-8 pointer-events-none" style={{ background: "linear-gradient(to right, rgba(0,0,0,0.06), transparent)" }} />
                       </div>
+                      {/* Spine */}
                       <div className="w-[3px] bg-gradient-to-b from-[#8B7355] via-[#6B5940] to-[#8B7355] flex-shrink-0 shadow-inner" />
+                      {/* Left page */}
                       {displayPage + 1 <= numPages && (
                         <div className={`${pageBg} relative`} style={{ boxShadow: "inset 4px 0 12px rgba(0,0,0,0.08)" }}>
                           <Page pageNumber={displayPage + 1} width={pageWidth} renderTextLayer={true} renderAnnotationLayer={true} className="book-page" />
@@ -551,27 +673,59 @@ const BookReader = () => {
               </AnimatePresence>
             )}
           </Document>
+
+          {/* Focus mode: minimal page indicator */}
+          {isFocusMode && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30"
+            >
+              <div className={`rounded-full px-4 py-1.5 ${isDarkTheme ? "bg-black/60" : "bg-white/80"} backdrop-blur-md shadow-lg flex items-center gap-3`}>
+                <span className={`text-[11px] font-medium ${isDarkTheme ? "text-gray-300" : "text-gray-600"}`}>
+                  {currentPage} / {numPages}
+                </span>
+                <div className={`w-20 h-1 rounded-full ${isDarkTheme ? "bg-white/10" : "bg-gray-200"}`}>
+                  <div
+                    className={`h-full rounded-full ${isDarkTheme ? "bg-emerald-400" : "bg-primary"} transition-all`}
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+            </motion.div>
+          )}
         </div>
       </div>
 
-      {/* Bottom Toolbar */}
-      <ReaderToolbar
-        currentPage={currentPage}
-        numPages={numPages}
-        zoom={zoom}
-        viewMode={viewMode}
-        isTTSPlaying={isTTSPlaying}
-        isDarkTheme={isDarkTheme}
-        pageInputValue={pageInputValue}
-        onNextPage={nextPage}
-        onPrevPage={prevPage}
-        onGoToPage={goToPage}
-        onZoomIn={() => setZoom(z => Math.min(2.5, z + 0.15))}
-        onZoomOut={() => setZoom(z => Math.max(0.5, z - 0.15))}
-        onSetViewMode={setViewMode}
-        onToggleTTS={toggleTTS}
-        onPageInputChange={setPageInputValue}
-      />
+      {/* Toolbar - hidden in focus mode */}
+      <AnimatePresence>
+        {!isFocusMode && (
+          <motion.div
+            initial={{ y: 60, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 60, opacity: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            <ReaderToolbar
+              currentPage={currentPage}
+              numPages={numPages}
+              zoom={zoom}
+              viewMode={viewMode}
+              isTTSPlaying={isTTSPlaying}
+              isDarkTheme={isDarkTheme}
+              pageInputValue={pageInputValue}
+              onNextPage={nextPage}
+              onPrevPage={prevPage}
+              onGoToPage={goToPage}
+              onZoomIn={() => setZoom(z => Math.min(2.5, z + 0.15))}
+              onZoomOut={() => setZoom(z => Math.max(0.5, z - 0.15))}
+              onSetViewMode={setViewMode}
+              onToggleTTS={toggleTTS}
+              onPageInputChange={setPageInputValue}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <style>{`
         .book-page canvas { display: block !important; }
