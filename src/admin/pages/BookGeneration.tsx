@@ -4,13 +4,17 @@ import {
   Upload, Loader2, CheckCircle2, XCircle, FileText,
   BookOpen, CreditCard, Layout, ImageIcon, FileCheck,
   MonitorPlay, HelpCircle, Download, ExternalLink,
-  Archive, RotateCcw, FolderSearch
+  Archive, RotateCcw, FolderSearch, Frame
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { tablouService } from "@/services/tablouService";
+import { printService } from "@/services/printService";
+
+type TargetType = "books" | "tablou" | "cards";
 
 interface ProcessedItem {
   success: boolean;
@@ -25,7 +29,14 @@ interface ProcessedItem {
   fileSizeKB?: number;
   fileExt?: string;
   error?: string;
+  targetType?: TargetType;
 }
+
+const TARGET_OPTIONS: { value: TargetType; label: string; icon: any; description: string; accept: string }[] = [
+  { value: "books", label: "كتب ومنتجات", icon: BookOpen, description: "PDF، وثائق، صور — يُحفظ في جدول المنتجات", accept: "*/*" },
+  { value: "tablou", label: "تابلوهات", icon: Frame, description: "صور فنية — يُحفظ في جدول التابلوهات مع 3 أحجام تلقائياً", accept: "image/*" },
+  { value: "cards", label: "قوالب بطاقات", icon: CreditCard, description: "تصاميم بطاقات أعمال — يُحفظ في جدول القوالب", accept: "image/*" },
+];
 
 const CATEGORY_ICONS: Record<string, any> = {
   "كتب": BookOpen,
@@ -34,6 +45,7 @@ const CATEGORY_ICONS: Record<string, any> = {
   "صور": ImageIcon,
   "وثائق": FileCheck,
   "عروض": MonitorPlay,
+  "تابلوهات": Frame,
   "أخرى": HelpCircle,
 };
 
@@ -61,6 +73,7 @@ const CATEGORY_PREFIXES: Record<string, string> = {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 const BookGeneration = () => {
+  const [targetType, setTargetType] = useState<TargetType>("books");
   const [processing, setProcessing] = useState(false);
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -247,7 +260,68 @@ const BookGeneration = () => {
     });
   };
 
+  // Smart route: process file for Tablou target
+  const processTablouFile = async (file: File): Promise<ProcessedItem[]> => {
+    const ext = file.name.split(".").pop()?.toLowerCase() || "";
+    const isImage = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "avif"].includes(ext);
+    if (!isImage) {
+      return [{ success: false, fileName: file.name, error: "التابلوهات تقبل صور فقط", targetType: "tablou" }];
+    }
+    setStatusMessage("جاري رفع التابلو...");
+    try {
+      const id = await tablouService.smartUpload(file);
+      const title = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      return [{
+        success: true,
+        id,
+        name: title,
+        category: "تابلوهات",
+        fileName: file.name,
+        fileSizeKB: Math.round(file.size / 1024),
+        fileExt: ext,
+        targetType: "tablou",
+      }];
+    } catch (err: any) {
+      return [{ success: false, fileName: file.name, error: err.message, targetType: "tablou" }];
+    }
+  };
+
+  // Smart route: process file for Card Template target
+  const processCardFile = async (file: File): Promise<ProcessedItem[]> => {
+    const ext = file.name.split(".").pop()?.toLowerCase() || "";
+    const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(ext);
+    if (!isImage) {
+      return [{ success: false, fileName: file.name, error: "قوالب البطاقات تقبل صور فقط", targetType: "cards" }];
+    }
+    setStatusMessage("جاري رفع قالب البطاقة...");
+    try {
+      const path = `card-templates/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from("book-images").upload(path, file);
+      if (uploadErr) throw new Error(uploadErr.message);
+      const { data: urlData } = supabase.storage.from("book-images").getPublicUrl(path);
+      const name = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      await printService.createTemplate(name, urlData.publicUrl, "business");
+      return [{
+        success: true,
+        name,
+        category: "بطاقات",
+        cover: urlData.publicUrl,
+        fileName: file.name,
+        fileSizeKB: Math.round(file.size / 1024),
+        fileExt: ext,
+        targetType: "cards",
+      }];
+    } catch (err: any) {
+      return [{ success: false, fileName: file.name, error: err.message, targetType: "cards" }];
+    }
+  };
+
   const processFile = async (file: File): Promise<ProcessedItem[]> => {
+    // Route to correct handler based on target type
+    if (targetType === "tablou") return processTablouFile(file);
+    if (targetType === "cards") return processCardFile(file);
+
+    // Default: books/products (existing logic)
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData?.session?.access_token;
@@ -443,6 +517,8 @@ const BookGeneration = () => {
     return acc;
   }, {} as Record<string, ProcessedItem[]>);
 
+  const currentTarget = TARGET_OPTIONS.find(t => t.value === targetType)!;
+
   return (
     <div className="space-y-6" dir="rtl">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
@@ -451,6 +527,31 @@ const BookGeneration = () => {
           ارفع أي ملف بأي حجم — يحلل ويصنف ويرقّم ويحفظ ويُنشئ روابط التحميل تلقائياً
         </p>
       </motion.div>
+
+      {/* Target type selector */}
+      <div className="grid grid-cols-3 gap-3 max-w-3xl">
+        {TARGET_OPTIONS.map(opt => {
+          const Icon = opt.icon;
+          const active = targetType === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => !processing && setTargetType(opt.value)}
+              className={`p-3 rounded-xl border-2 text-right transition-all ${
+                active
+                  ? "border-primary bg-primary/10"
+                  : "border-border bg-card hover:border-primary/40"
+              } ${processing ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <Icon className={`w-5 h-5 ${active ? "text-primary" : "text-muted-foreground"}`} />
+                <span className={`text-sm font-bold ${active ? "text-primary" : "text-foreground"}`}>{opt.label}</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground">{opt.description}</p>
+            </button>
+          );
+        })}
+      </div>
 
       {/* Category legend */}
       <div className="flex flex-wrap gap-2">
@@ -505,15 +606,19 @@ const BookGeneration = () => {
           ) : (
             <>
               <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-                <Upload className="w-8 h-8 text-primary" />
+                <currentTarget.icon className="w-8 h-8 text-primary" />
               </div>
               <div className="text-center">
-                <p className="text-sm font-medium text-foreground">اسحب الملفات هنا أو اضغط للتحميل</p>
+                <p className="text-sm font-medium text-foreground">
+                  اسحب الملفات هنا أو اضغط للتحميل — <span className="text-primary font-bold">{currentTarget.label}</span>
+                </p>
                 <p className="text-[11px] text-muted-foreground mt-1.5">
-                  PDF · صور · Word · PowerPoint · Excel · <strong>ZIP</strong> · وأكثر
+                  {targetType === "books" && "PDF · صور · Word · PowerPoint · Excel · ZIP · وأكثر"}
+                  {targetType === "tablou" && "صور فقط (JPG, PNG, WebP) — يُنشئ تابلو مع 3 أحجام تلقائياً"}
+                  {targetType === "cards" && "صور فقط (JPG, PNG) — يُنشئ قالب بطاقة أعمال"}
                 </p>
                 <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-                  نظام متكامل: تحليل ← تصنيف ← ترقيم ← رفع ← حفظ ← رابط تحميل · <strong>بدون حد للحجم</strong>
+                  نظام متكامل: رفع ← تصنيف ← ترقيم ← حفظ تلقائي
                 </p>
               </div>
             </>
@@ -523,7 +628,7 @@ const BookGeneration = () => {
         <input
           ref={fileInputRef}
           type="file"
-          accept="*/*"
+          accept={currentTarget.accept}
           multiple
           onChange={(e) => e.target.files && handleFiles(e.target.files)}
           className="hidden"
@@ -683,9 +788,9 @@ const BookGeneration = () => {
                 variant="outline"
                 size="sm"
                 className="shrink-0 border-green-500/30 text-green-400 hover:bg-green-500/10"
-                onClick={() => window.location.href = "/admin/products"}
+                onClick={() => window.location.href = targetType === "tablou" ? "/admin/tablou" : targetType === "cards" ? "/admin/card-templates" : "/admin/products"}
               >
-                عرض المنتجات
+                {targetType === "tablou" ? "عرض التابلوهات" : targetType === "cards" ? "عرض القوالب" : "عرض المنتجات"}
               </Button>
             </div>
           )}
