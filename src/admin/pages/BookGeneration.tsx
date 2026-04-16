@@ -29,7 +29,10 @@ interface ProcessedItem {
   fileSizeKB?: number;
   fileExt?: string;
   error?: string;
-  targetType?: TargetType;
+  targetType?: string;
+  designType?: string;
+  designReason?: string;
+  dimensions?: string | null;
 }
 
 const TARGET_OPTIONS: { value: TargetType; label: string; icon: any; description: string; accept: string }[] = [
@@ -47,6 +50,10 @@ const CATEGORY_ICONS: Record<string, any> = {
   "وثائق": FileCheck,
   "عروض": MonitorPlay,
   "تابلوهات": Frame,
+  "شعارات": ImageIcon,
+  "فلاير": FileText,
+  "ملصقات": Frame,
+  "قوائم": Layout,
   "أخرى": HelpCircle,
 };
 
@@ -832,14 +839,25 @@ const BookGeneration = () => {
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{r.name}</p>
-                        <p className="text-[11px] text-muted-foreground flex items-center gap-2">
+                        <p className="text-[11px] text-muted-foreground flex items-center gap-2 flex-wrap">
                           <span>{r.fileName}</span>
                           <span>·</span>
                           <span>{r.fileSizeKB && r.fileSizeKB > 1024 ? `${(r.fileSizeKB / 1024).toFixed(1)}MB` : `${r.fileSizeKB}KB`}</span>
+                          {r.dimensions && (
+                            <><span>·</span><span className="text-primary font-mono">{r.dimensions}px</span></>
+                          )}
+                          {r.designType && r.designType !== "other" && (
+                            <><span>·</span><span className="text-accent-foreground bg-accent px-1.5 py-0.5 rounded text-[10px] font-medium">{r.designType}</span></>
+                          )}
                           {r.fromArchive && (
                             <><span>·</span><Archive className="w-3 h-3 inline" /></>
                           )}
                         </p>
+                        {r.designReason && (
+                          <p className="text-[10px] text-muted-foreground/70 mt-0.5 truncate" title={r.designReason}>
+                            🧠 {r.designReason}
+                          </p>
+                        )}
                       </div>
                       {r.code && (
                         <span className="text-xs font-mono text-primary bg-primary/10 px-2 py-1 rounded-md">{r.code}</span>
