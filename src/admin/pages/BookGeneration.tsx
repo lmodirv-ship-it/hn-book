@@ -543,7 +543,7 @@ const BookGeneration = () => {
       </motion.div>
 
       {/* Target type selector */}
-      <div className="grid grid-cols-3 gap-3 max-w-3xl">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-4xl">
         {TARGET_OPTIONS.map(opt => {
           const Icon = opt.icon;
           const active = targetType === opt.value;
