@@ -104,12 +104,14 @@ export const storageService = {
    * Handles: reference code generation, storage upload, product update, file registration.
    */
   async uploadBookPdf(
-    productId: string,
+    productId: string | null,
     file: File,
     referenceCode?: string | null
   ): Promise<ApiResult<UploadFileResult>> {
     try {
-      const resolvedRef = await ensureProductReferenceCode(productId, referenceCode);
+      const resolvedRef = productId
+        ? await ensureProductReferenceCode(productId, referenceCode)
+        : (referenceCode?.trim().toUpperCase() || (() => { throw new Error("الرقم المرجعي مطلوب"); })());
       const storagePath = buildBookPdfStoragePath(resolvedRef);
 
       const { error: uploadError } = await db.storage
@@ -119,23 +121,17 @@ export const storageService = {
 
       const publicUrl = getBookFilePublicUrl(storagePath);
 
-      // Update product
-      const { error: updateError } = await db
-        .from("products")
-        .update({ pdf_url: publicUrl, reference_code: resolvedRef } as never)
-        .eq("id", productId);
-      if (updateError) throw updateError;
+      if (productId) {
+        const { error: updateError } = await db
+          .from("products")
+          .update({ pdf_url: publicUrl, reference_code: resolvedRef } as never)
+          .eq("id", productId);
+        if (updateError) throw updateError;
 
-      // Register in product_files
-      await registerFile(productId, "pdf", `${resolvedRef}.pdf`, file.size, "book-files", storagePath, publicUrl);
+        await registerFile(productId, "pdf", `${resolvedRef}.pdf`, file.size, "book-files", storagePath, publicUrl);
+      }
 
       return ok({ publicUrl, referenceCode: resolvedRef, storagePath });
-
-      // ── Future: REST API ──
-      // const formData = new FormData();
-      // formData.append("file", file);
-      // const result = await fetch(`${API_BASE}/books/${productId}/pdf`, { method: "POST", body: formData });
-      // return ok(await result.json());
     } catch (err: any) {
       return fail(err.message || "فشل رفع ملف PDF");
     }
