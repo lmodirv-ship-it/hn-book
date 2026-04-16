@@ -104,6 +104,8 @@ const BooksPage = () => {
         if (!cancelled && result.data) {
           setAllProducts(result.data.map(mapBook));
         }
+      } catch (err) {
+        console.error("[BooksPage] fetch error:", err);
       } finally {
         if (!cancelled) setInitialLoading(false);
       }
