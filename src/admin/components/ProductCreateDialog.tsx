@@ -85,35 +85,64 @@ export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: Pr
   };
 
   const handleManualSave = async () => {
-    if (!name.trim()) {
-      toast.error("يرجى إدخال اسم الكتاب");
-      return;
-    }
-    if (!price) {
-      toast.error("يرجى إدخال السعر");
-      return;
-    }
-    setSaving(true);
-    const desc = [description, author && `المؤلف: ${author}`, pages && `عدد الصفحات: ${pages}`].filter(Boolean).join("\n");
-    const featureList = features.split("\n").map(f => f.trim()).filter(Boolean);
+    const errors: string[] = [];
+    if (!name.trim()) errors.push("اسم الكتاب");
+    if (!price) errors.push("السعر");
+    if (!pdfFile) errors.push("ملف PDF");
+    if (!coverFile) errors.push("صورة الغلاف");
 
-    const result = await bookService.create({
-      name: name.trim(),
-      shortDescription: shortDesc.trim() || undefined,
-      description: desc || undefined,
-      price: Number(price),
-      originalPrice: originalPrice ? Number(originalPrice) : undefined,
-      category,
-      badge: badge.trim() || undefined,
-      features: featureList.length > 0 ? featureList : undefined,
-    });
-    setSaving(false);
-    if (result.error) {
-      toast.error(result.error);
+    if (errors.length > 0) {
+      toast.error(`يرجى إضافة: ${errors.join("، ")}`);
       return;
     }
-    toast.success("تم إضافة المنتج — يرجى رفع ملف PDF وصورة الغلاف من صفحة التعديل");
-    onProductCreated(); reset(); onOpenChange(false);
+
+    setSaving(true);
+    try {
+      const desc = [description, author && `المؤلف: ${author}`, pages && `عدد الصفحات: ${pages}`].filter(Boolean).join("\n");
+      const featureList = features.split("\n").map(f => f.trim()).filter(Boolean);
+
+      // Create a temp ID for file uploads
+      const tempId = crypto.randomUUID();
+
+      // Upload PDF and cover in parallel
+      const [pdfResult, coverResult] = await Promise.all([
+        storageService.uploadBookPdf(tempId, pdfFile!),
+        storageService.uploadBookImage(tempId, coverFile!),
+      ]);
+
+      if (pdfResult.error) {
+        toast.error("فشل رفع ملف PDF: " + pdfResult.error);
+        return;
+      }
+      if (coverResult.error) {
+        toast.error("فشل رفع صورة الغلاف: " + coverResult.error);
+        return;
+      }
+
+      const result = await bookService.create({
+        name: name.trim(),
+        shortDescription: shortDesc.trim() || undefined,
+        description: desc || undefined,
+        price: Number(price),
+        originalPrice: originalPrice ? Number(originalPrice) : undefined,
+        category,
+        badge: badge.trim() || undefined,
+        features: featureList.length > 0 ? featureList : undefined,
+        pdfUrl: pdfResult.data!.publicUrl,
+        image: coverResult.data!.publicUrl,
+      });
+
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success("تم إضافة الكتاب بنجاح");
+      onProductCreated(); reset(); onOpenChange(false);
+    } catch (e: any) {
+      toast.error(e.message || "حدث خطأ غير متوقع");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleAIGenerate = async () => {
