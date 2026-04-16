@@ -721,4 +721,33 @@ const ProductDetail = () => {
   );
 };
 
+const AddToCartButton = ({ product }: { product: Product }) => {
+  const { addItem, isInCart } = useCart();
+  const inCart = isInCart(product.id);
+
+  return (
+    <Button
+      variant="outline"
+      size="lg"
+      disabled={inCart}
+      onClick={() =>
+        addItem({
+          bookId: product.id,
+          name: product.name,
+          image: product.image,
+          price: product.price,
+          category: product.category,
+          referenceCode: product.referenceCode ?? null,
+        })
+      }
+      className={`w-full gap-2 text-sm font-semibold h-12 rounded-xl transition-all ${
+        inCart ? "border-primary/30 text-primary" : "hover:border-primary/30 hover:text-primary"
+      }`}
+    >
+      <ShoppingCart className="h-4 w-4" />
+      {inCart ? "✓ في السلة" : "أضف إلى السلة"}
+    </Button>
+  );
+};
+
 export default ProductDetail;
