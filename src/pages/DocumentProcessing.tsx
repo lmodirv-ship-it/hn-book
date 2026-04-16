@@ -4,27 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { documentService, type ProcessingResult, type SavedDoc } from "@/services/documentService";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-
-interface ProcessingResult {
-  engine: string;
-  text: string;
-  structured_data?: any;
-  confidence?: number;
-  metadata?: any;
-}
-
-interface SavedDoc {
-  id: string;
-  file_name: string;
-  engines_used: string[];
-  extracted_text: string;
-  structured_data: any;
-  confidence: number;
-  created_at: string;
-}
 
 const DocumentProcessing = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -42,31 +24,8 @@ const DocumentProcessing = () => {
   useEffect(() => { loadHistory(); }, []);
 
   const loadHistory = async () => {
-    const { data, error } = await supabase
-      .from("processed_documents" as any)
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(20);
-    if (error) console.error("Load history error:", error);
-    if (data) setHistory(data as unknown as SavedDoc[]);
-  };
-
-  const saveResult = async (fileName: string, res: ProcessingResult, engines: string[], fileSizeKb?: number) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    const { error } = await supabase.from("processed_documents" as any).insert({
-      user_id: user?.id || null,
-      file_name: fileName,
-      file_type: file?.type || "url",
-      file_size_kb: fileSizeKb || null,
-      engines_used: engines,
-      extracted_text: res.text,
-      structured_data: res.structured_data || {},
-      confidence: res.confidence || null,
-      metadata: res.metadata || {},
-      custom_prompt: customPrompt || null,
-    });
-    if (error) console.error("Save result error:", error);
-    loadHistory();
+    const data = await documentService.getHistory();
+    setHistory(data);
   };
 
   const toggleEngine = (engine: string) => {
@@ -89,45 +48,24 @@ const DocumentProcessing = () => {
     setResult(null);
 
     try {
-      let response;
+      let apiResult;
 
       if (activeTab === "url" && url) {
-        response = await supabase.functions.invoke("process-document", {
-          body: { url, engines: selectedEngines, prompt: customPrompt || undefined },
-        });
+        apiResult = await documentService.processUrl(url, selectedEngines, customPrompt);
       } else if (file) {
-        // Upload file first, then process
-        const tempPath = `temp-ocr/${crypto.randomUUID()}-${file.name}`;
-        const { error: uploadErr } = await supabase.storage
-          .from("book-files")
-          .upload(tempPath, file, { contentType: file.type, upsert: true });
-
-        if (uploadErr) throw new Error("فشل رفع الملف");
-
-        response = await supabase.functions.invoke("process-document", {
-          body: {
-            storage_path: tempPath,
-            file_name: file.name,
-            bucket: "book-files",
-            engines: selectedEngines,
-            prompt: customPrompt || undefined,
-          },
-        });
+        apiResult = await documentService.processFile(file, selectedEngines, customPrompt);
       }
 
-      if (response?.error) throw new Error(response.error.message);
+      if (!apiResult || apiResult.error) throw new Error(apiResult?.error || "فشلت المعالجة");
 
-      const data = response?.data;
-      if (data?.success) {
-        setResult(data.result);
-        setEnginesUsed(data.engines_used || []);
-        const fileName = file?.name || url || "document";
-        const fileSizeKb = file ? Math.round(file.size / 1024) : undefined;
-        await saveResult(fileName, data.result, data.engines_used || [], fileSizeKb);
-        toast({ title: "تمت المعالجة بنجاح ✨", description: `تم استخدام: ${(data.engines_used || []).join(" + ")}` });
-      } else {
-        throw new Error(data?.error || "فشلت المعالجة");
-      }
+      const { result: res, engines_used } = apiResult.data!;
+      setResult(res);
+      setEnginesUsed(engines_used);
+      const fileName = file?.name || url || "document";
+      const fileSizeKb = file ? Math.round(file.size / 1024) : undefined;
+      await documentService.saveResult({ fileName, result: res, engines: engines_used, fileSizeKb, fileType: file?.type, customPrompt });
+      loadHistory();
+      toast({ title: "تمت المعالجة بنجاح ✨", description: `تم استخدام: ${engines_used.join(" + ")}` });
     } catch (err: any) {
       toast({ title: "خطأ", description: err.message, variant: "destructive" });
     } finally {
