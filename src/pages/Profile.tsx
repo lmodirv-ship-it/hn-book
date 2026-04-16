@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, Mail, Phone, LogOut, ArrowRight, Loader2, Save, CheckCircle, Camera } from "lucide-react";
+import { User, Mail, Phone, LogOut, ArrowRight, Loader2, Save, CheckCircle, Camera, Package } from "lucide-react";
 import { motion } from "framer-motion";
 
 const Profile = () => {
@@ -229,7 +229,17 @@ const Profile = () => {
             </Button>
           </form>
 
-          <div className="border-t border-border pt-4">
+          <div className="border-t border-border pt-4 space-y-2">
+            <Button
+              variant="outline"
+              className="w-full gap-2"
+              asChild
+            >
+              <Link to="/my-orders">
+                <Package className="w-4 h-4" />
+                طلباتي
+              </Link>
+            </Button>
             <Button
               variant="ghost"
               className="w-full gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
