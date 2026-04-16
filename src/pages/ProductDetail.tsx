@@ -456,6 +456,11 @@ const ProductDetail = () => {
               </div>
               <span className="text-sm font-medium text-foreground/80">{rating}</span>
               <span className="text-sm text-muted-foreground">({reviewCount} تقييم)</span>
+              {product.pageCount && (
+                <span className="text-sm text-muted-foreground flex items-center gap-1 mr-2">
+                  <BookOpen className="w-3.5 h-3.5" /> {product.pageCount} صفحة
+                </span>
+              )}
             </motion.div>
 
             {/* Description */}
