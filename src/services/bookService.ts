@@ -15,6 +15,83 @@ import type {
   BookFilter,
 } from "./types";
 
+const QUERY_TIMEOUT_MS = 5000;
+
+function createAbortController(timeoutMs = QUERY_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  return {
+    controller,
+    clear: () => window.clearTimeout(timeoutId),
+  };
+}
+
+function buildProductsRestUrl(filter?: BookFilter) {
+  const limit = Math.max(1, Math.min(filter?.limit ?? 24, 50));
+  const offset = Math.max(filter?.offset ?? 0, 0);
+  const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/products`);
+
+  url.searchParams.set("select", "*");
+  url.searchParams.set("order", "created_at.desc");
+  url.searchParams.set("limit", String(limit));
+  url.searchParams.set("offset", String(offset));
+
+  if (filter?.category && filter.category !== "all") {
+    url.searchParams.set("category", `eq.${filter.category}`);
+  }
+
+  if (filter?.search?.trim()) {
+    const escapedSearch = filter.search.trim().replace(/[,%]/g, " ");
+    url.searchParams.set("or", `(name.ilike.*${escapedSearch}*,category.ilike.*${escapedSearch}*)`);
+  }
+
+  return { url: url.toString(), limit, offset };
+}
+
+async function fetchProductsViaRest(filter?: BookFilter): Promise<ApiResult<Book[]>> {
+  const { url, limit, offset } = buildProductsRestUrl(filter);
+  const { controller, clear } = createAbortController();
+
+  try {
+    console.log("[bookService.getAll] REST fallback request", { limit, offset, url });
+
+    const response = await fetch(url, {
+      method: "GET",
+      signal: controller.signal,
+      headers: {
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      console.error("[bookService.getAll] REST fallback failed", {
+        status: response.status,
+        body,
+      });
+      return fail(`REST fallback failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    console.log("[bookService.getAll] REST fallback success", {
+      limit,
+      offset,
+      count: Array.isArray(data) ? data.length : 0,
+    });
+
+    return ok((Array.isArray(data) ? data : []).map(mapRow));
+  } catch (error) {
+    console.error("[bookService.getAll] REST fallback unexpected error", error);
+    return fail(error instanceof Error ? error.message : "Failed to fetch books");
+  } finally {
+    clear();
+  }
+}
+
 // ─── Mappers ─────────────────────────────────────────────────
 
 function mapRow(row: any): Book {
@@ -61,15 +138,7 @@ function toDb(input: BookCreateInput | BookUpdateInput): Record<string, any> {
 export const bookService = {
   /** Get all books with optional filtering */
   async getAll(filter?: BookFilter): Promise<ApiResult<Book[]>> {
-    // ── Current: Supabase ──
-    let query = db.from("products").select("*").order("created_at", { ascending: false });
-    if (filter?.category && filter.category !== "all") query = query.eq("category", filter.category);
-    if (filter?.search) query = query.or(`name.ilike.%${filter.search}%,category.ilike.%${filter.search}%`);
-    if (filter?.limit) query = query.limit(filter.limit);
-    if (filter?.offset) query = query.range(filter.offset, filter.offset + (filter?.limit ?? 50) - 1);
-    const { data, error } = await query;
-    if (error) return fail(error.message);
-    return ok((data || []).map(mapRow));
+    return fetchProductsViaRest(filter);
 
     // ── Future: REST API ──
     // const params = new URLSearchParams();

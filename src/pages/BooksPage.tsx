@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Search, ChevronDown, BookOpen, Loader2 } from "lucide-react";
 import { bookService } from "@/services";
 
-const ITEMS_PER_PAGE = 24;
+const ITEMS_PER_PAGE = 10;
 const FETCH_TIMEOUT_MS = 8000;
 
 type LangCode = "all" | "ar" | "fr" | "en";
@@ -154,6 +154,11 @@ const BooksPage = () => {
       }
 
       const books = (result.data ?? []).map(mapBook);
+      console.log("[BooksPage] mapped books", {
+        count: books.length,
+        firstBook: books[0]?.name ?? null,
+        offset: nextOffset,
+      });
 
       setAllProducts((prev) => {
         if (!append) return books;
@@ -165,7 +170,11 @@ const BooksPage = () => {
       setOffset(nextOffset + books.length);
       setHasMore(books.length === ITEMS_PER_PAGE);
     } catch (err) {
-      console.error("[BooksPage] fetch error", err);
+      console.error("[BooksPage] fetch error", {
+        error: err,
+        offset: nextOffset,
+        append,
+      });
       if (!append) {
         setAllProducts([]);
         setError("تعذر تحميل الكتب حالياً. حاول مرة أخرى.");
