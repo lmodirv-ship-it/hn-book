@@ -15,7 +15,9 @@ import ReaderSettings from "@/components/reader/ReaderSettings";
 import BookIntroPage from "@/components/reader/BookIntroPage";
 import { useBookmarks } from "@/components/reader/useBookmarks";
 import { useNotes } from "@/components/reader/useNotes";
+import { useHighlights } from "@/components/reader/useHighlights";
 import { useReadingProgress } from "@/components/reader/useReadingProgress";
+import TextSelectionPopup from "@/components/reader/TextSelectionPopup";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
