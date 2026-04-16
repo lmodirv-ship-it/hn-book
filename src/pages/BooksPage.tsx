@@ -7,8 +7,33 @@ import type { Product } from "@/lib/products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, BookOpen, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { bookService } from "@/services";
+
+const LANGUAGES = [
+  { value: "all", label: "كل اللغات" },
+  { value: "ar", label: "العربية" },
+  { value: "en", label: "English" },
+] as const;
+
+const CATEGORIES_AR = [
+  { value: "all", label: "كل التصنيفات" },
+  { value: "الطب", label: "الطب" },
+  { value: "التاريخ", label: "التاريخ" },
+  { value: "العلوم", label: "العلوم" },
+  { value: "الأدب العربي", label: "الأدب العربي" },
+  { value: "الدين الإسلامي", label: "الدين الإسلامي" },
+  { value: "تطوير الذات", label: "تطوير الذات" },
+  { value: "كتب", label: "كتب" },
+] as const;
+
+const CATEGORIES_EN = [
+  { value: "all", label: "All Categories" },
+  { value: "Literature", label: "Literature" },
+  { value: "Philosophy", label: "Philosophy" },
+  { value: "Biography & Autobiography", label: "Biography" },
+] as const;
 
 const PAGE_SIZE = 50;
 
