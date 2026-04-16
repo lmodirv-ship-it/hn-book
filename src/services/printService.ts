@@ -10,6 +10,7 @@ export interface CardTemplate {
   category: string;
   is_active: boolean;
   created_at: string;
+  layout_config?: any;
 }
 
 export interface PrintOrder {
