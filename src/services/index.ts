@@ -1,21 +1,22 @@
 /**
  * HN-Book Service Layer
  * 
- * Central export for all services.
- * Components import from here instead of calling the backend directly.
+ * Central export — components import from here.
  * 
- * Migration guide:
- * 1. Replace the implementation in each .service.ts file
- * 2. Keep the same function signatures and return types
- * 3. No changes needed in UI components
+ * Architecture:
+ *   src/api/client.ts      → raw backend client (swap for migration)
+ *   src/services/           → business logic services
+ *     authService.ts        → auth, profiles, roles
+ *     bookService.ts        → books CRUD, filtering, categories
+ *     readerService.ts      → reading progress, bookmarks, highlights, notes
+ *     types.ts              → shared types (backend-agnostic)
  */
 
-export { authService } from "./auth.service";
-export { booksService } from "./books.service";
-export { ordersService } from "./orders.service";
-export { storageService } from "./storage.service";
+export { authService } from "./authService";
+export { bookService } from "./bookService";
+export { readerService } from "./readerService";
 
-// Re-export types for convenience
+// Re-export types
 export type {
   AppUser,
   AuthSession,
@@ -36,3 +37,11 @@ export type {
   UploadResult,
   ServiceResult,
 } from "./types";
+
+export type {
+  ReadingProgress,
+  Bookmark,
+  Highlight,
+  ReaderNote,
+  ReaderSettings,
+} from "./readerService";
