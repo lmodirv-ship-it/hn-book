@@ -627,6 +627,7 @@ const BookGeneration = () => {
                   اسحب الملفات هنا أو اضغط للتحميل — <span className="text-primary font-bold">{currentTarget.label}</span>
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-1.5">
+                  {targetType === "auto" && "🧠 أي ملف → الذكاء الاصطناعي يكتشف النوع ويوجّهه للنظام المناسب تلقائياً (كتب / تابلو / بطاقات)"}
                   {targetType === "books" && "PDF · صور · Word · PowerPoint · Excel · ZIP · وأكثر"}
                   {targetType === "tablou" && "صور فقط (JPG, PNG, WebP) — يُنشئ تابلو مع 3 أحجام تلقائياً"}
                   {targetType === "cards" && "صور فقط (JPG, PNG) — يُنشئ قالب بطاقة أعمال"}
