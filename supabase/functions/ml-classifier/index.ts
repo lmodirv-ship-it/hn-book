@@ -307,14 +307,47 @@ async function handlePredict(supabase: any, params: any) {
     }
   }
 
-  const confidence = Math.min(bestScore, 0.99);
+  const mlConfidence = Math.min(bestScore, 0.99);
+
+  // Blend: if ML model is confident, use it; otherwise prefer rules
+  let finalType: string;
+  let finalConfidence: number;
+  let finalReason: string;
+  let source: string;
+
+  if (mlConfidence > ruleResult.confidence && mlConfidence > 0.3) {
+    finalType = bestType;
+    finalConfidence = mlConfidence;
+    finalReason = `نموذج: ${bestReason}`;
+    source = "ml_model";
+  } else if (ruleResult.confidence >= 0.5) {
+    finalType = ruleResult.type;
+    finalConfidence = ruleResult.confidence;
+    finalReason = `قواعد: ${ruleResult.reason}`;
+    source = "rules";
+  } else {
+    // Both weak — pick higher
+    if (mlConfidence >= ruleResult.confidence) {
+      finalType = bestType;
+      finalConfidence = mlConfidence;
+      finalReason = bestReason || ruleResult.reason;
+      source = "ml_model+rules";
+    } else {
+      finalType = ruleResult.type;
+      finalConfidence = ruleResult.confidence;
+      finalReason = ruleResult.reason;
+      source = "rules+ml_model";
+    }
+  }
 
   return jsonResponse({
-    predicted_type: bestType,
-    confidence: Number(confidence.toFixed(3)),
-    reason: bestReason || "تطابق ضعيف",
-    source: "ml_model",
-    needs_confirmation: confidence < 0.5,
+    predicted_type: finalType,
+    confidence: Number(finalConfidence.toFixed(3)),
+    reason: finalReason,
+    source,
+    needs_confirmation: finalConfidence < 0.5,
+    rule_prediction: { type: ruleResult.type, confidence: ruleResult.confidence },
+    model_prediction: bestScore > 0 ? { type: bestType, confidence: Number(mlConfidence.toFixed(3)) } : null,
   });
 }
 
