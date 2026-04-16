@@ -39,6 +39,7 @@ const navItems = [
   { path: "/admin/recommendations", icon: BookOpen, label: "التوصيات" },
   { path: "/admin/card-templates", icon: CreditCard, label: "تصاميم البطاقات" },
   { path: "/admin/logos", icon: Image, label: "مكتبة الشعارات" },
+  { path: "/admin/tablou", icon: Image, label: "التابلوهات" },
   { path: "/admin/print-orders", icon: Printer, label: "طلبات الطباعة" },
   { path: "/admin/settings", icon: Settings, label: "الإعدادات" },
 ];

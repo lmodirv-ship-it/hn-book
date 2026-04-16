@@ -45,6 +45,9 @@ import PrintOrdersAdmin from "./admin/pages/PrintOrdersAdmin.tsx";
 import CardTemplatesAdmin from "./admin/pages/CardTemplatesAdmin.tsx";
 import LogosAdmin from "./admin/pages/LogosAdmin.tsx";
 import CarteVisite from "./pages/CarteVisite.tsx";
+import TablouPage from "./pages/TablouPage.tsx";
+import TablouDetail from "./pages/TablouDetail.tsx";
+import TablouAdmin from "./admin/pages/TablouAdmin.tsx";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +70,8 @@ const App = () => (
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/book/:id" element={<ProductDetail />} />
             <Route path="/carte-visite" element={<CarteVisite />} />
+            <Route path="/tablou" element={<TablouPage />} />
+            <Route path="/tablou/:id" element={<TablouDetail />} />
             <Route path="/read/:id" element={<BookReader />} />
             <Route path="/document-processing" element={<DocumentProcessing />} />
             <Route path="/auth" element={<CustomerAuth />} />
@@ -100,6 +105,7 @@ const App = () => (
               <Route path="print-orders" element={<PrintOrdersAdmin />} />
               <Route path="card-templates" element={<CardTemplatesAdmin />} />
               <Route path="logos" element={<LogosAdmin />} />
+              <Route path="tablou" element={<TablouAdmin />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />
