@@ -43,6 +43,9 @@ const navItems = [
   { path: "/admin/tablou", icon: Frame, label: "التابلوهات" },
   { path: "/admin/print-orders", icon: Printer, label: "طلبات الطباعة" },
   { path: "/admin/ai-classifier", icon: Brain, label: "محرك الذكاء" },
+  { path: "/admin/features", icon: ToggleRight, label: "مدير الميزات" },
+  { path: "/admin/monitoring", icon: MonitorDot, label: "مراقبة النظام" },
+  { path: "/admin/api-integrations", icon: Globe, label: "تكاملات API" },
   { path: "/admin/settings", icon: Settings, label: "الإعدادات" },
 ];
 
