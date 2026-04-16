@@ -298,6 +298,7 @@ export type Database = {
           price: number
           reference_code: string | null
           short_description: string | null
+          slug: string | null
           updated_at: string
         }
         Insert: {
@@ -317,6 +318,7 @@ export type Database = {
           price?: number
           reference_code?: string | null
           short_description?: string | null
+          slug?: string | null
           updated_at?: string
         }
         Update: {
@@ -336,6 +338,7 @@ export type Database = {
           price?: number
           reference_code?: string | null
           short_description?: string | null
+          slug?: string | null
           updated_at?: string
         }
         Relationships: []
