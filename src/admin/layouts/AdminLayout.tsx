@@ -5,7 +5,7 @@ import {
   BarChart3, Package, Users, TrendingUp, Settings,
   Menu, X, Shield, BookOpen, Tag, LayoutDashboard,
   ShoppingCart, FileText, LogOut, Ticket, Activity, ShieldCheck, FolderUp, Globe, ScanText, DollarSign,
-  Bell, AlertTriangle, XCircle, Database, Crown,
+  Bell, AlertTriangle, XCircle, Database, Crown, CreditCard, Printer,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +37,8 @@ const navItems = [
   { path: "/admin/database", icon: Database, label: "مدير قاعدة البيانات" },
   { path: "/admin/sales", icon: Crown, label: "المبيعات والاشتراكات" },
   { path: "/admin/recommendations", icon: BookOpen, label: "التوصيات" },
+  { path: "/admin/card-templates", icon: CreditCard, label: "تصاميم البطاقات" },
+  { path: "/admin/print-orders", icon: Printer, label: "طلبات الطباعة" },
   { path: "/admin/settings", icon: Settings, label: "الإعدادات" },
 ];
 
