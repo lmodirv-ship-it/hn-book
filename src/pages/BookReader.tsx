@@ -79,6 +79,7 @@ const BookReader = () => {
   const navigate = useNavigate();
   const [book, setBook] = useState<BookData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [accessBlocked, setAccessBlocked] = useState(false);
   const [resourceUrl, setResourceUrl] = useState<string | null>(null);
   const [resourceType, setResourceType] = useState<ResourceType | null>(null);
   const [textContent, setTextContent] = useState("");
