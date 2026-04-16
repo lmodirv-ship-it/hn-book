@@ -13,11 +13,19 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
 const CATEGORY_PREFIXES: Record<string, string> = {
   "كتب": "HNB", "بطاقات": "HNC", "قوالب": "HNT", "صور": "HNI",
-  "وثائق": "HND", "عروض": "HNP", "أخرى": "HNX",
+  "وثائق": "HND", "عروض": "HNP", "تابلوهات": "HNA", "أخرى": "HNX",
 };
 const CATEGORY_LABELS: Record<string, string> = {
   HNB: "كتب", HNC: "بطاقات", HNT: "قوالب", HNI: "صور",
-  HND: "وثائق", HNP: "عروض", HNX: "أخرى",
+  HND: "وثائق", HNP: "عروض", HNA: "تابلوهات", HNX: "أخرى",
+};
+
+// Maps category to a target system for smart routing
+const CATEGORY_TARGET: Record<string, string> = {
+  "كتب": "books", "وثائق": "books", "عروض": "books",
+  "تابلوهات": "tablou", "صور": "tablou",
+  "بطاقات": "cards", "قوالب": "cards",
+  "أخرى": "books",
 };
 
 function getExt(name: string): string {
@@ -47,7 +55,7 @@ function getMime(ext: string): string {
 interface RawItem {
   fileName: string; fileExt: string; mimeCategory: string; mimeType: string;
   fileSizeKB: number; fileBytes: Uint8Array; fromArchive?: string;
-  folderPath?: string; // full path inside ZIP for smart categorization
+  folderPath?: string;
 }
 
 function isReadableTextFile(mime: string, ext: string): boolean {
@@ -86,7 +94,7 @@ async function classifyAI(bytes: Uint8Array, name: string, mime: string, cat: st
             model: "google/gemini-2.5-flash",
             messages: [{
               role: "user",
-              content: `Analyze this text-based file and return ONLY valid JSON:\n{"type":"one of: كتب, بطاقات, قوالب, صور, وثائق, عروض, أخرى","name_ar":"Arabic title","name_en":"English title","description_ar":"Short Arabic description","author":"author or empty","tags":["tag1"],"suggested_price":0}\nRules: كتب=books/ebooks, بطاقات=cards, قوالب=templates, صور=photos/graphics, وثائق=documents/forms, عروض=presentations, أخرى=other. File name: ${name}\nFile type: ${mime}\nExtracted content preview:\n${textPreview}`,
+              content: `Analyze this text-based file and return ONLY valid JSON:\n{"type":"one of: كتب, بطاقات, قوالب, صور, وثائق, عروض, تابلوهات, أخرى","name_ar":"Arabic title","name_en":"English title","description_ar":"Short Arabic description","author":"author or empty","tags":["tag1"],"suggested_price":0}\nRules: كتب=books/ebooks, بطاقات=cards, قوالب=templates, صور=photos/graphics, وثائق=documents/forms, عروض=presentations, تابلوهات=wall art/posters, أخرى=other. File name: ${name}\nFile type: ${mime}\nExtracted content preview:\n${textPreview}`,
             }],
             max_tokens: 900,
             temperature: 0.1,
@@ -97,9 +105,7 @@ async function classifyAI(bytes: Uint8Array, name: string, mime: string, cat: st
           const c = d.choices?.[0]?.message?.content || "";
           const m = c.match(/\{[\s\S]*\}/);
           if (m) {
-            try {
-              return JSON.parse(m[0]);
-            } catch {}
+            try { return JSON.parse(m[0]); } catch {}
           }
         }
       } catch (e) {
@@ -141,8 +147,8 @@ async function classifyAI(bytes: Uint8Array, name: string, mime: string, cat: st
           role: "user",
           content: [
             { type: "text", text: `Analyze this file. Return ONLY valid JSON:
-{"type":"one of: كتب, بطاقات, قوالب, صور, وثائق, عروض, أخرى","name_ar":"Arabic title","name_en":"English title","description_ar":"Short Arabic description","author":"author or empty","tags":["tag1"],"suggested_price":0}
-Rules: كتب=books/ebooks, بطاقات=cards, قوالب=templates, صور=photos/graphics, وثائق=documents/forms, عروض=presentations, أخرى=other. File: ${name}` },
+{"type":"one of: كتب, بطاقات, قوالب, صور, وثائق, عروض, تابلوهات, أخرى","name_ar":"Arabic title","name_en":"English title","description_ar":"Short Arabic description","author":"author or empty","tags":["tag1"],"suggested_price":0}
+Rules: كتب=books/ebooks, بطاقات=cards, قوالب=templates, صور=photos/graphics, وثائق=documents/forms, عروض=presentations, تابلوهات=wall art/posters/decorative art, أخرى=other. File: ${name}` },
             { type: "image_url", image_url: { url: `data:${mediaType};base64,${b64}` } },
           ],
         }],
@@ -159,7 +165,6 @@ Rules: كتب=books/ebooks, بطاقات=cards, قوالب=templates, صور=pho
   return null;
 }
 
-// Folder name → category hint mapping (for ZIP structure-based classification)
 const FOLDER_CATEGORY_HINTS: Record<string, string> = {
   logo: "صور", logos: "صور", logotype: "صور",
   card: "بطاقات", cards: "بطاقات", "carte-visite": "بطاقات", "business-card": "بطاقات",
@@ -174,15 +179,15 @@ const FOLDER_CATEGORY_HINTS: Record<string, string> = {
   icon: "صور", icons: "صور", sticker: "صور", stickers: "صور",
   cv: "قوالب", resume: "قوالب", invoice: "قوالب", letterhead: "قوالب",
   social: "قوالب", "social-media": "قوالب", post: "قوالب", posts: "قوالب",
+  tablou: "تابلوهات", tableau: "تابلوهات", "wall-art": "تابلوهات", wallart: "تابلوهات",
+  art: "تابلوهات", poster: "تابلوهات", posters: "تابلوهات", print: "تابلوهات",
 };
 
 function getCategoryFromFolderPath(folderPath: string): string | null {
   const parts = folderPath.toLowerCase().split("/").filter(Boolean);
-  // Check each folder level for a category match
   for (const part of parts) {
     const cleaned = part.replace(/[_\-\s]+/g, "-").trim();
     if (FOLDER_CATEGORY_HINTS[cleaned]) return FOLDER_CATEGORY_HINTS[cleaned];
-    // Also check partial matches
     for (const [key, cat] of Object.entries(FOLDER_CATEGORY_HINTS)) {
       if (cleaned.includes(key)) return cat;
     }
@@ -212,7 +217,6 @@ async function extractZip(bytes: Uint8Array, parent: string): Promise<RawItem[]>
       });
     }
     console.log(`📂 Extracted ${items.length} files from ZIP`);
-    // Log folder structure for debugging
     const folders = [...new Set(items.map(i => i.folderPath?.split("/").slice(0, -1).join("/")).filter(Boolean))];
     if (folders.length > 0) console.log(`📁 Folders found: ${folders.join(", ")}`);
   } catch (e) { console.error("ZIP error:", e); }
@@ -231,6 +235,131 @@ async function getNextCode(supabase: any, prefix: string): Promise<string> {
   return `${prefix}-${String(max + 1).padStart(4, "0")}`;
 }
 
+// Save item to the appropriate system based on target
+async function saveToTarget(
+  supabase: any, item: RawItem, cls: any, categoryType: string, target: string
+): Promise<any> {
+  const prefix = CATEGORY_PREFIXES[categoryType] || "HNX";
+
+  if (target === "tablou" && item.mimeCategory === "image") {
+    // Save directly to tablous table
+    const storagePath = `tablou/${Date.now()}-${item.fileName}`;
+    const { error: uploadErr } = await supabase.storage
+      .from("book-images")
+      .upload(storagePath, item.fileBytes, { contentType: item.mimeType, upsert: true });
+    if (uploadErr) throw new Error("فشل رفع صورة التابلو");
+
+    const imageUrl = `${SUPABASE_URL}/storage/v1/object/public/book-images/${storagePath}`;
+    const title = cls.name_ar || item.fileName.replace(/\.[^.]+$/, "").replace(/[-_]/g, " ");
+    const suggestedPrice = cls.suggested_price || Math.floor(Math.random() * 100 + 50);
+
+    const { data: tablou, error: insertErr } = await supabase.from("tablous").insert({
+      title,
+      image_url: imageUrl,
+      category: "modern",
+      description: cls.description_ar || "",
+      base_price: suggestedPrice,
+      is_active: true,
+    }).select("id").single();
+
+    if (insertErr) throw new Error("فشل حفظ التابلو: " + insertErr.message);
+    // Sizes are auto-created by trigger
+
+    return {
+      success: true, id: tablou.id, name: title, category: "تابلوهات",
+      cover: imageUrl, file_url: imageUrl, fileName: item.fileName,
+      fromArchive: item.fromArchive || null, fileSizeKB: item.fileSizeKB,
+      fileExt: item.fileExt, targetType: "tablou",
+    };
+  }
+
+  if (target === "cards" && item.mimeCategory === "image") {
+    // Save to card_templates table
+    const storagePath = `card-templates/${Date.now()}-${item.fileName}`;
+    const { error: uploadErr } = await supabase.storage
+      .from("book-images")
+      .upload(storagePath, item.fileBytes, { contentType: item.mimeType, upsert: true });
+    if (uploadErr) throw new Error("فشل رفع قالب البطاقة");
+
+    const imageUrl = `${SUPABASE_URL}/storage/v1/object/public/book-images/${storagePath}`;
+    const name = cls.name_ar || item.fileName.replace(/\.[^.]+$/, "").replace(/[-_]/g, " ");
+
+    const { data: template, error: insertErr } = await supabase.from("card_templates").insert({
+      name,
+      image_url: imageUrl,
+      category: "business",
+      is_active: true,
+    }).select("id").single();
+
+    if (insertErr) throw new Error("فشل حفظ القالب: " + insertErr.message);
+
+    return {
+      success: true, id: template.id, name, category: "بطاقات",
+      cover: imageUrl, file_url: imageUrl, fileName: item.fileName,
+      fromArchive: item.fromArchive || null, fileSizeKB: item.fileSizeKB,
+      fileExt: item.fileExt, targetType: "cards",
+    };
+  }
+
+  // Default: save to products table (books/docs/etc.)
+  const itemCode = await getNextCode(supabase, prefix);
+  const bucket = item.mimeCategory === "image" ? "book-images" : "book-files";
+  const storagePath = `products/${itemCode}/${itemCode}.${item.fileExt}`;
+
+  const { error: uploadErr } = await supabase.storage
+    .from(bucket)
+    .upload(storagePath, item.fileBytes, { contentType: item.mimeType, upsert: true });
+  if (uploadErr) throw new Error("فشل رفع الملف");
+
+  const fileUrl = `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${storagePath}`;
+  const coverUrl = item.mimeCategory === "image" ? fileUrl : null;
+  const productName = `${itemCode} - ${cls.name_ar}`;
+  const description = [
+    cls.description_ar,
+    cls.author ? `المؤلف: ${cls.author}` : "",
+    cls.name_en ? `\n---\n🇬🇧 ${cls.name_en}` : "",
+  ].filter(Boolean).join("\n");
+
+  const { data: product, error: insertErr } = await supabase.from("products").insert({
+    name: productName,
+    short_description: cls.description_ar || null,
+    description,
+    category: CATEGORY_LABELS[prefix] || categoryType,
+    price: cls.suggested_price || 0,
+    image: coverUrl,
+    pdf_url: item.mimeCategory === "pdf" ? fileUrl : null,
+    badge: itemCode,
+    is_active: true,
+    features: [
+      cls.author ? `المؤلف: ${cls.author}` : "",
+      `النوع: ${categoryType}`,
+      `الصيغة: ${item.fileExt.toUpperCase()}`,
+      `الحجم: ${item.fileSizeKB > 1024 ? `${(item.fileSizeKB / 1024).toFixed(1)}MB` : `${item.fileSizeKB}KB`}`,
+      ...(cls.tags || []),
+    ].filter(Boolean),
+  }).select("id").single();
+
+  if (insertErr) throw new Error("فشل الحفظ في قاعدة البيانات: " + insertErr.message);
+
+  const fileType = item.mimeCategory === "image" ? "image" : item.mimeCategory === "pdf" ? "pdf" : "other";
+  await supabase.from("product_files").insert({
+    product_id: product.id,
+    file_type: fileType as any,
+    file_name: `${itemCode}.${item.fileExt}`,
+    storage_path: `${bucket}/${storagePath}`,
+    public_url: fileUrl,
+    file_size: item.fileBytes.length,
+    is_primary: true,
+  });
+
+  return {
+    success: true, id: product.id, code: itemCode, category: categoryType,
+    name: productName, cover: coverUrl, file_url: fileUrl, fileName: item.fileName,
+    fromArchive: item.fromArchive || null, fileSizeKB: item.fileSizeKB,
+    fileExt: item.fileExt, targetType: "books",
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -243,18 +372,19 @@ serve(async (req) => {
     let mimeCategory: string;
     let fileBytes: Uint8Array;
     let fileSizeKB: number;
+    let forceTarget: string | null = null; // "auto", "books", "tablou", "cards"
 
     const contentType = req.headers.get("content-type") || "";
 
-    // Mode 1: Storage path (for large files uploaded directly to storage)
     if (contentType.includes("application/json")) {
       const body = await req.json();
-      const { storage_path, file_name, bucket } = body;
+      const { storage_path, file_name, bucket, target } = body;
       if (!storage_path || !file_name) {
         return new Response(JSON.stringify({ error: "storage_path and file_name required" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      forceTarget = target || null;
 
       const bucketName = bucket || "book-files";
       console.log(`📥 Downloading from storage: ${bucketName}/${storage_path}`);
@@ -264,7 +394,6 @@ serve(async (req) => {
         .download(storage_path);
 
       if (dlError || !fileData) {
-        console.error("Storage download failed:", dlError);
         return new Response(JSON.stringify({ error: "فشل تحميل الملف من التخزين" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -276,14 +405,11 @@ serve(async (req) => {
       mimeCategory = getMimeCat(mimeType, fileExt);
       fileBytes = new Uint8Array(await fileData.arrayBuffer());
       fileSizeKB = Math.round(fileBytes.length / 1024);
-
-      // Clean up the temp upload after downloading
       await supabase.storage.from(bucketName).remove([storage_path]);
-    }
-    // Mode 2: FormData (for smaller files sent directly)
-    else {
+    } else {
       const formData = await req.formData();
       const file = formData.get("file") as File;
+      forceTarget = (formData.get("target") as string) || null;
       if (!file) {
         return new Response(JSON.stringify({ error: "No file provided" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -298,14 +424,19 @@ serve(async (req) => {
       fileSizeKB = Math.round(fileBytes.length / 1024);
     }
 
-    console.log(`📦 Processing: ${fileName} (${mimeType}, ${fileSizeKB}KB, ${mimeCategory})`);
+    console.log(`📦 Processing: ${fileName} (${mimeType}, ${fileSizeKB}KB, ${mimeCategory}, target=${forceTarget || "auto"})`);
 
-    // ZIP files are saved as a single file (no extraction)
-    // All file types are treated as single items
+    // Extract ZIP archives into individual files
     let rawItems: RawItem[] = [];
-    rawItems.push({ fileName, fileExt, mimeCategory, mimeType, fileSizeKB, fileBytes });
+    if (mimeCategory === "archive" && fileExt === "zip") {
+      rawItems = await extractZip(fileBytes, fileName);
+      if (rawItems.length === 0) {
+        rawItems.push({ fileName, fileExt, mimeCategory, mimeType, fileSizeKB, fileBytes });
+      }
+    } else {
+      rawItems.push({ fileName, fileExt, mimeCategory, mimeType, fileSizeKB, fileBytes });
+    }
 
-    // 2. Process each item: classify → upload → number → save → create references
     const results = [];
 
     for (let i = 0; i < rawItems.length; i++) {
@@ -313,11 +444,7 @@ serve(async (req) => {
       console.log(`🔍 [${i+1}/${rawItems.length}] ${item.fileName}`);
 
       try {
-        // Folder-based category hint (from ZIP structure)
         const folderHint = item.folderPath ? getCategoryFromFolderPath(item.folderPath) : null;
-        if (folderHint) {
-          console.log(`📁 Folder hint for ${item.fileName}: ${folderHint} (from ${item.folderPath})`);
-        }
 
         // AI Classification
         const cls = await classifyAI(item.fileBytes, item.fileName, item.mimeType, item.mimeCategory) || {
@@ -326,100 +453,25 @@ serve(async (req) => {
           description_ar: `ملف ${item.fileName}`, author: "", tags: [], suggested_price: 0,
         };
 
-        // If AI couldn't determine type well but folder structure gives a hint, prefer folder hint
         const categoryType = folderHint || cls.type || "أخرى";
-        const prefix = CATEGORY_PREFIXES[categoryType] || "HNX";
 
-        // Generate unique code
-        const itemCode = await getNextCode(supabase, prefix);
-
-        // Upload file to storage
-        const bucket = item.mimeCategory === "image" ? "book-images" : "book-files";
-        const storagePath = `products/${itemCode}/${itemCode}.${item.fileExt}`;
-
-        const { error: uploadErr } = await supabase.storage
-          .from(bucket)
-          .upload(storagePath, item.fileBytes, { contentType: item.mimeType, upsert: true });
-
-        if (uploadErr) {
-          console.error("Upload failed:", uploadErr);
-          results.push({ success: false, fileName: item.fileName, error: "فشل رفع الملف" });
-          continue;
+        // Determine target system
+        let target = forceTarget;
+        if (!target || target === "auto") {
+          target = CATEGORY_TARGET[categoryType] || "books";
         }
 
-        const fileUrl = `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${storagePath}`;
+        console.log(`🎯 ${item.fileName} → ${categoryType} → target: ${target}`);
 
-        // Cover: use image itself, or null for others
-        const coverUrl = item.mimeCategory === "image" ? fileUrl : null;
-
-        // Build product name and description
-        const productName = `${itemCode} - ${cls.name_ar}`;
-        const description = [
-          cls.description_ar,
-          cls.author ? `المؤلف: ${cls.author}` : "",
-          cls.name_en ? `\n---\n🇬🇧 ${cls.name_en}` : "",
-        ].filter(Boolean).join("\n");
-
-        // Insert product
-        const { data: product, error: insertErr } = await supabase.from("products").insert({
-          name: productName,
-          short_description: cls.description_ar || null,
-          description,
-          category: CATEGORY_LABELS[prefix] || categoryType,
-          price: cls.suggested_price || 0,
-          image: coverUrl,
-          pdf_url: item.mimeCategory === "pdf" ? fileUrl : null,
-          badge: itemCode,
-          is_active: true,
-          features: [
-            cls.author ? `المؤلف: ${cls.author}` : "",
-            `النوع: ${categoryType}`,
-            `الصيغة: ${item.fileExt.toUpperCase()}`,
-            `الحجم: ${fileSizeKB > 1024 ? `${(item.fileSizeKB / 1024).toFixed(1)}MB` : `${item.fileSizeKB}KB`}`,
-            ...(cls.tags || []),
-          ].filter(Boolean),
-        }).select("id").single();
-
-        if (insertErr) {
-          console.error("DB insert failed:", insertErr);
-          results.push({ success: false, fileName: item.fileName, error: "فشل الحفظ في قاعدة البيانات" });
-          continue;
-        }
-
-        // Insert file reference
-        const fileType = item.mimeCategory === "image" ? "image" : item.mimeCategory === "pdf" ? "pdf" : "other";
-        await supabase.from("product_files").insert({
-          product_id: product.id,
-          file_type: fileType as any,
-          file_name: `${itemCode}.${item.fileExt}`,
-          storage_path: `${bucket}/${storagePath}`,
-          public_url: fileUrl,
-          file_size: item.fileBytes.length,
-          is_primary: true,
-        });
-
-        console.log(`✅ ${itemCode} saved: ${productName}`);
-
-        results.push({
-          success: true,
-          id: product.id,
-          code: itemCode,
-          category: categoryType,
-          name: productName,
-          cover: coverUrl,
-          file_url: fileUrl,
-          fileName: item.fileName,
-          fromArchive: item.fromArchive || null,
-          fileSizeKB: item.fileSizeKB,
-          fileExt: item.fileExt,
-        });
+        const result = await saveToTarget(supabase, item, cls, categoryType, target);
+        results.push(result);
       } catch (e: any) {
         console.error(`❌ Failed ${item.fileName}:`, e);
         results.push({ success: false, fileName: item.fileName, error: e.message });
       }
     }
 
-    const successCount = results.filter(r => r.success).length;
+    const successCount = results.filter((r: any) => r.success).length;
     console.log(`🏁 Done: ${successCount}/${results.length} saved`);
 
     return new Response(JSON.stringify({
