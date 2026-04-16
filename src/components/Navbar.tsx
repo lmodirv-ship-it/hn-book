@@ -2,6 +2,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import hnLogo from "@/assets/hn-logo.jpeg";
 import { ShoppingCart, Menu, X, Globe, LogOut, User } from "lucide-react";
+import { useCart } from "@/contexts/CartContext";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -28,6 +29,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }: NavbarProps) => {
   const navigate = useNavigate();
+  const { itemCount } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
@@ -263,11 +265,13 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
               <User className="h-4 w-4" />
             </Button>
           )}
-          <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/40">
+          <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/40" onClick={() => navigate("/cart")}>
             <ShoppingCart className="h-4 w-4" />
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[9px] font-bold text-accent-foreground">
-              0
-            </span>
+            {itemCount > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground animate-scale-in">
+                {itemCount}
+              </span>
+            )}
           </Button>
         </div>
 

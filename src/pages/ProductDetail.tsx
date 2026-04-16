@@ -15,6 +15,7 @@ import ProductCard from "@/components/ProductCard";
 import Paywall from "@/components/Paywall";
 import { bookService } from "@/services";
 import { accessService } from "@/services/accessService";
+import { useCart } from "@/contexts/CartContext";
 import { supabase } from "@/integrations/supabase/client";
 import type { Product } from "@/lib/products";
 import { mapProductRowToProduct } from "@/lib/product-utils";
@@ -601,6 +602,11 @@ const ProductDetail = () => {
                   />
                 )}
 
+                {/* Add to cart for paid books */}
+                {product.price > 0 && !accessResult?.canAccess && !accessLoading && (
+                  <AddToCartButton product={product} />
+                )}
+
                 {!hasPdf && product.price > 0 && (
                   <Button variant="outline" size="lg" disabled className="w-full gap-2.5 text-sm font-semibold h-12 rounded-xl opacity-50 cursor-not-allowed">
                     <BookOpen className="h-5 w-5" /> المطالعة غير متوفرة
@@ -712,6 +718,35 @@ const ProductDetail = () => {
 
       <Footer />
     </div>
+  );
+};
+
+const AddToCartButton = ({ product }: { product: Product }) => {
+  const { addItem, isInCart } = useCart();
+  const inCart = isInCart(product.id);
+
+  return (
+    <Button
+      variant="outline"
+      size="lg"
+      disabled={inCart}
+      onClick={() =>
+        addItem({
+          bookId: product.id,
+          name: product.name,
+          image: product.image,
+          price: product.price,
+          category: product.category,
+          referenceCode: product.referenceCode ?? null,
+        })
+      }
+      className={`w-full gap-2 text-sm font-semibold h-12 rounded-xl transition-all ${
+        inCart ? "border-primary/30 text-primary" : "hover:border-primary/30 hover:text-primary"
+      }`}
+    >
+      <ShoppingCart className="h-4 w-4" />
+      {inCart ? "✓ في السلة" : "أضف إلى السلة"}
+    </Button>
   );
 };
 
