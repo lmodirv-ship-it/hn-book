@@ -14,6 +14,7 @@ export interface Product {
   dealEndsIn?: number;
   referenceCode?: string;
   pdfUrl?: string;
+  slug?: string;
 }
 
 function seededRandom(seed: number) {
