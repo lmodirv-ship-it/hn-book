@@ -762,8 +762,17 @@ const BookReader = () => {
 
       <style>{`
         .book-page canvas { display: block !important; }
-        .book-page .react-pdf__Page__textContent { user-select: text; font-family: ${fontFamily}; font-size: ${fontSize}px; }
+        .book-page .react-pdf__Page__textContent {
+          user-select: text;
+          font-family: ${fontFamily};
+          font-size: ${fontSize}px;
+          line-height: 1.9;
+          letter-spacing: 0.3px;
+        }
         .book-page .react-pdf__Page__annotations { pointer-events: auto; }
+        .book-page .react-pdf__Page__textContent ::selection {
+          background: rgba(16, 185, 129, 0.3);
+        }
       `}</style>
     </div>
   );
