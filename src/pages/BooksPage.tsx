@@ -157,7 +157,7 @@ const BooksPage = () => {
       setPageTransitioning(false);
       setHasLoadedOnce(true);
     }
-  }, [hasLoadedOnce]);
+  }, [hasLoadedOnce, selectedLanguage, selectedCategory]);
 
   // Prefetch next page in background
   const prefetchNextPage = useCallback((page: number, search: string) => {
