@@ -294,8 +294,75 @@ const AdminProducts = () => {
             <div className="space-y-6">
               <div>
                 <p className="text-sm font-medium text-foreground">{editProduct.name}</p>
-                <p className="text-xs text-muted-foreground">{editProduct.category} · ${editProduct.price} · {editProduct.reference_code || "بدون مرجع"}</p>
+                <p className="text-xs text-muted-foreground">
+                  {editProduct.category} · {editProduct.price} د.م · {editProduct.reference_code || "بدون مرجع"}
+                  {editProduct.page_count && ` · ${editProduct.page_count} صفحة`}
+                </p>
               </div>
+
+              {/* Smart pricing */}
+              {editProduct.page_count && (() => {
+                const suggestion = calculateSuggestedPrice(editProduct.page_count, editProduct.category);
+                if (!suggestion) return null;
+                return (
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
+                    <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-primary" /> تسعير ذكي
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
+                      <span>📄 {suggestion.breakdown.pageCount} صفحة</span>
+                      <span>× {suggestion.breakdown.perPageRate} د.م/صفحة</span>
+                      <span>📂 معامل التصنيف: {suggestion.breakdown.categoryMultiplier}×</span>
+                      <span>💰 خام: {suggestion.breakdown.rawPrice} د.م</span>
+                    </div>
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-sm font-bold text-primary">{suggestion.suggestedPrice} د.م (مقترح)</span>
+                      {editProduct.price !== suggestion.suggestedPrice && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[11px] gap-1"
+                          onClick={async () => {
+                            await supabase.from("products").update({ price: suggestion.suggestedPrice } as any).eq("id", editProduct.id);
+                            setProducts(prev => prev.map(x => x.id === editProduct.id ? { ...x, price: suggestion.suggestedPrice } : x));
+                            setEditProduct(prev => prev ? { ...prev, price: suggestion.suggestedPrice } : null);
+                            toast.success(`تم تطبيق: ${suggestion.suggestedPrice} د.م`);
+                          }}
+                        >
+                          <Sparkles className="w-3 h-3" /> تطبيق
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Manual price override */}
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">السعر اليدوي (د.م)</label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    value={editProduct.price}
+                    onChange={(e) => setEditProduct(prev => prev ? { ...prev, price: Number(e.target.value) } : null)}
+                    className="w-28 bg-card"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-9 text-xs"
+                    onClick={async () => {
+                      await supabase.from("products").update({ price: editProduct.price } as any).eq("id", editProduct.id);
+                      setProducts(prev => prev.map(x => x.id === editProduct.id ? { ...x, price: editProduct.price } : x));
+                      toast.success("تم حفظ السعر");
+                    }}
+                  >
+                    حفظ
+                  </Button>
+                </div>
+              </div>
+
               <ProductImageUpload
                 productId={editProduct.id}
                 currentImage={editProduct.image}
