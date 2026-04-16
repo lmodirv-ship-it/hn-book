@@ -33,6 +33,37 @@ const buildImageStoragePath = (referenceCode: string, ext: string) =>
 const getImagePublicUrl = (storagePath: string) =>
   `${SUPABASE_URL}/storage/v1/object/public/book-images/${storagePath}`;
 
+const STANDALONE_REFERENCE_CODE_PATTERN = /^HNB-\d{5}$/;
+
+async function generateStandaloneReferenceCode(preferredReferenceCode?: string | null) {
+  const preferred = preferredReferenceCode?.trim().toUpperCase();
+
+  if (preferred && STANDALONE_REFERENCE_CODE_PATTERN.test(preferred)) {
+    const { data, error } = await db
+      .from("products")
+      .select("id")
+      .eq("reference_code", preferred)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return preferred;
+  }
+
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const candidate = `HNB-${String(Math.floor(Math.random() * 100000)).padStart(5, "0")}`;
+    const { data, error } = await db
+      .from("products")
+      .select("id")
+      .eq("reference_code", candidate)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return candidate;
+  }
+
+  throw new Error("تعذر إنشاء رقم مرجعي فريد");
+}
+
 async function registerFile(
   productId: string,
   fileType: "pdf" | "image",
@@ -65,43 +96,9 @@ async function registerFile(
 
 export const storageService = {
   /**
-   * Upload a PDF to storage WITHOUT requiring a product record.
-   * Generates a reference code, uploads the file, and returns the public URL.
-   * Use this for "upload first, create record later" flows.
-   */
-  async uploadPdfOnly(
-    file: File
-  ): Promise<ApiResult<UploadFileResult>> {
-    try {
-      // Generate a unique reference code (not tied to any product yet)
-      const REFERENCE_PREFIX = "B";
-      let resolvedRef = "";
-      for (let attempt = 0; attempt < 20; attempt++) {
-        const candidate = `${REFERENCE_PREFIX}${String(Math.floor(Math.random() * 1_000_000)).padStart(6, "0")}`;
-        // Check uniqueness
-        const { data } = await db.from("products").select("id").eq("reference_code", candidate).maybeSingle();
-        if (!data) { resolvedRef = candidate; break; }
-      }
-      if (!resolvedRef) throw new Error("تعذر إنشاء رقم مرجعي فريد");
-
-      const storagePath = buildBookPdfStoragePath(resolvedRef);
-
-      const { error: uploadError } = await db.storage
-        .from("book-files")
-        .upload(storagePath, file, { upsert: true });
-      if (uploadError) throw uploadError;
-
-      const publicUrl = getBookFilePublicUrl(storagePath);
-
-      return ok({ publicUrl, referenceCode: resolvedRef, storagePath });
-    } catch (err: any) {
-      return fail(err.message || "فشل رفع ملف PDF");
-    }
-  },
-
-  /**
-   * Upload a book PDF file for a product.
-   * Handles: reference code generation, storage upload, product update, file registration.
+   * Upload a book PDF file.
+   * - With productId: uploads and links the file to an existing product.
+   * - Without productId: uploads first and returns pdf_url + reference_code for later book creation.
    */
   async uploadBookPdf(
     productId: string | null,
@@ -111,7 +108,7 @@ export const storageService = {
     try {
       const resolvedRef = productId
         ? await ensureProductReferenceCode(productId, referenceCode)
-        : (referenceCode?.trim().toUpperCase() || (() => { throw new Error("الرقم المرجعي مطلوب"); })());
+        : await generateStandaloneReferenceCode(referenceCode);
       const storagePath = buildBookPdfStoragePath(resolvedRef);
 
       const { error: uploadError } = await db.storage

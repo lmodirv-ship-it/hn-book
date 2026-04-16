@@ -55,10 +55,8 @@ const BulkPdfUpload = () => {
     try {
       updateFile(i, { status: "uploading" });
 
-      const generatedReferenceCode = `HNB-${String(Math.floor(Math.random() * 100000)).padStart(5, "0")}`;
-
       // 1. Upload PDF first
-      const uploadResult = await storageService.uploadBookPdf(null, current.file, generatedReferenceCode);
+      const uploadResult = await storageService.uploadBookPdf(null, current.file);
       if (uploadResult.error) throw new Error(uploadResult.error);
 
       const { publicUrl, referenceCode } = uploadResult.data!;
@@ -69,6 +67,7 @@ const BulkPdfUpload = () => {
         category: current.category,
         price: 0,
         pdfUrl: publicUrl,
+        referenceCode,
         image: publicUrl,
       });
 

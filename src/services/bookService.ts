@@ -162,6 +162,7 @@ function toDb(input: BookCreateInput | BookUpdateInput): Record<string, any> {
   if ("badge" in input && input.badge !== undefined) m.badge = input.badge;
   if ("isFlashDeal" in input && input.isFlashDeal !== undefined) m.is_flash_deal = input.isFlashDeal;
   if ("pdfUrl" in input && input.pdfUrl !== undefined) m.pdf_url = input.pdfUrl;
+  if ("referenceCode" in input && input.referenceCode !== undefined) m.reference_code = input.referenceCode;
   if ("isActive" in input && (input as BookUpdateInput).isActive !== undefined) m.is_active = (input as BookUpdateInput).isActive;
   return m;
 }
