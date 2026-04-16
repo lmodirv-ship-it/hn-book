@@ -117,9 +117,28 @@ const BooksPage = () => {
     }
   }, [hasLoadedOnce]);
 
+  // Prefetch next page in background
+  const prefetchNextPage = useCallback((page: number, search: string) => {
+    const nextPage = page + 1;
+    const nextOffset = nextPage * PAGE_SIZE;
+    if (nextOffset >= totalCount) return;
+    bookService.getAll({
+      limit: PAGE_SIZE,
+      offset: nextOffset,
+      ...(search.trim() ? { search: search.trim() } : {}),
+    });
+  }, [totalCount]);
+
   useEffect(() => {
     void fetchPage(currentPage, searchDebounced);
   }, [currentPage, searchDebounced, fetchPage]);
+
+  // Prefetch next page after current page loads
+  useEffect(() => {
+    if (hasLoadedOnce && !loading) {
+      prefetchNextPage(currentPage, searchDebounced);
+    }
+  }, [hasLoadedOnce, loading, currentPage, searchDebounced, prefetchNextPage]);
 
   const goToPage = (page: number) => {
     if (page < 1 || page > totalPages || page === currentPage) return;
