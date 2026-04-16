@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import {
   Brain, RefreshCw, CheckCircle2, XCircle, BarChart3,
   TrendingUp, Database, Loader2, Edit3, Save, AlertTriangle,
+  Activity, Wifi, WifiOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { aiService, type AIEngineStatus } from "@/services/aiService";
 
 interface ModelStats {
   type: string;
