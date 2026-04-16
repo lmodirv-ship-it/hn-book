@@ -37,6 +37,8 @@ const ProductDetail = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [liked, setLiked] = useState(false);
   const [hasPdf, setHasPdf] = useState(false);
+  const [accessResult, setAccessResult] = useState<{ canAccess: boolean; reason: string; isLoggedIn: boolean } | null>(null);
+  const [accessLoading, setAccessLoading] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
