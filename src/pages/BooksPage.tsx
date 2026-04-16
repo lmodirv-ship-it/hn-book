@@ -107,6 +107,10 @@ const BooksPage = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchDebounced, setSearchDebounced] = useState("");
+  const [selectedLanguage, setSelectedLanguage] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+
+  const categories = selectedLanguage === "en" ? CATEGORIES_EN : CATEGORIES_AR;
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
