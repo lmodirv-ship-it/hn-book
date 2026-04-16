@@ -518,19 +518,33 @@ const ProductDetail = () => {
                 )}
               </div>
 
-              {/* Buy button */}
+              {/* Action buttons */}
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.55 }}
+                className="space-y-3 mt-5"
               >
-                <Button
-                  size="lg"
-                  className="mt-5 w-full gap-2.5 text-base font-semibold h-14 rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:scale-[1.01] active:scale-[0.99] transition-all"
-                >
-                  <ShoppingCart className="h-5 w-5" />
-                  {product.price > 0 ? `اشترِ الآن — ${product.price} د.م` : "احصل عليه مجاناً"}
-                </Button>
+                {product.price > 0 ? (
+                  <Button
+                    size="lg"
+                    className="w-full gap-2.5 text-base font-semibold h-14 rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:scale-[1.01] active:scale-[0.99] transition-all"
+                  >
+                    <ShoppingCart className="h-5 w-5" />
+                    اشترِ الآن — {product.price} د.م
+                  </Button>
+                ) : (
+                  <Button
+                    size="lg"
+                    className="w-full gap-2.5 text-base font-semibold h-14 rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:scale-[1.01] active:scale-[0.99] transition-all"
+                    asChild
+                  >
+                    <Link to={`/read/${product.id}`}>
+                      <BookOpen className="h-5 w-5" />
+                      اقرأ الآن مجاناً
+                    </Link>
+                  </Button>
+                )}
               </motion.div>
 
               {/* Read / Preview button - only for PDFs */}
