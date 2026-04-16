@@ -3,9 +3,8 @@ import { motion } from "framer-motion";
 import { Upload, FileText, Check, X, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { db } from "@/api/client";
 import { storageService } from "@/services/storageService";
-import { invalidateBookCache } from "@/services/bookService";
+import { bookService, invalidateBookCache } from "@/services/bookService";
 import { detectCategory } from "@/lib/category-detection";
 
 type FileStatus = "queued" | "uploading" | "done" | "error";
