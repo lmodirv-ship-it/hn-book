@@ -1178,6 +1178,33 @@ export type Database = {
         }
         Relationships: []
       }
+      visitors: {
+        Row: {
+          id: string
+          ip_address: string | null
+          page_path: string | null
+          user_agent: string | null
+          user_id: string | null
+          visit_time: string
+        }
+        Insert: {
+          id?: string
+          ip_address?: string | null
+          page_path?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          visit_time?: string
+        }
+        Update: {
+          id?: string
+          ip_address?: string | null
+          page_path?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          visit_time?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
