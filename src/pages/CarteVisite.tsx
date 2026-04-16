@@ -13,15 +13,18 @@ import {
   printService, calculatePrice, QUANTITIES, PAPER_TYPES, PRINT_TYPES, TEMPLATE_CATEGORIES,
   type CardTemplate,
 } from "@/services/printService";
+import CardEditor from "@/components/carte-visite/CardEditor";
+import type { LayoutConfig } from "@/components/carte-visite/CardPreview";
 import {
   CreditCard, CheckCircle2, ChevronLeft, ChevronRight,
-  Loader2, Layers, Palette, User, Star, Briefcase, Mail, Phone, MapPin, Building2,
+  Loader2, Layers, Palette, User, Star, Briefcase, Mail, Phone, MapPin, Building2, PenTool,
 } from "lucide-react";
 
 const STEPS = [
   { label: "اختر التصميم", icon: Palette },
+  { label: "صمم بطاقتك", icon: PenTool },
   { label: "الخيارات", icon: Layers },
-  { label: "معلوماتك", icon: User },
+  { label: "التوصيل", icon: MapPin },
   { label: "التأكيد", icon: CheckCircle2 },
 ];
 
@@ -36,6 +39,7 @@ const CarteVisite = () => {
   const [printType, setPrintType] = useState("one_side");
   const [notes, setNotes] = useState("");
   const [popularIds, setPopularIds] = useState<string[]>([]);
+  const [cardData, setCardData] = useState<Record<string, string>>({});
   const [form, setForm] = useState({
     name: "", job_title: "", phone: "", email: "", address: "", city: "", country: "MA", company: "",
   });
@@ -77,9 +81,24 @@ const CarteVisite = () => {
 
   const canNext = () => {
     if (step === 0) return !!selectedTemplate;
-    if (step === 1) return true;
-    if (step === 2) return form.name.trim() && form.phone.trim() && form.address.trim() && form.city.trim() && form.email.trim();
+    if (step === 1) return Object.values(cardData).some(v => v.trim()); // at least one field filled
+    if (step === 2) return true;
+    if (step === 3) return form.name.trim() && form.phone.trim() && form.address.trim() && form.city.trim() && form.email.trim();
     return true;
+  };
+
+  // Sync card editor data → shipping form
+  const handleCardDataChange = (data: Record<string, string>) => {
+    setCardData(data);
+    // Auto-fill shipping from card data
+    setForm(f => ({
+      ...f,
+      name: data.name || f.name,
+      job_title: data.job_title || f.job_title,
+      company: data.company || f.company,
+      phone: data.phone || f.phone,
+      email: data.email || f.email,
+    }));
   };
 
   const handleSubmit = async () => {
@@ -129,7 +148,7 @@ const CarteVisite = () => {
           <h1 className="text-3xl font-bold text-foreground mb-3">تم استلام طلبك!</h1>
           <p className="text-muted-foreground mb-2">سيتم التواصل معك قريباً لتأكيد التفاصيل.</p>
           <p className="text-lg font-bold text-primary mb-6">{price} د.م</p>
-          <Button onClick={() => { setOrderDone(false); setStep(0); setSelectedTemplate(null); }}>
+          <Button onClick={() => { setOrderDone(false); setStep(0); setSelectedTemplate(null); setCardData({}); }}>
             طلب جديد
           </Button>
         </div>
@@ -149,26 +168,27 @@ const CarteVisite = () => {
             بطاقات <span className="text-primary">أعمال</span> احترافية
           </h1>
           <p className="text-muted-foreground max-w-lg mx-auto">
-            اختر تصميمك المفضل، أدخل بياناتك، واطلب طباعة بطاقاتك بجودة عالية
+            اختر تصميمك، أدخل بياناتك، شاهد المعاينة الحية، وحمّل PDF جاهز للطباعة
           </p>
         </div>
       </section>
 
+      {/* Steps */}
       <div className="container mx-auto px-4 mb-8">
-        <div className="flex items-center justify-center gap-2 md:gap-4">
+        <div className="flex items-center justify-center gap-1 md:gap-3 flex-wrap">
           {STEPS.map((s, i) => {
             const Icon = s.icon;
             const active = i === step;
             const done = i < step;
             return (
-              <div key={i} className="flex items-center gap-2">
-                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+              <div key={i} className="flex items-center gap-1">
+                <div className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-medium transition-all ${
                   active ? "bg-primary text-primary-foreground" : done ? "bg-primary/20 text-primary" : "bg-secondary text-muted-foreground"
                 }`}>
-                  <Icon className="w-3.5 h-3.5" />
+                  <Icon className="w-3 h-3" />
                   <span className="hidden md:inline">{s.label}</span>
                 </div>
-                {i < STEPS.length - 1 && <ChevronLeft className="w-4 h-4 text-muted-foreground/40" />}
+                {i < STEPS.length - 1 && <ChevronLeft className="w-3.5 h-3.5 text-muted-foreground/40" />}
               </div>
             );
           })}
@@ -177,6 +197,7 @@ const CarteVisite = () => {
 
       <div className="container mx-auto px-4 pb-16">
         <AnimatePresence mode="wait">
+          {/* Step 0: Choose Template */}
           {step === 0 && (
             <motion.div key="step0" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}>
               <h2 className="text-xl font-bold text-foreground mb-4">اختر التصميم</h2>
@@ -216,8 +237,22 @@ const CarteVisite = () => {
             </motion.div>
           )}
 
-          {step === 1 && (
-            <motion.div key="step1" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="max-w-2xl mx-auto space-y-6">
+          {/* Step 1: Live Card Editor */}
+          {step === 1 && selectedTpl && (
+            <motion.div key="step1" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}>
+              <CardEditor
+                templateName={selectedTpl.name}
+                backgroundUrl={selectedTpl.image_url}
+                layoutConfig={(selectedTpl as any).layout_config as LayoutConfig}
+                onDataChange={handleCardDataChange}
+                initialData={cardData}
+              />
+            </motion.div>
+          )}
+
+          {/* Step 2: Print Options */}
+          {step === 2 && (
+            <motion.div key="step2" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="max-w-2xl mx-auto space-y-6">
               <h2 className="text-xl font-bold text-foreground mb-2">خيارات الطباعة</h2>
               {selectedTpl && (
                 <div className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border">
@@ -254,14 +289,13 @@ const CarteVisite = () => {
             </motion.div>
           )}
 
-          {step === 2 && (
-            <motion.div key="step2" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="max-w-lg mx-auto space-y-4">
-              <h2 className="text-xl font-bold text-foreground mb-2">بيانات البطاقة والتوصيل</h2>
-              <p className="text-sm text-muted-foreground mb-4">هذه البيانات ستُطبع على بطاقتك</p>
+          {/* Step 3: Shipping Info */}
+          {step === 3 && (
+            <motion.div key="step3" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="max-w-lg mx-auto space-y-4">
+              <h2 className="text-xl font-bold text-foreground mb-2">بيانات التوصيل</h2>
+              <p className="text-sm text-muted-foreground mb-4">تم ملء بعض الحقول تلقائياً من بيانات بطاقتك</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div><Label className="flex items-center gap-1.5 mb-1"><User className="w-3.5 h-3.5" /> الاسم الكامل *</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="محمد أمين" /></div>
-                <div><Label className="flex items-center gap-1.5 mb-1"><Briefcase className="w-3.5 h-3.5" /> المسمى الوظيفي</Label><Input value={form.job_title} onChange={e => setForm({ ...form, job_title: e.target.value })} placeholder="مدير تسويق" /></div>
-                <div><Label className="flex items-center gap-1.5 mb-1"><Building2 className="w-3.5 h-3.5" /> الشركة</Label><Input value={form.company} onChange={e => setForm({ ...form, company: e.target.value })} placeholder="HN Groupe" /></div>
                 <div><Label className="flex items-center gap-1.5 mb-1"><Phone className="w-3.5 h-3.5" /> الهاتف *</Label><Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+212 6XX XXX XXX" /></div>
                 <div><Label className="flex items-center gap-1.5 mb-1"><Mail className="w-3.5 h-3.5" /> البريد الإلكتروني *</Label><Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="email@example.com" /></div>
                 <div><Label className="flex items-center gap-1.5 mb-1"><MapPin className="w-3.5 h-3.5" /> العنوان *</Label><Input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} placeholder="شارع..." /></div>
@@ -271,8 +305,9 @@ const CarteVisite = () => {
             </motion.div>
           )}
 
-          {step === 3 && (
-            <motion.div key="step3" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="max-w-lg mx-auto">
+          {/* Step 4: Confirmation */}
+          {step === 4 && (
+            <motion.div key="step4" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="max-w-lg mx-auto">
               <h2 className="text-xl font-bold text-foreground mb-4">تأكيد الطلب</h2>
               <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
                 {selectedTpl && (
@@ -288,8 +323,6 @@ const CarteVisite = () => {
                 </div>
                 <div className="p-4 grid grid-cols-2 gap-y-2 text-sm">
                   <span className="text-muted-foreground">الاسم</span><span className="text-foreground font-medium text-left">{form.name}</span>
-                  {form.job_title && <><span className="text-muted-foreground">الوظيفة</span><span className="text-foreground font-medium text-left">{form.job_title}</span></>}
-                  {form.company && <><span className="text-muted-foreground">الشركة</span><span className="text-foreground font-medium text-left">{form.company}</span></>}
                   <span className="text-muted-foreground">الهاتف</span><span className="text-foreground font-medium text-left">{form.phone}</span>
                   <span className="text-muted-foreground">البريد</span><span className="text-foreground font-medium text-left">{form.email}</span>
                   <span className="text-muted-foreground">العنوان</span><span className="text-foreground font-medium text-left">{form.address}, {form.city}</span>
@@ -303,11 +336,12 @@ const CarteVisite = () => {
           )}
         </AnimatePresence>
 
+        {/* Navigation */}
         <div className="flex items-center justify-between max-w-2xl mx-auto mt-8">
           <Button variant="outline" onClick={() => setStep(s => s - 1)} disabled={step === 0} className="gap-1.5">
             <ChevronRight className="w-4 h-4" /> السابق
           </Button>
-          {step < 3 ? (
+          {step < 4 ? (
             <Button onClick={() => setStep(s => s + 1)} disabled={!canNext()} className="gap-1.5">
               التالي <ChevronLeft className="w-4 h-4" />
             </Button>
