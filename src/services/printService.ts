@@ -1,5 +1,5 @@
 /**
- * Print Service — manages card templates and print orders.
+ * Print Service — manages card templates, logos, and print orders.
  */
 import { supabase } from "@/integrations/supabase/client";
 
@@ -13,10 +13,19 @@ export interface CardTemplate {
   layout_config?: any;
 }
 
+export interface Logo {
+  id: string;
+  name: string;
+  image_url: string;
+  category: string;
+  is_active: boolean;
+}
+
 export interface PrintOrder {
   id: string;
   user_id: string | null;
   template_id: string;
+  logo_id: string | null;
   quantity: number;
   paper_type: string;
   print_type: string;
@@ -82,7 +91,16 @@ export const TEMPLATE_CATEGORIES = [
   { value: "minimal", label: "بسيط" },
 ];
 
+export const LOGO_CATEGORIES = [
+  { value: "general", label: "عام" },
+  { value: "tech", label: "تقنية" },
+  { value: "medical", label: "طبي" },
+  { value: "legal", label: "قانوني" },
+  { value: "education", label: "تعليم" },
+];
+
 export const printService = {
+  // Templates
   async getTemplates(): Promise<CardTemplate[]> {
     const { data } = await supabase
       .from("card_templates")
@@ -112,6 +130,51 @@ export const printService = {
     return data || [];
   },
 
+  async createTemplate(name: string, image_url: string, category: string = "business"): Promise<void> {
+    const { error } = await supabase.from("card_templates").insert({ name, image_url, category } as any);
+    if (error) throw new Error(error.message);
+  },
+
+  async updateTemplate(id: string, data: Partial<CardTemplate>): Promise<void> {
+    await supabase.from("card_templates").update(data as any).eq("id", id);
+  },
+
+  async deleteTemplate(id: string): Promise<void> {
+    await supabase.from("card_templates").delete().eq("id", id);
+  },
+
+  // Logos
+  async getLogos(): Promise<Logo[]> {
+    const { data } = await supabase
+      .from("logos")
+      .select("*")
+      .eq("is_active", true)
+      .order("created_at", { ascending: false }) as any;
+    return data || [];
+  },
+
+  async getAllLogos(): Promise<Logo[]> {
+    const { data } = await supabase
+      .from("logos")
+      .select("*")
+      .order("created_at", { ascending: false }) as any;
+    return data || [];
+  },
+
+  async createLogo(name: string, image_url: string, category: string = "general"): Promise<void> {
+    const { error } = await supabase.from("logos").insert({ name, image_url, category } as any);
+    if (error) throw new Error(error.message);
+  },
+
+  async updateLogo(id: string, data: Partial<Logo>): Promise<void> {
+    await supabase.from("logos").update(data as any).eq("id", id);
+  },
+
+  async deleteLogo(id: string): Promise<void> {
+    await supabase.from("logos").delete().eq("id", id);
+  },
+
+  // Orders
   async createOrder(order: Omit<PrintOrder, "id" | "created_at" | "status" | "template">): Promise<{ id: string } | null> {
     const { data, error } = await supabase
       .from("print_orders")
@@ -163,18 +226,5 @@ export const printService = {
 
   async updateOrderStatus(id: string, status: string): Promise<void> {
     await supabase.from("print_orders").update({ status } as any).eq("id", id);
-  },
-
-  async createTemplate(name: string, image_url: string, category: string = "business"): Promise<void> {
-    const { error } = await supabase.from("card_templates").insert({ name, image_url, category } as any);
-    if (error) throw new Error(error.message);
-  },
-
-  async updateTemplate(id: string, data: Partial<CardTemplate>): Promise<void> {
-    await supabase.from("card_templates").update(data as any).eq("id", id);
-  },
-
-  async deleteTemplate(id: string): Promise<void> {
-    await supabase.from("card_templates").delete().eq("id", id);
   },
 };
