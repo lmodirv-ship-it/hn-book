@@ -100,7 +100,9 @@ const BooksPage = () => {
     const fetchInitial = async () => {
       try {
         setInitialLoading(true);
+        console.log("[BooksPage] Phase 1: fetching initial books...");
         const result = await bookService.getAll({ limit: ITEMS_PER_PAGE });
+        console.log("[BooksPage] Phase 1 result:", { dataLen: result.data?.length, error: result.error });
         if (!cancelled && result.data) {
           setAllProducts(result.data.map(mapBook));
         }
