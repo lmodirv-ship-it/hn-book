@@ -131,21 +131,12 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
             <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/10 border border-primary/30 shadow-[0_0_20px_-5px_hsl(199,89%,48%,0.15)]">
               {navLinks.map((link, idx) => (
                 <React.Fragment key={link.href}>
-                  {link.isRoute ? (
-                    <button
-                      onClick={() => navigate(link.href)}
-                      className="nav-glow-green rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border border-emerald-500/50 bg-emerald-500/20 transition-transform duration-200"
-                    >
-                      {link.label}
-                    </button>
-                  ) : (
-                    <a
-                      href={link.href}
-                      className="nav-glow-btn rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border border-primary/50 bg-primary/20 transition-transform duration-200"
-                    >
-                      {link.label}
-                    </a>
-                  )}
+                  <button
+                    onClick={() => navigate(link.href)}
+                    className="nav-glow-green rounded-lg px-3 py-1.5 text-[11px] font-semibold text-foreground border border-emerald-500/50 bg-emerald-500/20 transition-transform duration-200"
+                  >
+                    {link.label}
+                  </button>
 
                   {idx === 0 && (
                     <div className="relative" ref={langRef}>
