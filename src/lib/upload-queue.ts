@@ -1,5 +1,5 @@
 /**
- * Concurrent upload queue with retry support.
+ * Concurrent upload queue with retry support and batch completion callback.
  * Framework-agnostic — used by React hook wrapper.
  */
 
@@ -11,14 +11,16 @@ export interface JobState<T = unknown> {
   status: JobStatus;
   error?: string;
   retries: number;
+  /** Arbitrary result data stored after successful processing */
+  result?: any;
 }
 
 export interface QueueOptions<T> {
   concurrency?: number;    // default 5
   maxRetries?: number;     // default 2
-  processor: (payload: T) => Promise<void>;
+  processor: (payload: T) => Promise<any>;
   onUpdate: (jobs: JobState<T>[]) => void;
-  onComplete?: (stats: { success: number; failed: number }) => void;
+  onComplete?: (stats: { success: number; failed: number }, jobs: JobState<T>[]) => void;
 }
 
 export class UploadQueue<T> {
@@ -37,7 +39,6 @@ export class UploadQueue<T> {
     };
   }
 
-  /** Add jobs to the queue (can be called while processing). */
   enqueue(payloads: T[]) {
     const newJobs: JobState<T>[] = payloads.map((payload) => ({
       id: this.nextId++,
@@ -50,14 +51,12 @@ export class UploadQueue<T> {
     if (this.active) this.drain();
   }
 
-  /** Start processing all queued jobs. */
   start() {
     if (this.active) return;
     this.active = true;
     this.drain();
   }
 
-  /** Retry all failed jobs. */
   retryFailed() {
     this.jobs = this.jobs.map((j) =>
       j.status === "error" ? { ...j, status: "queued" as const, error: undefined } : j
@@ -67,13 +66,11 @@ export class UploadQueue<T> {
     else this.start();
   }
 
-  /** Remove completed/failed jobs from list. */
   clearDone() {
     this.jobs = this.jobs.filter((j) => j.status !== "done");
     this.notify();
   }
 
-  /** Clear everything and stop. */
   reset() {
     this.jobs = [];
     this.active = false;
@@ -107,13 +104,15 @@ export class UploadQueue<T> {
       this.runJob(next);
     }
 
-    // Check if completely done
     if (this.running === 0 && !this.jobs.some((j) => j.status === "queued")) {
       this.active = false;
-      this.opts.onComplete?.({
-        success: this.jobs.filter((j) => j.status === "done").length,
-        failed: this.jobs.filter((j) => j.status === "error").length,
-      });
+      this.opts.onComplete?.(
+        {
+          success: this.jobs.filter((j) => j.status === "done").length,
+          failed: this.jobs.filter((j) => j.status === "error").length,
+        },
+        [...this.jobs]
+      );
     }
   }
 
@@ -122,12 +121,11 @@ export class UploadQueue<T> {
     this.updateJob(job.id, { status: "uploading" });
 
     try {
-      await this.opts.processor(job.payload);
-      this.updateJob(job.id, { status: "done" });
+      const result = await this.opts.processor(job.payload);
+      this.updateJob(job.id, { status: "done", result });
     } catch (err: any) {
       const retries = (this.jobs.find((j) => j.id === job.id)?.retries ?? 0) + 1;
       if (retries <= this.opts.maxRetries) {
-        // Re-queue for retry
         this.updateJob(job.id, { status: "queued", retries, error: undefined });
       } else {
         this.updateJob(job.id, {

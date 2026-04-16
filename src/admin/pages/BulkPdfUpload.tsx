@@ -1,20 +1,34 @@
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Upload, FileText, Check, X, Loader2, AlertCircle, RotateCcw } from "lucide-react";
+import { Upload, FileText, Check, X, Loader2, AlertCircle, RotateCcw, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { useUploadQueue } from "@/hooks/useUploadQueue";
 import { storageService } from "@/services/storageService";
-import { bookService, invalidateBookCache } from "@/services/bookService";
+import { invalidateBookCache } from "@/services/bookService";
 import { detectCategory } from "@/lib/category-detection";
-import { generateBookCover } from "@/lib/cover-generator";
+import { generateCoverAsync, terminateCoverWorker } from "@/lib/cover-worker-client";
+import { supabase } from "@/integrations/supabase/client";
+
+// ── Types ──
 
 interface BookPayload {
   file: File;
   title: string;
   category: string;
 }
+
+interface UploadResult {
+  name: string;
+  category: string;
+  pdfUrl: string;
+  image: string;
+  referenceCode: string;
+  storagePath: string;
+}
+
+// ── Helpers ──
 
 function cleanFilename(filename: string): string {
   return filename
@@ -24,36 +38,37 @@ function cleanFilename(filename: string): string {
     .trim();
 }
 
-async function processBookUpload(payload: BookPayload): Promise<void> {
-  // 1. Upload PDF
-  const pdfResult = await storageService.uploadBookPdf(payload.file);
+/**
+ * Process a single file: upload PDF + generate cover in parallel,
+ * then upload cover. Returns data needed for batch DB creation.
+ */
+async function processFileUpload(payload: BookPayload): Promise<UploadResult> {
+  // 1. Upload PDF + generate cover IN PARALLEL
+  const [pdfResult, coverBlob] = await Promise.all([
+    storageService.uploadBookPdf(payload.file),
+    generateCoverAsync(payload.title, "PENDING"), // will update ref after
+  ]);
+
   if (pdfResult.error) throw new Error(pdfResult.error);
 
-  const { publicUrl: pdfUrl, referenceCode } = pdfResult.data!;
+  const { publicUrl: pdfUrl, referenceCode, storagePath } = pdfResult.data!;
 
-  // 2. Generate cover
-  const coverBlob = await generateBookCover(payload.title, referenceCode);
+  // 2. Upload cover image
   const coverFile = new File([coverBlob], `${referenceCode}.jpg`, { type: "image/jpeg" });
-
-  // 3. Upload cover
   const coverResult = await storageService.uploadBookImage(coverFile, referenceCode);
-  const coverUrl = coverResult.data?.publicUrl || pdfUrl;
+  const image = coverResult.data?.publicUrl || pdfUrl;
 
-  // 4. Create book
-  const createResult = await bookService.create({
+  return {
     name: payload.title,
     category: payload.category,
-    price: 0,
     pdfUrl,
+    image,
     referenceCode,
-    image: coverUrl,
-  });
-
-  if (createResult.error) {
-    await storageService.removePdfByPath(pdfResult.data!.storagePath);
-    throw new Error(createResult.error);
-  }
+    storagePath,
+  };
 }
+
+// ── Component ──
 
 const BulkPdfUpload = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -62,16 +77,54 @@ const BulkPdfUpload = () => {
     useUploadQueue<BookPayload>({
       concurrency: 5,
       maxRetries: 2,
-      processor: processBookUpload,
-      onComplete: ({ success, failed }) => {
-        if (success) {
-          invalidateBookCache();
-          toast.success(`تم إنشاء ${success} كتاب${failed ? ` · فشل ${failed}` : ""}`);
+      processor: processFileUpload,
+      onComplete: async ({ success, failed }, completedJobs) => {
+        // Batch create all successful books via edge function
+        const successfulJobs = completedJobs.filter(
+          (j) => j.status === "done" && j.result
+        );
+
+        if (successfulJobs.length > 0) {
+          try {
+            const books = successfulJobs.map((j) => {
+              const r = j.result as UploadResult;
+              return {
+                name: r.name,
+                category: r.category,
+                price: 0,
+                pdf_url: r.pdfUrl,
+                image: r.image,
+                reference_code: r.referenceCode,
+              };
+            });
+
+            const { data, error } = await supabase.functions.invoke(
+              "batch-create-books",
+              { body: { books } }
+            );
+
+            if (error) {
+              console.error("[BulkUpload] batch create error:", error);
+              toast.error("تم رفع الملفات لكن فشل إنشاء بعض الكتب في قاعدة البيانات");
+            } else {
+              const result = data as { success: number; failed: number };
+              invalidateBookCache();
+              toast.success(
+                `تم إنشاء ${result.success} كتاب${result.failed ? ` · فشل ${result.failed}` : ""}`
+              );
+            }
+          } catch (err) {
+            console.error("[BulkUpload] batch create exception:", err);
+            toast.error("خطأ في إنشاء الكتب");
+          }
         } else if (failed) {
           toast.error(`فشل رفع جميع الملفات (${failed})`);
         }
       },
     });
+
+  // Cleanup worker on unmount
+  useEffect(() => () => terminateCoverWorker(), []);
 
   const addFiles = (selected: File[]) => {
     const pdfs = selected.filter(
@@ -91,8 +144,6 @@ const BulkPdfUpload = () => {
     enqueue(payloads);
   };
 
-  const handleStart = () => start();
-
   const progressPercent =
     stats.total > 0 ? Math.round(((stats.done + stats.errors) / stats.total) * 100) : 0;
 
@@ -101,7 +152,7 @@ const BulkPdfUpload = () => {
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl font-extrabold text-foreground">🚀 رفع ذكي للكتب</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          ارفع ملفات PDF — سيتم تلقائياً: استخراج العنوان، تحديد التصنيف، إنشاء الكتاب
+          معالجة متوازية بـ Web Worker + Backend Queue — ارفع 20+ كتاب بسرعة فائقة
         </p>
       </motion.div>
 
@@ -117,6 +168,17 @@ const BulkPdfUpload = () => {
       >
         <Upload className="w-10 h-10 text-muted-foreground" />
         <p className="text-sm text-muted-foreground">اسحب ملفات PDF هنا أو اضغط لاختيارها</p>
+        <div className="flex items-center gap-4 mt-2">
+          <span className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary flex items-center gap-1">
+            <Zap className="w-3 h-3" /> Web Worker
+          </span>
+          <span className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary flex items-center gap-1">
+            <Zap className="w-3 h-3" /> 5x متزامن
+          </span>
+          <span className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary flex items-center gap-1">
+            <Zap className="w-3 h-3" /> Batch API
+          </span>
+        </div>
       </div>
       <input
         ref={fileInputRef}
@@ -132,17 +194,25 @@ const BulkPdfUpload = () => {
 
       {/* Progress bar */}
       {isActive && stats.total > 0 && (
-        <div className="space-y-2">
+        <motion.div
+          initial={{ opacity: 0, y: -5 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-2"
+        >
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>
-              {stats.uploading > 0 && `⚡ ${stats.uploading} جاري الرفع`}
-              {stats.uploading > 0 && stats.done > 0 && " · "}
-              {stats.done > 0 && `✓ ${stats.done} مكتمل`}
+            <span className="flex items-center gap-2">
+              {stats.uploading > 0 && (
+                <span className="flex items-center gap-1">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  {stats.uploading} جاري الرفع
+                </span>
+              )}
+              {stats.done > 0 && <span>✓ {stats.done} مكتمل</span>}
             </span>
             <span>{progressPercent}%</span>
           </div>
           <Progress value={progressPercent} className="h-2" />
-        </div>
+        </motion.div>
       )}
 
       {/* Stats badges */}
@@ -183,7 +253,12 @@ const BulkPdfUpload = () => {
       {jobs.length > 0 && (
         <div className="rounded-2xl border border-border bg-card overflow-hidden divide-y divide-border/50 max-h-[400px] overflow-y-auto">
           {jobs.map((j) => (
-            <div key={j.id} className="flex items-center gap-3 px-4 py-3">
+            <motion.div
+              key={j.id}
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-3 px-4 py-3"
+            >
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                 {j.status === "uploading" ? (
                   <Loader2 className="w-4 h-4 text-primary animate-spin" />
@@ -196,7 +271,9 @@ const BulkPdfUpload = () => {
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">{j.payload.title}</p>
+                <p className="text-sm font-medium text-foreground truncate">
+                  {j.payload.title}
+                </p>
                 <div className="flex items-center gap-2 mt-0.5">
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">
                     {j.payload.category}
@@ -214,10 +291,10 @@ const BulkPdfUpload = () => {
                   <p className="text-[11px] text-destructive mt-0.5">{j.error}</p>
                 )}
                 {j.status === "done" && (
-                  <p className="text-[11px] text-primary mt-0.5">✓ تم إنشاء الكتاب</p>
+                  <p className="text-[11px] text-primary mt-0.5">✓ تم الرفع</p>
                 )}
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       )}
@@ -225,7 +302,7 @@ const BulkPdfUpload = () => {
       {/* Actions */}
       <div className="flex gap-3">
         {stats.queued > 0 && !isActive && (
-          <Button onClick={handleStart} className="gap-2">
+          <Button onClick={start} className="gap-2">
             <Upload className="w-4 h-4" />
             رفع وإنشاء {stats.queued} كتاب
           </Button>
