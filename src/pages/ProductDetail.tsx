@@ -80,6 +80,12 @@ const ProductDetail = () => {
         setProduct(mapped);
         setHasPdf(!!book.pdfUrl);
 
+        // Check access
+        setAccessLoading(true);
+        const access = await accessService.canAccessBook(book.id, book.price);
+        setAccessResult(access);
+        setAccessLoading(false);
+
         // Fetch product files (images) in parallel with related
         const [filesRes, relatedRes] = await Promise.all([
           supabase
