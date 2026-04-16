@@ -35,25 +35,17 @@ const BulkPdfUpload = () => {
   const [manualSearch, setManualSearch] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch ALL products (paginated to bypass 1000 row limit)
+  // Fetch ALL products via bookService
   const loadProducts = useCallback(async () => {
     if (loaded) return products;
-    const allProducts: Product[] = [];
-    let from = 0;
-    const pageSize = 1000;
-    let hasMore = true;
-
-    while (hasMore) {
-      const { data } = await supabase
-        .from("products")
-        .select("id, name, badge, reference_code, pdf_url")
-        .range(from, from + pageSize - 1)
-        .order("name");
-      const batch = (data || []) as Product[];
-      allProducts.push(...batch);
-      hasMore = batch.length === pageSize;
-      from += pageSize;
-    }
+    const result = await bookService.getAll({ limit: 5000 });
+    const allProducts: Product[] = (result.data || []).map(b => ({
+      id: b.id,
+      name: b.name,
+      badge: b.badge || null,
+      reference_code: b.referenceCode || null,
+      pdf_url: b.pdfUrl || null,
+    }));
 
     setProducts(allProducts);
     setLoaded(true);
@@ -67,15 +59,12 @@ const BulkPdfUpload = () => {
       .map((file) => {
         const baseName = file.name.replace(/\.pdf$/i, "").trim();
         const normalizedRef = baseName.toUpperCase();
-        // Try matching by badge (e.g. HNB-0081)
         const badgeMatch = prods.find(
           (p) => p.badge && p.badge.toLowerCase() === baseName.toLowerCase()
         );
-        // Try matching by reference_code
         const refMatch = !badgeMatch
           ? prods.find((p) => p.reference_code && p.reference_code.toLowerCase() === baseName.toLowerCase())
           : null;
-        // Try matching by product name
         const nameMatch = !badgeMatch && !refMatch
           ? prods.find((p) => p.name.toLowerCase() === baseName.toLowerCase())
           : null;
@@ -139,63 +128,34 @@ const BulkPdfUpload = () => {
 
       setFiles((prev) => prev.map((ff, idx) => (idx === i ? { ...ff, status: "uploading" } : ff)));
 
-      try {
-        const matchedProduct = products.find((product) => product.id === f.matchedProductId);
-        const resolvedReferenceCode = await ensureProductReferenceCode(
-          f.matchedProductId,
-          matchedProduct?.reference_code,
-          f.refCode
+      const matchedProduct = products.find((product) => product.id === f.matchedProductId);
+      const result = await storageService.uploadBookPdf(
+        f.matchedProductId,
+        f.file,
+        matchedProduct?.reference_code
+      );
+
+      if (result.error) {
+        setFiles((prev) =>
+          prev.map((ff, idx) =>
+            idx === i ? { ...ff, status: "error", error: result.error || "فشل الرفع" } : ff
+          )
         );
-        const storagePath = buildBookPdfStoragePath(resolvedReferenceCode);
-
-        const { error: uploadError } = await supabase.storage
-          .from("book-files")
-          .upload(storagePath, f.file, { upsert: true });
-        if (uploadError) throw uploadError;
-
-        const publicUrl = getBookFilePublicUrl(storagePath);
-
-        await supabase
-          .from("products")
-          .update({ pdf_url: publicUrl, reference_code: resolvedReferenceCode } as never)
-          .eq("id", f.matchedProductId);
-
-        await supabase
-          .from("product_files")
-          .delete()
-          .eq("product_id", f.matchedProductId)
-          .eq("file_type", "pdf");
-
-        await supabase.from("product_files").insert({
-          product_id: f.matchedProductId,
-          file_type: "pdf" as any,
-          file_name: `${resolvedReferenceCode}.pdf`,
-          file_size: f.file.size,
-          storage_path: `book-files/${storagePath}`,
-          public_url: publicUrl,
-          is_primary: true,
-        });
-
+        failed++;
+      } else {
         setProducts((prev) =>
           prev.map((product) =>
             product.id === f.matchedProductId
-              ? { ...product, pdf_url: publicUrl, reference_code: resolvedReferenceCode }
+              ? { ...product, pdf_url: result.data!.publicUrl, reference_code: result.data!.referenceCode }
               : product
           )
         );
         setFiles((prev) =>
           prev.map((ff, idx) =>
-            idx === i ? { ...ff, refCode: resolvedReferenceCode, status: "done" } : ff
+            idx === i ? { ...ff, refCode: result.data!.referenceCode, status: "done" } : ff
           )
         );
         success++;
-      } catch (err: any) {
-        setFiles((prev) =>
-          prev.map((ff, idx) =>
-            idx === i ? { ...ff, status: "error", error: err.message || "فشل الرفع" } : ff
-          )
-        );
-        failed++;
       }
     }
 
