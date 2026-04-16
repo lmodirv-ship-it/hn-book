@@ -2,7 +2,7 @@ import { useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Upload, FileText, Check, Loader2, AlertCircle,
-  RotateCcw, Zap, Database,
+  Zap, Database,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -11,7 +11,7 @@ import { useUploadQueue } from "@/hooks/useUploadQueue";
 import { useJobProcessor } from "@/hooks/useJobProcessor";
 import { storageService } from "@/services/storageService";
 import { detectCategory } from "@/lib/category-detection";
-import { terminateCoverWorker } from "@/lib/cover-worker-client";
+import { generateCoverAsync, terminateCoverWorker } from "@/lib/cover-worker-client";
 import { db } from "@/api/client";
 
 // ── Types ──
@@ -33,17 +33,25 @@ function cleanFilename(filename: string): string {
 }
 
 /**
- * Phase 1: Upload PDF to storage → insert job record as "pending".
- * The background poller (Phase 2) handles cover gen + book creation.
+ * Frontend-only work: upload PDF + generate/upload cover → insert DB job.
+ * All book creation happens in the backend worker.
  */
-async function uploadAndCreateJob(payload: BookPayload): Promise<void> {
-  // 1. Upload PDF
-  const pdfResult = await storageService.uploadBookPdf(payload.file);
-  if (pdfResult.error) throw new Error(pdfResult.error);
+async function uploadFilesAndCreateJob(payload: BookPayload): Promise<void> {
+  // 1. Upload PDF + generate cover in parallel (Web Worker)
+  const [pdfResult, coverBlob] = await Promise.all([
+    storageService.uploadBookPdf(payload.file),
+    generateCoverAsync(payload.title, "GEN"),
+  ]);
 
+  if (pdfResult.error) throw new Error(pdfResult.error);
   const { publicUrl: pdfUrl, referenceCode, storagePath } = pdfResult.data!;
 
-  // 2. Insert job into upload_jobs — poller will pick it up
+  // 2. Upload cover image
+  const coverFile = new File([coverBlob], `${referenceCode}.jpg`, { type: "image/jpeg" });
+  const coverResult = await storageService.uploadBookImage(coverFile, referenceCode);
+  const image = coverResult.data?.publicUrl || pdfUrl;
+
+  // 3. Insert job into upload_jobs — backend worker will create the book
   const { error: jobError } = await db
     .from("upload_jobs")
     .insert({
@@ -53,13 +61,13 @@ async function uploadAndCreateJob(payload: BookPayload): Promise<void> {
         title: payload.title,
         category: payload.category,
         pdfUrl,
+        image,
         referenceCode,
         storagePath,
       },
     } as any);
 
   if (jobError) {
-    // Cleanup uploaded PDF
     await storageService.removePdfByPath(storagePath);
     throw new Error(jobError.message);
   }
@@ -70,34 +78,34 @@ async function uploadAndCreateJob(payload: BookPayload): Promise<void> {
 const BulkPdfUpload = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Phase 1: Queue for fast PDF uploads
-  const { jobs: queueJobs, stats: queueStats, isActive: queueActive, enqueue, start, reset: resetQueue } =
-    useUploadQueue<BookPayload>({
-      concurrency: 5,
-      maxRetries: 2,
-      processor: uploadAndCreateJob,
-      onComplete: ({ success, failed }) => {
-        if (success) {
-          toast.success(`تم رفع ${success} ملف — جاري إنشاء الكتب في الخلفية...`);
-        }
-        if (failed) {
-          toast.error(`فشل رفع ${failed} ملف`);
-        }
-      },
-    });
-
-  // Phase 2: Background poller processes pending jobs
-  const { jobs: dbJobs, stats: dbStats, processing: pollerActive } = useJobProcessor({
-    enabled: true,
-    pollInterval: 2000,
-    batchSize: 3,
-    onBatchComplete: ({ success, failed }) => {
-      if (success) toast.success(`✓ تم إنشاء ${success} كتاب في الخلفية`);
-      if (failed) toast.error(`فشل إنشاء ${failed} كتاب`);
+  // Phase 1: Queue for fast file uploads (PDF + cover)
+  const {
+    jobs: queueJobs,
+    stats: queueStats,
+    isActive: queueActive,
+    enqueue,
+    start,
+    reset: resetQueue,
+  } = useUploadQueue<BookPayload>({
+    concurrency: 5,
+    maxRetries: 2,
+    processor: uploadFilesAndCreateJob,
+    onComplete: ({ success, failed }) => {
+      if (success) toast.success(`تم رفع ${success} ملف — جاري إنشاء الكتب في الخلفية...`);
+      if (failed) toast.error(`فشل رفع ${failed} ملف`);
     },
   });
 
-  // Cleanup worker on unmount
+  // Phase 2: Backend worker polling
+  const { jobs: dbJobs, stats: dbStats, workerActive } = useJobProcessor({
+    pollInterval: 2500,
+    autoTrigger: true,
+    onBatchComplete: ({ success, failed }) => {
+      if (success) toast.success(`✅ تم إنشاء ${success} كتاب`);
+      if (failed) toast.error(`❌ فشل إنشاء ${failed} كتاب`);
+    },
+  });
+
   useEffect(() => () => terminateCoverWorker(), []);
 
   const addFiles = (selected: File[]) => {
@@ -108,17 +116,15 @@ const BulkPdfUpload = () => {
       toast.error("يرجى اختيار ملفات PDF فقط");
       return;
     }
-
-    const payloads: BookPayload[] = pdfs.map((file) => {
-      const title = cleanFilename(file.name);
-      const { category } = detectCategory(title);
-      return { file, title, category };
-    });
-
-    enqueue(payloads);
+    enqueue(
+      pdfs.map((file) => {
+        const title = cleanFilename(file.name);
+        const { category } = detectCategory(title);
+        return { file, title, category };
+      })
+    );
   };
 
-  // Combined progress
   const uploadProgress =
     queueStats.total > 0
       ? Math.round(((queueStats.done + queueStats.errors) / queueStats.total) * 100)
@@ -126,20 +132,18 @@ const BulkPdfUpload = () => {
 
   return (
     <div className="space-y-6" dir="rtl">
+      {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl font-extrabold text-foreground">🚀 رفع ذكي للكتب</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          رفع فوري + معالجة خلفية — ارفع 20+ كتاب بسرعة فائقة
+          رفع فوري + معالجة خلفية في الخادم — ارفع 20+ كتاب بسرعة فائقة
         </p>
       </motion.div>
 
       {/* Drop zone */}
       <div
         onDragOver={(e) => e.preventDefault()}
-        onDrop={(e) => {
-          e.preventDefault();
-          addFiles(Array.from(e.dataTransfer.files));
-        }}
+        onDrop={(e) => { e.preventDefault(); addFiles(Array.from(e.dataTransfer.files)); }}
         onClick={() => fileInputRef.current?.click()}
         className="cursor-pointer rounded-2xl border-2 border-dashed border-border hover:border-primary/50 bg-card/50 p-10 flex flex-col items-center justify-center gap-3 transition-colors"
       >
@@ -153,37 +157,25 @@ const BulkPdfUpload = () => {
             <Zap className="w-3 h-3" /> 5x متزامن
           </span>
           <span className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary flex items-center gap-1">
-            <Database className="w-3 h-3" /> Background Queue
+            <Database className="w-3 h-3" /> Backend Worker
           </span>
         </div>
       </div>
       <input
-        ref={fileInputRef}
-        type="file"
-        accept=".pdf,application/pdf"
-        multiple
-        onChange={(e) => {
-          addFiles(Array.from(e.target.files || []));
-          e.target.value = "";
-        }}
+        ref={fileInputRef} type="file" accept=".pdf,application/pdf" multiple
+        onChange={(e) => { addFiles(Array.from(e.target.files || [])); e.target.value = ""; }}
         className="hidden"
       />
 
       {/* Phase 1: Upload progress */}
       {queueActive && queueStats.total > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: -5 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-2"
-        >
+        <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="flex items-center gap-2">
-              <Upload className="w-3 h-3" />
-              <span>رفع الملفات</span>
+              <Upload className="w-3 h-3" /> رفع الملفات
               {queueStats.uploading > 0 && (
                 <span className="flex items-center gap-1">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  {queueStats.uploading} جاري
+                  <Loader2 className="w-3 h-3 animate-spin" /> {queueStats.uploading} جاري
                 </span>
               )}
             </span>
@@ -193,16 +185,15 @@ const BulkPdfUpload = () => {
         </motion.div>
       )}
 
-      {/* Phase 2: Background processing status */}
-      {(dbStats.pending > 0 || dbStats.processing > 0) && (
+      {/* Phase 2: Backend worker status */}
+      {(dbStats.pending > 0 || dbStats.processing > 0 || workerActive) && (
         <motion.div
-          initial={{ opacity: 0, y: -5 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-3 px-4 py-3 rounded-xl bg-accent/10 border border-accent/20"
         >
           <Loader2 className="w-4 h-4 text-primary animate-spin flex-shrink-0" />
           <div className="text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">معالجة خلفية</span>
+            <span className="font-medium text-foreground">🔄 معالجة خلفية (Backend)</span>
             {" — "}
             {dbStats.processing > 0 && `${dbStats.processing} جاري الإنشاء`}
             {dbStats.processing > 0 && dbStats.pending > 0 && " · "}
@@ -211,65 +202,47 @@ const BulkPdfUpload = () => {
         </motion.div>
       )}
 
+      {/* Queue stats */}
+      {queueJobs.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-xs px-3 py-1.5 rounded-full bg-secondary text-muted-foreground">
+            ملفات: {queueStats.total}
+          </span>
+          {queueStats.queued > 0 && (
+            <span className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary">⏳ انتظار: {queueStats.queued}</span>
+          )}
+          {queueStats.uploading > 0 && (
+            <span className="text-xs px-3 py-1.5 rounded-full bg-accent/20 text-accent-foreground">🔄 رفع: {queueStats.uploading}</span>
+          )}
+          {queueStats.done > 0 && (
+            <span className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary">✅ تم: {queueStats.done}</span>
+          )}
+          {queueStats.errors > 0 && (
+            <span className="text-xs px-3 py-1.5 rounded-full bg-destructive/10 text-destructive">❌ خطأ: {queueStats.errors}</span>
+          )}
+        </div>
+      )}
+
       {/* Queue file list */}
       {queueJobs.length > 0 && (
-        <>
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs px-3 py-1.5 rounded-full bg-secondary text-muted-foreground">
-              ملفات: {queueStats.total}
-            </span>
-            {queueStats.queued > 0 && (
-              <span className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary">
-                ⏳ انتظار: {queueStats.queued}
-              </span>
-            )}
-            {queueStats.uploading > 0 && (
-              <span className="text-xs px-3 py-1.5 rounded-full bg-accent/20 text-accent-foreground">
-                🔄 رفع: {queueStats.uploading}
-              </span>
-            )}
-            {queueStats.done > 0 && (
-              <span className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary">
-                ✅ تم: {queueStats.done}
-              </span>
-            )}
-            {queueStats.errors > 0 && (
-              <span className="text-xs px-3 py-1.5 rounded-full bg-destructive/10 text-destructive">
-                ❌ خطأ: {queueStats.errors}
-              </span>
-            )}
-          </div>
-
-          <div className="rounded-2xl border border-border bg-card overflow-hidden divide-y divide-border/50 max-h-[300px] overflow-y-auto">
-            {queueJobs.map((j) => (
-              <div key={j.id} className="flex items-center gap-3 px-4 py-2.5">
-                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 text-sm">
-                  {j.status === "uploading" ? "🔄"
-                   : j.status === "done" ? "✅"
-                   : j.status === "error" ? "❌"
-                   : "⏳"}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{j.payload.title}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">
-                      {j.payload.category}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground">
-                      {(j.payload.file.size / 1024 / 1024).toFixed(1)} MB
-                    </span>
-                  </div>
-                  {j.status === "error" && (
-                    <p className="text-[11px] text-destructive mt-0.5">{j.error}</p>
-                  )}
-                  {j.status === "done" && (
-                    <p className="text-[11px] text-primary mt-0.5">✓ تم الرفع — جاري الإنشاء</p>
-                  )}
-                </div>
+        <div className="rounded-2xl border border-border bg-card overflow-hidden divide-y divide-border/50 max-h-[300px] overflow-y-auto">
+          {queueJobs.map((j) => (
+            <div key={j.id} className="flex items-center gap-3 px-4 py-2.5">
+              <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 text-sm">
+                {j.status === "uploading" ? "🔄" : j.status === "done" ? "✅" : j.status === "error" ? "❌" : "⏳"}
               </div>
-            ))}
-          </div>
-        </>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">{j.payload.title}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">{j.payload.category}</span>
+                  <span className="text-[10px] text-muted-foreground">{(j.payload.file.size / 1024 / 1024).toFixed(1)} MB</span>
+                </div>
+                {j.status === "error" && <p className="text-[11px] text-destructive mt-0.5">{j.error}</p>}
+                {j.status === "done" && <p className="text-[11px] text-primary mt-0.5">✅ تم الرفع — جاري الإنشاء في الخلفية</p>}
+              </div>
+            </div>
+          ))}
+        </div>
       )}
 
       {/* DB Jobs history */}
@@ -283,12 +256,27 @@ const BulkPdfUpload = () => {
               .map((j) => (
                 <div key={j.id} className="flex items-center gap-2 text-xs">
                   <span className="flex-shrink-0">✅</span>
-                  <span className="text-foreground truncate">
-                    {(j.result as any)?.title || j.file_name}
-                  </span>
-                  <span className="text-muted-foreground text-[10px]">
-                    {(j.result as any)?.referenceCode}
-                  </span>
+                  <span className="text-foreground truncate">{(j.result as any)?.title || j.file_name}</span>
+                  <span className="text-muted-foreground text-[10px]">{(j.result as any)?.referenceCode}</span>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* Error jobs */}
+      {dbStats.errors > 0 && !queueActive && (
+        <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3">
+          <p className="text-xs text-destructive mb-2 font-medium">❌ مهام فشلت</p>
+          <div className="space-y-1.5">
+            {dbJobs
+              .filter((j) => j.status === "error")
+              .slice(0, 5)
+              .map((j) => (
+                <div key={j.id} className="flex items-center gap-2 text-xs">
+                  <span className="flex-shrink-0">❌</span>
+                  <span className="text-foreground truncate">{(j.result as any)?.title || j.file_name}</span>
+                  <span className="text-destructive text-[10px]">{(j.result as any)?.error}</span>
                 </div>
               ))}
           </div>
@@ -299,20 +287,16 @@ const BulkPdfUpload = () => {
       <div className="flex gap-3">
         {queueStats.queued > 0 && !queueActive && (
           <Button onClick={start} className="gap-2">
-            <Upload className="w-4 h-4" />
-            رفع {queueStats.queued} ملف
+            <Upload className="w-4 h-4" /> رفع {queueStats.queued} ملف
           </Button>
         )}
         {queueActive && (
           <Button disabled className="gap-2">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            جاري الرفع... ({queueStats.uploading} متزامن)
+            <Loader2 className="w-4 h-4 animate-spin" /> جاري الرفع... ({queueStats.uploading} متزامن)
           </Button>
         )}
         {queueJobs.length > 0 && !queueActive && (
-          <Button variant="outline" onClick={resetQueue}>
-            مسح الكل
-          </Button>
+          <Button variant="outline" onClick={resetQueue}>مسح الكل</Button>
         )}
       </div>
     </div>

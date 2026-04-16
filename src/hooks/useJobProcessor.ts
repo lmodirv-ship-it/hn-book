@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { db } from "@/api/client";
 import { supabase } from "@/integrations/supabase/client";
-import { storageService } from "@/services/storageService";
-import { generateCoverAsync } from "@/lib/cover-worker-client";
 import { invalidateBookCache } from "@/services/bookService";
 
 export type DbJobStatus = "pending" | "processing" | "done" | "error";
@@ -16,30 +14,27 @@ export interface DbJob {
 }
 
 interface UseJobProcessorOptions {
-  enabled?: boolean;
-  pollInterval?: number;   // ms, default 2000
-  batchSize?: number;      // default 3
+  /** Poll interval in ms (default 2000) */
+  pollInterval?: number;
+  /** Auto-trigger backend worker when pending jobs exist (default true) */
+  autoTrigger?: boolean;
   onBatchComplete?: (stats: { success: number; failed: number }) => void;
 }
 
 /**
- * Background job processor that polls upload_jobs table
- * and processes pending jobs (cover gen → cover upload → book creation).
+ * Polls upload_jobs table for status changes and triggers
+ * the backend worker to process pending jobs.
+ * All heavy processing happens server-side.
  */
 export function useJobProcessor(opts: UseJobProcessorOptions = {}) {
-  const {
-    enabled = true,
-    pollInterval = 2000,
-    batchSize = 3,
-    onBatchComplete,
-  } = opts;
+  const { pollInterval = 2000, autoTrigger = true, onBatchComplete } = opts;
 
   const [jobs, setJobs] = useState<DbJob[]>([]);
-  const [processing, setProcessing] = useState(false);
+  const [workerActive, setWorkerActive] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const processingRef = useRef(false);
+  const triggeringRef = useRef(false);
 
-  // Fetch all recent jobs for display
+  // Fetch all recent jobs
   const refreshJobs = useCallback(async () => {
     const { data } = await db
       .from("upload_jobs")
@@ -47,130 +42,59 @@ export function useJobProcessor(opts: UseJobProcessorOptions = {}) {
       .order("created_at", { ascending: false })
       .limit(50);
     if (data) setJobs(data as unknown as DbJob[]);
+    return data as unknown as DbJob[] | null;
   }, []);
 
-  // Process a single job
-  const processJob = async (job: DbJob): Promise<boolean> => {
-    const jobData = job.result || {};
-    const { title, category, pdfUrl, referenceCode, storagePath } = jobData as any;
-
-    if (!pdfUrl || !referenceCode) {
-      await db
-        .from("upload_jobs")
-        .update({ status: "error", result: { ...jobData, error: "بيانات غير مكتملة" } } as any)
-        .eq("id", job.id);
-      return false;
-    }
+  // Trigger the backend worker edge function
+  const triggerWorker = useCallback(async () => {
+    if (triggeringRef.current) return;
+    triggeringRef.current = true;
+    setWorkerActive(true);
 
     try {
-      // Mark as processing
-      await db
-        .from("upload_jobs")
-        .update({ status: "processing" } as any)
-        .eq("id", job.id);
-
-      // 1. Generate cover via Web Worker
-      const coverBlob = await generateCoverAsync(title || job.file_name, referenceCode);
-      const coverFile = new File([coverBlob], `${referenceCode}.jpg`, { type: "image/jpeg" });
-
-      // 2. Upload cover
-      const coverResult = await storageService.uploadBookImage(coverFile, referenceCode);
-      const image = coverResult.data?.publicUrl || pdfUrl;
-
-      // 3. Create book via batch edge function
-      const { data, error } = await supabase.functions.invoke("batch-create-books", {
-        body: {
-          books: [{
-            name: title || job.file_name,
-            category: category || "كتب",
-            price: 0,
-            pdf_url: pdfUrl,
-            image,
-            reference_code: referenceCode,
-          }],
-        },
+      const { data, error } = await supabase.functions.invoke("process-upload-jobs", {
+        body: {},
       });
 
-      if (error) throw new Error(error.message || "فشل إنشاء الكتاب");
-
-      const result = data as { success: number; failed: number; results: any[] };
-      if (result.failed > 0) {
-        throw new Error(result.results?.[0]?.error || "فشل إنشاء الكتاب");
+      if (error) {
+        console.error("[JobProcessor] worker error:", error);
+      } else if (data) {
+        const result = data as { success?: number; failed?: number; processed?: number };
+        if ((result.success ?? 0) > 0) {
+          invalidateBookCache();
+          onBatchComplete?.({
+            success: result.success ?? 0,
+            failed: result.failed ?? 0,
+          });
+        }
       }
-
-      // Mark done
-      await db
-        .from("upload_jobs")
-        .update({
-          status: "done",
-          result: { ...jobData, image, bookCreated: true },
-        } as any)
-        .eq("id", job.id);
-
-      return true;
-    } catch (err: any) {
-      await db
-        .from("upload_jobs")
-        .update({
-          status: "error",
-          result: { ...jobData, error: err?.message || "خطأ غير متوقع" },
-        } as any)
-        .eq("id", job.id);
-      return false;
-    }
-  };
-
-  // Poll and process pending jobs
-  const pollAndProcess = useCallback(async () => {
-    if (processingRef.current) return;
-    processingRef.current = true;
-    setProcessing(true);
-
-    try {
-      const { data: pendingJobs } = await db
-        .from("upload_jobs")
-        .select("*")
-        .eq("status", "pending")
-        .order("created_at", { ascending: true })
-        .limit(batchSize);
-
-      if (!pendingJobs || pendingJobs.length === 0) {
-        setProcessing(false);
-        processingRef.current = false;
-        return;
-      }
-
-      let success = 0;
-      let failed = 0;
-
-      // Process batch in parallel
-      const results = await Promise.all(
-        (pendingJobs as unknown as DbJob[]).map((job) => processJob(job))
-      );
-
-      results.forEach((ok) => (ok ? success++ : failed++));
-
-      if (success > 0) invalidateBookCache();
-      onBatchComplete?.({ success, failed });
-
-      await refreshJobs();
+    } catch (err) {
+      console.error("[JobProcessor] trigger error:", err);
     } finally {
-      setProcessing(false);
-      processingRef.current = false;
+      setWorkerActive(false);
+      triggeringRef.current = false;
+      await refreshJobs();
     }
-  }, [batchSize, onBatchComplete, refreshJobs]);
+  }, [onBatchComplete, refreshJobs]);
 
-  // Start/stop polling
+  // Poll loop: refresh jobs + auto-trigger worker if pending exist
   useEffect(() => {
-    if (!enabled) return;
+    refreshJobs();
 
-    refreshJobs(); // Initial load
-    intervalRef.current = setInterval(pollAndProcess, pollInterval);
+    intervalRef.current = setInterval(async () => {
+      const freshJobs = await refreshJobs();
+      if (!freshJobs) return;
+
+      const hasPending = freshJobs.some((j) => j.status === "pending");
+      if (hasPending && autoTrigger && !triggeringRef.current) {
+        triggerWorker();
+      }
+    }, pollInterval);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [enabled, pollInterval, pollAndProcess, refreshJobs]);
+  }, [pollInterval, autoTrigger, refreshJobs, triggerWorker]);
 
   const stats = {
     total: jobs.length,
@@ -180,5 +104,5 @@ export function useJobProcessor(opts: UseJobProcessorOptions = {}) {
     errors: jobs.filter((j) => j.status === "error").length,
   };
 
-  return { jobs, stats, processing, refreshJobs };
+  return { jobs, stats, workerActive, refreshJobs, triggerWorker };
 }
