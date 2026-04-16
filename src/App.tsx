@@ -49,6 +49,9 @@ import TablouPage from "./pages/TablouPage.tsx";
 import TablouDetail from "./pages/TablouDetail.tsx";
 import TablouAdmin from "./admin/pages/TablouAdmin.tsx";
 import AIClassifier from "./admin/pages/AIClassifier.tsx";
+import FeatureManager from "./admin/pages/FeatureManager.tsx";
+import SystemMonitoring from "./admin/pages/SystemMonitoring.tsx";
+import ApiIntegrationsAdmin from "./admin/pages/ApiIntegrationsAdmin.tsx";
 
 const queryClient = new QueryClient();
 
@@ -108,6 +111,9 @@ const App = () => (
               <Route path="logos" element={<LogosAdmin />} />
               <Route path="tablou" element={<TablouAdmin />} />
               <Route path="ai-classifier" element={<AIClassifier />} />
+              <Route path="features" element={<FeatureManager />} />
+              <Route path="monitoring" element={<SystemMonitoring />} />
+              <Route path="api-integrations" element={<ApiIntegrationsAdmin />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />
