@@ -61,6 +61,7 @@ function getPageNumbers(current: number, total: number): (number | "...")[] {
 // ─── component ───────────────────────────────────────────────
 
 const BooksPage = () => {
+  useEffect(() => { document.title = "كتب | HN-Book"; }, []);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
