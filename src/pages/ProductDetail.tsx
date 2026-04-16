@@ -525,6 +525,7 @@ const ProductDetail = () => {
                 transition={{ delay: 0.55 }}
                 className="space-y-3 mt-5"
               >
+                {/* Primary action */}
                 {product.price > 0 ? (
                   <Button
                     size="lg"
@@ -554,35 +555,51 @@ const ProductDetail = () => {
                     غير متوفر للقراءة حالياً
                   </Button>
                 )}
-              </motion.div>
 
-              {/* Read / Preview button - only for paid books with PDF */}
-              {hasPdf && product.price > 0 && (
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="mt-3 w-full gap-2.5 text-base font-semibold h-12 rounded-xl border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 transition-all"
-                  asChild
-                >
-                  <Link to={`/read/${product.id}`}>
+                {/* Secondary actions row */}
+                {hasPdf && (
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Read / Preview */}
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="gap-2 text-sm font-semibold h-12 rounded-xl border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 transition-all"
+                      asChild
+                    >
+                      <Link to={`/read/${product.id}`}>
+                        <Eye className="h-4 w-4" />
+                        {product.price > 0 ? "مطالعة" : "قراءة"}
+                      </Link>
+                    </Button>
+
+                    {/* Download PDF */}
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="gap-2 text-sm font-semibold h-12 rounded-xl border-muted-foreground/30 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all"
+                      asChild
+                    >
+                      <a href={product.pdfUrl} target="_blank" rel="noopener noreferrer" download>
+                        <Download className="h-4 w-4" />
+                        تحميل PDF
+                      </a>
+                    </Button>
+                  </div>
+                )}
+
+                {/* Disabled state for no PDF */}
+                {!hasPdf && product.price > 0 && (
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    disabled
+                    className="w-full gap-2.5 text-sm font-semibold h-12 rounded-xl opacity-50 cursor-not-allowed"
+                  >
                     <BookOpen className="h-5 w-5" />
-                    مطالعة الكتاب
-                  </Link>
-                </Button>
-              )}
-
-              {/* Read button disabled for paid books without PDF */}
-              {!hasPdf && product.price > 0 && (
-                <Button
-                  variant="outline"
-                  size="lg"
-                  disabled
-                  className="mt-3 w-full gap-2.5 text-base font-semibold h-12 rounded-xl opacity-50 cursor-not-allowed"
-                >
-                  <BookOpen className="h-5 w-5" />
-                  المطالعة غير متوفرة
-                </Button>
-              )}
+                    المطالعة غير متوفرة
+                  </Button>
+                )}
+              </motion.div>
 
               {/* Sub-info */}
               <div className="mt-4 flex items-center justify-center gap-4 text-xs text-muted-foreground">
