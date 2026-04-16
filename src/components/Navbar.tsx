@@ -98,11 +98,9 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
   }, []);
 
   const navLinks = [
-    { href: "#products", label: t("nav.products") },
-    { href: "/books", label: "📚 كتب", isRoute: true },
-    { href: "/carte-visite", label: "🪪 بطاقات", isRoute: true },
-    { href: "#features", label: t("nav.features") },
-    { href: "#pricing", label: t("nav.pricing") },
+    { href: "/books", label: "📚 كتب" },
+    { href: "/carte-visite", label: "🪪 بطاقات" },
+    { href: "/tablou", label: "🖼️ لوحات" },
   ];
 
   const allCategories = categories ? ["All", ...categories] : [];
@@ -133,21 +131,12 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
             <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/10 border border-primary/30 shadow-[0_0_20px_-5px_hsl(199,89%,48%,0.15)]">
               {navLinks.map((link, idx) => (
                 <React.Fragment key={link.href}>
-                  {link.isRoute ? (
-                    <button
-                      onClick={() => navigate(link.href)}
-                      className="nav-glow-green rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border border-emerald-500/50 bg-emerald-500/20 transition-transform duration-200"
-                    >
-                      {link.label}
-                    </button>
-                  ) : (
-                    <a
-                      href={link.href}
-                      className="nav-glow-btn rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border border-primary/50 bg-primary/20 transition-transform duration-200"
-                    >
-                      {link.label}
-                    </a>
-                  )}
+                  <button
+                    onClick={() => navigate(link.href)}
+                    className="nav-glow-green rounded-lg px-3 py-1.5 text-[11px] font-semibold text-foreground border border-emerald-500/50 bg-emerald-500/20 transition-transform duration-200"
+                  >
+                    {link.label}
+                  </button>
 
                   {idx === 0 && (
                     <div className="relative" ref={langRef}>
@@ -285,29 +274,18 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
             style={{ borderTop: "1px solid hsl(199 89% 48% / 0.08)" }}
           >
             <nav className="flex flex-col gap-1.5 px-4 py-3">
-              {navLinks.map((link) =>
-                link.isRoute ? (
-                  <button
-                    key={link.href}
-                    onClick={() => {
-                      navigate(link.href);
-                      setMobileOpen(false);
-                    }}
-                    className="rounded-xl px-4 py-3 text-sm font-semibold text-white transition-all duration-300 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/25 hover:border-emerald-500/40 text-right"
-                  >
-                    {link.label}
-                  </button>
-                ) : (
-                  <a
-                    key={link.href}
-                    href={link.href}
-                    className="rounded-xl px-4 py-3 text-sm font-semibold text-white transition-all duration-300 bg-primary/10 border border-primary/20 hover:bg-primary/25 hover:border-primary/40 hover:shadow-[0_0_15px_-3px_hsl(199,89%,48%,0.3)]"
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    {link.label}
-                  </a>
-                )
-              )}
+              {navLinks.map((link) => (
+                <button
+                  key={link.href}
+                  onClick={() => {
+                    navigate(link.href);
+                    setMobileOpen(false);
+                  }}
+                  className="rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition-all duration-300 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/25 hover:border-emerald-500/40 text-right"
+                >
+                  {link.label}
+                </button>
+              ))}
 
               {allCategories.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-1">
