@@ -138,49 +138,7 @@ function toDb(input: BookCreateInput | BookUpdateInput): Record<string, any> {
 export const bookService = {
   /** Get all books with optional filtering */
   async getAll(filter?: BookFilter): Promise<ApiResult<Book[]>> {
-    try {
-      let query = db.from("products").select("*").order("created_at", { ascending: false });
-
-      if (filter?.category && filter.category !== "all") {
-        query = query.eq("category", filter.category);
-      }
-
-      if (filter?.search?.trim()) {
-        const escapedSearch = filter.search.trim().replace(/[,%]/g, " ");
-        query = query.or(`name.ilike.%${escapedSearch}%,category.ilike.%${escapedSearch}%`);
-      }
-
-      const limit = Math.max(1, Math.min(filter?.limit ?? 24, 50));
-      const offset = Math.max(filter?.offset ?? 0, 0);
-      const { controller, clear } = createAbortController();
-
-      query = query.range(offset, offset + limit - 1);
-
-      const { data, error } = await query.abortSignal(controller.signal);
-      clear();
-
-      if (error) {
-        console.error("[bookService.getAll] query failed", {
-          filter,
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-        });
-        return fetchProductsViaRest(filter);
-      }
-
-      console.log("[bookService.getAll] query success", {
-        limit,
-        offset,
-        count: data?.length ?? 0,
-      });
-
-      return ok((data || []).map(mapRow));
-    } catch (error) {
-      console.error("[bookService.getAll] unexpected error", error);
-      return fetchProductsViaRest(filter);
-    }
+    return fetchProductsViaRest(filter);
 
     // ── Future: REST API ──
     // const params = new URLSearchParams();
