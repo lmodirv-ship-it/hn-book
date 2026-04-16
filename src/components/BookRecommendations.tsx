@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Sparkles, TrendingUp, Clock } from "lucide-react";
+import { Sparkles, TrendingUp, Clock, Star, Flame } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import { recommendationService } from "@/services/recommendationService";
 import type { Product } from "@/lib/products";
@@ -9,20 +9,26 @@ interface Props {
   bookId?: string;
   category?: string;
   title?: string;
-  type?: "similar" | "popular" | "newest";
+  type?: "similar" | "popular" | "newest" | "featured" | "trending" | "recommended";
   limit?: number;
 }
 
-const ICONS = {
+const ICONS: Record<string, any> = {
   similar: Sparkles,
   popular: TrendingUp,
   newest: Clock,
+  featured: Star,
+  trending: Flame,
+  recommended: Sparkles,
 };
 
-const TITLES = {
+const TITLES: Record<string, string> = {
   similar: "كتب مشابهة",
   popular: "الأكثر شعبية",
   newest: "أحدث الكتب",
+  featured: "مختارات",
+  trending: "الأكثر رواجاً",
+  recommended: "كتب مقترحة",
 };
 
 const BookRecommendations = ({ bookId, category, title, type = "popular", limit = 4 }: Props) => {
@@ -30,10 +36,12 @@ const BookRecommendations = ({ bookId, category, title, type = "popular", limit 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetch = async () => {
+    const load = async () => {
       setLoading(true);
       let result;
-      if (type === "similar" && bookId && category) {
+      if (type === "featured" || type === "trending" || type === "recommended") {
+        result = await recommendationService.getManual(type, limit);
+      } else if (type === "similar" && bookId && category) {
         result = await recommendationService.getSimilar(bookId, category, limit);
       } else if (type === "popular") {
         result = await recommendationService.getPopular(limit);
@@ -43,7 +51,7 @@ const BookRecommendations = ({ bookId, category, title, type = "popular", limit 
       if (result.data) setBooks(result.data);
       setLoading(false);
     };
-    fetch();
+    load();
   }, [bookId, category, type, limit]);
 
   if (loading) {
@@ -61,8 +69,8 @@ const BookRecommendations = ({ bookId, category, title, type = "popular", limit 
 
   if (books.length === 0) return null;
 
-  const Icon = ICONS[type];
-  const displayTitle = title || TITLES[type];
+  const Icon = ICONS[type] || TrendingUp;
+  const displayTitle = title || TITLES[type] || "توصيات";
 
   return (
     <motion.div
