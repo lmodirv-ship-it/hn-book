@@ -143,6 +143,7 @@ function mapRow(row: any): Book {
     referenceCode: row.reference_code ?? row.referenceCode ?? undefined,
     pdfUrl: (row.pdf_url ?? row.pdfUrl) && (row.pdf_url ?? row.pdfUrl).trim() ? (row.pdf_url ?? row.pdfUrl) : undefined,
     slug: row.slug ?? undefined,
+    pageCount: row.page_count ?? row.pageCount ?? undefined,
     isActive: row.is_active ?? row.isActive ?? true,
     createdAt: row.created_at ?? row.createdAt,
     updatedAt: row.updated_at ?? row.updatedAt,
