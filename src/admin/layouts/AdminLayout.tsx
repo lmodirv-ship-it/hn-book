@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 const navItems = [
   { path: "/admin", icon: LayoutDashboard, label: "لوحة التحكم" },
   { path: "/admin/products", icon: Package, label: "إدارة المنتجات" },
+  { path: "/admin/categories", icon: Tag, label: "إدارة التصنيفات" },
   { path: "/admin/book-generation", icon: FolderUp, label: "الاستيراد الذكي" },
   { path: "/admin/web-search", icon: Globe, label: "بحث المصادر المفتوحة" },
   { path: "/admin/bulk-pdf", icon: FileText, label: "رفع PDF بالجملة" },

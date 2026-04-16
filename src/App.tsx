@@ -31,6 +31,7 @@ import WebBookSearch from "./admin/pages/WebBookSearch.tsx";
 import BulkPdfUpload from "./admin/pages/BulkPdfUpload.tsx";
 import DocumentProcessing from "./pages/DocumentProcessing.tsx";
 import DocumentProcessor from "./admin/pages/DocumentProcessor.tsx";
+import CategoryManagement from "./admin/pages/CategoryManagement.tsx";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +61,7 @@ const App = () => (
             <Route path="/admin" element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
               <Route index element={<AdminDashboard />} />
               <Route path="products" element={<AdminProducts />} />
+              <Route path="categories" element={<CategoryManagement />} />
               <Route path="book-generation" element={<BookGeneration />} />
               <Route path="web-search" element={<WebBookSearch />} />
               <Route path="bulk-pdf" element={<BulkPdfUpload />} />

@@ -9,30 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, BookOpen, ChevronLeft, ChevronRight, Filter } from "lucide-react";
-import { bookService } from "@/services";
+import { bookService, categoryService } from "@/services";
+import type { Category } from "@/services/categoryService";
 
 const LANGUAGES = [
   { value: "all", label: "كل اللغات" },
   { value: "ar", label: "العربية" },
   { value: "en", label: "English" },
-] as const;
-
-const CATEGORIES_AR = [
-  { value: "all", label: "كل التصنيفات" },
-  { value: "الطب", label: "الطب" },
-  { value: "التاريخ", label: "التاريخ" },
-  { value: "العلوم", label: "العلوم" },
-  { value: "الأدب العربي", label: "الأدب العربي" },
-  { value: "الدين الإسلامي", label: "الدين الإسلامي" },
-  { value: "تطوير الذات", label: "تطوير الذات" },
-  { value: "كتب", label: "كتب" },
-] as const;
-
-const CATEGORIES_EN = [
-  { value: "all", label: "All Categories" },
-  { value: "Literature", label: "Literature" },
-  { value: "Philosophy", label: "Philosophy" },
-  { value: "Biography & Autobiography", label: "Biography" },
 ] as const;
 
 const PAGE_SIZE = 50;
@@ -109,8 +92,14 @@ const BooksPage = () => {
   const [searchDebounced, setSearchDebounced] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [dbCategories, setDbCategories] = useState<Category[]>([]);
 
-  const categories = selectedLanguage === "en" ? CATEGORIES_EN : CATEGORIES_AR;
+  // Load categories from database
+  useEffect(() => {
+    categoryService.getAll().then((result) => {
+      if (result.data) setDbCategories(result.data);
+    });
+  }, []);
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
@@ -231,8 +220,9 @@ const BooksPage = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((c) => (
-                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                    <SelectItem value="all">كل التصنيفات</SelectItem>
+                    {dbCategories.map((c) => (
+                      <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
