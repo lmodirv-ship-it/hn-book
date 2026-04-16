@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, ChevronLeft, ChevronRight, Search, Bookmark, BookmarkCheck, Sun, Moon, Eye, EyeOff, Settings, Maximize2, Minimize2, List, Highlighter as HighlighterIcon } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, Search, Bookmark, BookmarkCheck, Sun, Moon, Eye, EyeOff, Settings, Maximize2, Minimize2, List, Highlighter as HighlighterIcon, Lock as LockIcon } from "lucide-react";
 import { bookService } from "@/services";
+import { accessService } from "@/services/accessService";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -78,6 +79,7 @@ const BookReader = () => {
   const navigate = useNavigate();
   const [book, setBook] = useState<BookData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [accessBlocked, setAccessBlocked] = useState(false);
   const [resourceUrl, setResourceUrl] = useState<string | null>(null);
   const [resourceType, setResourceType] = useState<ResourceType | null>(null);
   const [textContent, setTextContent] = useState("");
@@ -204,6 +206,15 @@ const BookReader = () => {
         });
         if (!bookData.pdfUrl) return;
 
+        // Check access for paid books
+        if (bookData.price > 0) {
+          const access = await accessService.canAccessBook(bookData.id, bookData.price);
+          if (!access.canAccess) {
+            setAccessBlocked(true);
+            setLoading(false);
+            return;
+          }
+        }
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
         const isInternal = bookData.pdfUrl.includes(supabaseUrl) || bookData.pdfUrl.includes("supabase.co");
         const inferredType = getResourceTypeFromUrl(bookData.pdfUrl);
@@ -428,6 +439,22 @@ const BookReader = () => {
         <h1 className={`text-lg font-bold ${textColor}`}>{book.name}</h1>
         <p className={`${subTextColor} text-sm`}>لا يوجد ملف قابل للمطالعة</p>
         <button onClick={() => navigate(`/product/${id}`)} className={`${linkColor} hover:underline text-sm`}>العودة لصفحة المنتج</button>
+      </div>
+    );
+  }
+
+  if (accessBlocked) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-4" style={readerBgStyle} dir="rtl">
+        <LockIcon className="w-12 h-12 text-primary/60" />
+        <h1 className={`text-lg font-bold ${textColor}`}>{book.name}</h1>
+        <p className={`${subTextColor} text-sm`}>يجب شراء الكتاب أو الاشتراك للقراءة</p>
+        <div className="flex gap-3">
+          <button onClick={() => navigate(`/book/${id}`)} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold">
+            صفحة الكتاب
+          </button>
+          <button onClick={() => navigate("/auth")} className={`${linkColor} hover:underline text-sm py-2`}>تسجيل الدخول</button>
+        </div>
       </div>
     );
   }
