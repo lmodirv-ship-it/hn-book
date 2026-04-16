@@ -7,6 +7,7 @@ export interface CardTemplate {
   id: string;
   name: string;
   image_url: string;
+  category: string;
   is_active: boolean;
   created_at: string;
 }
@@ -20,6 +21,9 @@ export interface PrintOrder {
   print_type: string;
   total_price: number;
   customer_name: string;
+  job_title: string;
+  email: string;
+  company: string;
   phone: string;
   address: string;
   city: string;
@@ -69,6 +73,14 @@ export const PRINT_TYPES = [
   { value: "double_side", label: "وجهين" },
 ];
 
+export const TEMPLATE_CATEGORIES = [
+  { value: "business", label: "أعمال" },
+  { value: "modern", label: "عصري" },
+  { value: "classic", label: "كلاسيكي" },
+  { value: "creative", label: "إبداعي" },
+  { value: "minimal", label: "بسيط" },
+];
+
 export const printService = {
   async getTemplates(): Promise<CardTemplate[]> {
     const { data } = await supabase
@@ -76,6 +88,18 @@ export const printService = {
       .select("*")
       .eq("is_active", true)
       .order("created_at", { ascending: false }) as any;
+    return data || [];
+  },
+
+  async getTemplatesByCategory(category: string): Promise<CardTemplate[]> {
+    const query = supabase
+      .from("card_templates")
+      .select("*")
+      .eq("is_active", true);
+    if (category !== "all") {
+      query.eq("category", category);
+    }
+    const { data } = await query.order("created_at", { ascending: false }) as any;
     return data || [];
   },
 
@@ -123,12 +147,25 @@ export const printService = {
     return orders.map((o: any) => ({ ...o, template: tMap.get(o.template_id) }));
   },
 
+  async getPopularTemplates(): Promise<string[]> {
+    const { data } = await supabase
+      .from("print_orders")
+      .select("template_id") as any;
+    if (!data || data.length === 0) return [];
+    const counts: Record<string, number> = {};
+    data.forEach((o: any) => { counts[o.template_id] = (counts[o.template_id] || 0) + 1; });
+    return Object.entries(counts)
+      .sort(([, a], [, b]) => (b as number) - (a as number))
+      .slice(0, 4)
+      .map(([id]) => id);
+  },
+
   async updateOrderStatus(id: string, status: string): Promise<void> {
     await supabase.from("print_orders").update({ status } as any).eq("id", id);
   },
 
-  async createTemplate(name: string, image_url: string): Promise<void> {
-    const { error } = await supabase.from("card_templates").insert({ name, image_url } as any);
+  async createTemplate(name: string, image_url: string, category: string = "business"): Promise<void> {
+    const { error } = await supabase.from("card_templates").insert({ name, image_url, category } as any);
     if (error) throw new Error(error.message);
   },
 
