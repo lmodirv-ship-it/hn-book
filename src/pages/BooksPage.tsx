@@ -61,7 +61,16 @@ function getPageNumbers(current: number, total: number): (number | "...")[] {
 // ─── component ───────────────────────────────────────────────
 
 const BooksPage = () => {
-  useEffect(() => { document.title = "كتب | HN-Book"; }, []);
+  useEffect(() => {
+    document.title = "كتب | HN-Book";
+    let meta = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "description";
+      document.head.appendChild(meta);
+    }
+    meta.content = "أفضل منصة لقراءة وشراء الكتب بجميع اللغات";
+  }, []);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
