@@ -1,53 +1,60 @@
 
 
-# خطة تفعيل التخزين المحلي الكامل للملفات
+## Problem
+The `BooksPage` fetches 1000 books in a single request from a database of 4069 books. This causes a long "جاري التحميل..." wait with no visual feedback.
 
-## المشكلة الحالية
-عند استيراد كتب من المصادر المفتوحة (Web Search) أو عبر الاستيراد الذكي (Book Generation)، بعض الملفات لا يتم تحميلها فعلياً إلى تخزين الموقع، مما يسبب خطأ "تعذر تحميل الكتاب" عند فتحها في القارئ الداخلي. السبب الرئيسي:
+## Plan
 
-1. **روابط Google Books** لا تسمح بالتحميل المباشر (تتطلب مصادقة)
-2. **بعض المصادر** ترجع صفحات HTML بدل ملفات PDF
-3. **لا يتم التحقق** من نجاح التحميل الفعلي قبل حفظ الرابط
+### 1. Reduce initial fetch to 24 books
+- Change `ITEMS_PER_PAGE` from 60 to 24
+- Fetch only 24 books initially via `bookService.getAll({ limit: 24 })`
+- On "Load More" click, fetch the next batch (offset-based) and append to existing list
 
-## الحل
+### 2. Replace spinner with Skeleton grid
+- While loading, show a grid of 12 skeleton cards matching the `ProductCard` layout (aspect-[4/5] image placeholder + text lines)
+- Uses the existing `Skeleton` component from `src/components/ui/skeleton.tsx`
+- Show skeletons both on initial load AND when loading more (append skeleton cards at bottom)
 
-### 1. تحسين Edge Function `search-books-web`
-- إضافة تحقق من نوع المحتوى بعد التحميل (رفض HTML/redirects)
-- استخدام `proxy-pdf` كوسيط للروابط المحمية
-- عدم حفظ `pdf_url` إذا فشل التحميل الفعلي
-- إضافة حالة واضحة في النتائج: "تم التخزين محلياً" vs "رابط خارجي فقط"
+### 3. Add `loading="lazy"` to images
+- Already present on `ProductCard` line 49 — confirmed, no change needed
 
-### 2. تحسين واجهة بحث المصادر المفتوحة (`WebBookSearch.tsx`)
-- عرض حالة التخزين بوضوح (محلي ✅ / خارجي ⚠️)
-- إضافة زر "إعادة تحميل" للملفات التي فشل تخزينها
+### 4. Adjust data fetching strategy
+- Instead of loading all books into `allProducts` and filtering client-side, keep the current approach but with smaller batches
+- Since language/category filtering happens client-side using `CATEGORY_LANG_MAP`, we still need all data for accurate counts — **compromise**: fetch first 24 for instant display, then background-fetch the rest for counts
+- Alternative (simpler): keep client-side filtering but paginate the visible list, fetching in chunks of 24 as user scrolls/clicks "Load More"
 
-### 3. تحسين القارئ (`BookReader.tsx`)
-- إذا كان الملف مخزن محلياً (رابط supabase) → تحميل مباشر
-- إذا كان رابط خارجي → استخدام `proxy-pdf` مع تحقق من نوع المحتوى
-- رسالة خطأ أوضح عند فشل التحميل مع اقتراح إعادة الاستيراد
+**Chosen approach**: Two-phase loading:
+- Phase 1: Fetch 24 books immediately → display them → `setLoading(false)`
+- Phase 2: Background-fetch remaining books in batches of 200 for category counts and filtering (non-blocking, user already sees content)
 
-### 4. تحسين الاستيراد الذكي (`BookGeneration.tsx` / `process-universal-file`)
-- لا تغييرات كبيرة مطلوبة - يعمل بشكل صحيح مع الملفات المرفوعة يدوياً
+### 5. Files to modify
 
-## التفاصيل التقنية
+| File | Change |
+|------|--------|
+| `src/pages/BooksPage.tsx` | Two-phase fetch, skeleton grid, reduce ITEMS_PER_PAGE to 24 |
+| `src/services/bookService.ts` | Already supports `limit`/`offset` — no change needed |
 
-**`search-books-web/index.ts`** — التغييرات الرئيسية:
+### Technical details
+
+**Skeleton card component** (inline in BooksPage):
+```text
+┌──────────────┐
+│  ████████████ │  ← aspect-[4/5] skeleton
+│  ████████████ │
+│  ████████████ │
+│              │
+│  ███████     │  ← category line
+│  █████████████│  ← title line
+│  ████████     │  ← description line
+│  ███   ██████ │  ← price + code
+└──────────────┘
 ```
-- عند تحميل ملف، التحقق من Content-Type (رفض text/html)
-- إضافة timeout و retry للتحميلات البطيئة
-- حفظ pdf_url = null إذا فشل التحميل (بدل حفظ الرابط الخارجي)
-- إضافة حقل _stored_locally في النتائج
+
+**Two-phase fetch logic**:
+```
+Phase 1: bookService.getAll({ limit: 24 }) → show immediately
+Phase 2: bookService.getAll({ limit: 1000, offset: 24 }) → append silently
 ```
 
-**`BookReader.tsx`** — تحسين معالجة الأخطاء:
-```
-- كشف الروابط المحلية (supabase) vs الخارجية
-- رسالة خطأ مفصلة مع زر إعادة الاستيراد
-```
-
-**`WebBookSearch.tsx`** — تحسين العرض:
-```
-- أيقونة تخزين محلي واضحة
-- زر إعادة تحميل للملفات غير المخزنة
-```
+No design changes. No new features. Performance only.
 
