@@ -191,10 +191,12 @@ const BookReader = () => {
   useEffect(() => {
     let objectUrlToRevoke: string | null = null;
     const fetchBook = async () => {
-      if (!id) { setLoading(false); return; }
+      if (!slugOrId) { setLoading(false); return; }
       try {
-        const result = await bookService.getById(id);
-        if (!result.data) return;
+        // Try slug first, fallback to UUID
+        const result = slugOrId.includes('-') && slugOrId.length > 30
+          ? await bookService.getById(slugOrId)
+          : await bookService.getBySlug(slugOrId).then(r => r.data ? r : bookService.getById(slugOrId));
         const bookData = result.data;
         setBook({
           id: bookData.id,
@@ -263,7 +265,7 @@ const BookReader = () => {
     };
     fetchBook();
     return () => { if (objectUrlToRevoke) URL.revokeObjectURL(objectUrlToRevoke); };
-  }, [id]);
+  }, [slugOrId]);
 
   const onDocumentLoadSuccess = useCallback((result: any) => {
     setNumPages(result.numPages);
