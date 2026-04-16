@@ -37,17 +37,13 @@ function buildProductsRestUrl(filter?: BookFilter, maxLimit = 100) {
   url.searchParams.set("limit", String(limit));
   url.searchParams.set("offset", String(offset));
 
+  // Apply category filter
   if (filter?.category && filter.category !== "all") {
     url.searchParams.set("category", `eq.${filter.category}`);
-  }
-
-  // Language filter: Arabic categories vs English categories
-  if (filter?.language === "ar") {
-    url.searchParams.set("category", `not.like.*[a-zA-Z]*`);
+  } else if (filter?.language === "ar") {
+    url.searchParams.set("category", `in.(الطب,التاريخ,العلوم,الأدب العربي,الدين الإسلامي,كتب,تطوير الذات,أخرى)`);
   } else if (filter?.language === "en") {
-    url.searchParams.set("category", `like.*[a-zA-Z]*`);
-  } else if (filter?.language === "fr") {
-    url.searchParams.set("category", `ilike.*fran%`);
+    url.searchParams.set("category", `in.(Literature,Arabic literature,Philosophy,Biography & Autobiography)`);
   }
 
   if (filter?.search?.trim()) {
