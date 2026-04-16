@@ -182,11 +182,14 @@ export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: Pr
                 <Input type="number" value={originalPrice} onChange={(e) => setOriginalPrice(e.target.value)} placeholder="59" className="bg-card" />
               </Field>
             </div>
-            <Field label="التصنيف">
-              <select value={category} onChange={(e) => setCategory(e.target.value)}
-                className="w-full h-10 rounded-md border border-input bg-card px-3 text-sm text-foreground">
+            <Field label={`التصنيف${categorySuggested ? " ✨ مقترح تلقائياً" : ""}`}>
+              <select value={category} onChange={(e) => { setCategory(e.target.value); setCategorySuggested(false); }}
+                className={`w-full h-10 rounded-md border px-3 text-sm text-foreground ${categorySuggested ? "border-primary/50 bg-primary/5" : "border-input bg-card"}`}>
                 {categoryNames.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
+              {categorySuggested && (
+                <p className="text-[10px] text-primary mt-1">تم اقتراح التصنيف بناءً على العنوان والوصف — يمكنك تغييره</p>
+              )}
             </Field>
             <Field label="المميزات (سطر لكل ميزة)">
               <Textarea value={features} onChange={(e) => setFeatures(e.target.value)} placeholder={"PDF عالي الجودة\nقابل للطباعة\nتحديثات مجانية"} className="bg-card min-h-[60px]" />
