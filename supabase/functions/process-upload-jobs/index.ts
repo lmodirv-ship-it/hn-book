@@ -8,18 +8,46 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts"
 
 const BATCH_SIZE = 3;
 
-// ── Smart pricing (inline for Deno) ──
-function calculatePrice(pageCount: number | null, category: string): number {
+// ── Dynamic pricing from DB ──
+async function calculatePriceFromDb(
+  serviceClient: any,
+  pageCount: number | null,
+  country = "MA",
+  paperType = "standard"
+): Promise<number> {
   if (!pageCount || pageCount <= 0) return 0;
-  const multipliers: Record<string, number> = {
-    "الطب": 1.8, "العلوم": 1.5, "الدين الإسلامي": 1.0,
-    "التاريخ": 1.2, "الأدب العربي": 1.1, "تطوير الذات": 1.3,
-    "كتب": 1.0, "أخرى": 1.0, "Literature": 1.2,
-    "Philosophy": 1.3, "Biography & Autobiography": 1.2, "Arabic literature": 1.1,
-  };
-  const m = multipliers[category] ?? 1.0;
-  const raw = pageCount * 0.15 * m;
-  return Math.min(500, Math.max(0, Math.round(raw / 5) * 5));
+
+  // Fetch active rules
+  const { data: rules } = await serviceClient
+    .from("pricing_rules")
+    .select("min_pages,max_pages,price_per_page,priority,country,paper_type")
+    .eq("is_active", true);
+
+  // Find best matching rule
+  const matching = (rules || [])
+    .filter((r: any) =>
+      pageCount >= r.min_pages &&
+      pageCount <= r.max_pages &&
+      (r.country === country || r.country === "ALL") &&
+      (r.paper_type === paperType || r.paper_type === "all")
+    )
+    .sort((a: any, b: any) => b.priority - a.priority);
+
+  let pricePerPage = 1; // default
+  if (matching.length > 0) {
+    pricePerPage = matching[0].price_per_page;
+  } else {
+    // Fallback to base price setting
+    const { data: setting } = await serviceClient
+      .from("pricing_settings")
+      .select("value")
+      .eq("key", "base_price_per_page")
+      .single();
+    if (setting?.value?.value) pricePerPage = setting.value.value;
+  }
+
+  const raw = pageCount * pricePerPage;
+  return Math.max(0, Math.round(raw / 5) * 5);
 }
 
 Deno.serve(async (req) => {
@@ -110,7 +138,7 @@ Deno.serve(async (req) => {
           .insert({
             name: title || job.file_name,
             category: category || "كتب",
-            price: calculatePrice(pageCount, category || "كتب"),
+            price: await calculatePriceFromDb(serviceClient, pageCount),
             pdf_url: pdfUrl,
             image: image,
             reference_code: referenceCode || null,
