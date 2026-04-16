@@ -32,13 +32,16 @@ const TablouDetail = () => {
 
   const handleAddToCart = () => {
     if (!tablou || !currentSize) return;
-    addItem({
-      id: `${tablou.id}-${currentSize.size}`,
-      name: `${tablou.title} (${SIZE_LABELS[currentSize.size] || currentSize.size} - ${currentSize.width_cm}x${currentSize.height_cm}cm)`,
-      price,
-      image: tablou.image_url,
-      quantity,
-    });
+    for (let i = 0; i < quantity; i++) {
+      addItem({
+        bookId: `tablou-${tablou.id}-${currentSize.size}`,
+        name: `${tablou.title} (${SIZE_LABELS[currentSize.size] || currentSize.size} - ${currentSize.width_cm}x${currentSize.height_cm}cm)`,
+        price,
+        image: tablou.image_url,
+        category: "tablou",
+        referenceCode: null,
+      });
+    }
     toast({ title: "تمت الإضافة إلى السلة ✅" });
   };
 
