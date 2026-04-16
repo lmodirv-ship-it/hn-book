@@ -47,6 +47,7 @@ const App = () => (
             <Route path="/books" element={<BooksPage />} />
             <Route path="/category/:category" element={<CategoryPage />} />
             <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/book/:id" element={<ProductDetail />} />
             <Route path="/read/:id" element={<BookReader />} />
             <Route path="/document-processing" element={<DocumentProcessing />} />
             <Route path="/auth" element={<CustomerAuth />} />
