@@ -50,6 +50,10 @@ const CATEGORY_ICONS: Record<string, any> = {
   "وثائق": FileCheck,
   "عروض": MonitorPlay,
   "تابلوهات": Frame,
+  "شعارات": ImageIcon,
+  "فلاير": FileText,
+  "ملصقات": Frame,
+  "قوائم": Layout,
   "أخرى": HelpCircle,
 };
 
