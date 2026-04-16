@@ -44,29 +44,57 @@ function cleanFilename(filename: string): string {
  * then upload cover. Returns data needed for batch DB creation.
  */
 async function processFileUpload(payload: BookPayload): Promise<UploadResult> {
-  // 1. Upload PDF + generate cover IN PARALLEL
-  const [pdfResult, coverBlob] = await Promise.all([
-    storageService.uploadBookPdf(payload.file),
-    generateCoverAsync(payload.title, "PENDING"), // will update ref after
-  ]);
+  // 0. Track job in database
+  const { data: job } = await db
+    .from("upload_jobs")
+    .insert({ file_name: payload.file.name, status: "pending" } as any)
+    .select("id")
+    .single();
+  const jobId = job?.id;
 
-  if (pdfResult.error) throw new Error(pdfResult.error);
-
-  const { publicUrl: pdfUrl, referenceCode, storagePath } = pdfResult.data!;
-
-  // 2. Upload cover image
-  const coverFile = new File([coverBlob], `${referenceCode}.jpg`, { type: "image/jpeg" });
-  const coverResult = await storageService.uploadBookImage(coverFile, referenceCode);
-  const image = coverResult.data?.publicUrl || pdfUrl;
-
-  return {
-    name: payload.title,
-    category: payload.category,
-    pdfUrl,
-    image,
-    referenceCode,
-    storagePath,
+  const updateJobStatus = async (status: string, result?: any) => {
+    if (!jobId) return;
+    await db
+      .from("upload_jobs")
+      .update({ status, result: result ?? {} } as any)
+      .eq("id", jobId);
   };
+
+  try {
+    await updateJobStatus("uploading");
+
+    // 1. Upload PDF + generate cover IN PARALLEL
+    const [pdfResult, coverBlob] = await Promise.all([
+      storageService.uploadBookPdf(payload.file),
+      generateCoverAsync(payload.title, "PENDING"),
+    ]);
+
+    if (pdfResult.error) {
+      await updateJobStatus("error", { error: pdfResult.error });
+      throw new Error(pdfResult.error);
+    }
+
+    const { publicUrl: pdfUrl, referenceCode, storagePath } = pdfResult.data!;
+
+    // 2. Upload cover image
+    const coverFile = new File([coverBlob], `${referenceCode}.jpg`, { type: "image/jpeg" });
+    const coverResult = await storageService.uploadBookImage(coverFile, referenceCode);
+    const image = coverResult.data?.publicUrl || pdfUrl;
+
+    await updateJobStatus("done", { pdfUrl, image, referenceCode });
+
+    return {
+      name: payload.title,
+      category: payload.category,
+      pdfUrl,
+      image,
+      referenceCode,
+      storagePath,
+    };
+  } catch (err: any) {
+    await updateJobStatus("error", { error: err?.message });
+    throw err;
+  }
 }
 
 // ── Component ──
