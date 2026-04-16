@@ -220,22 +220,22 @@ const BulkPdfUpload = () => {
             </span>
             {queueStats.queued > 0 && (
               <span className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary">
-                انتظار: {queueStats.queued}
+                ⏳ انتظار: {queueStats.queued}
               </span>
             )}
             {queueStats.uploading > 0 && (
               <span className="text-xs px-3 py-1.5 rounded-full bg-accent/20 text-accent-foreground">
-                ⚡ رفع: {queueStats.uploading}
+                🔄 رفع: {queueStats.uploading}
               </span>
             )}
             {queueStats.done > 0 && (
               <span className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary">
-                تم: {queueStats.done}
+                ✅ تم: {queueStats.done}
               </span>
             )}
             {queueStats.errors > 0 && (
               <span className="text-xs px-3 py-1.5 rounded-full bg-destructive/10 text-destructive">
-                خطأ: {queueStats.errors}
+                ❌ خطأ: {queueStats.errors}
               </span>
             )}
           </div>
@@ -243,16 +243,11 @@ const BulkPdfUpload = () => {
           <div className="rounded-2xl border border-border bg-card overflow-hidden divide-y divide-border/50 max-h-[300px] overflow-y-auto">
             {queueJobs.map((j) => (
               <div key={j.id} className="flex items-center gap-3 px-4 py-2.5">
-                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  {j.status === "uploading" ? (
-                    <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
-                  ) : j.status === "done" ? (
-                    <Check className="w-3.5 h-3.5 text-primary" />
-                  ) : j.status === "error" ? (
-                    <AlertCircle className="w-3.5 h-3.5 text-destructive" />
-                  ) : (
-                    <FileText className="w-3.5 h-3.5 text-primary" />
-                  )}
+                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 text-sm">
+                  {j.status === "uploading" ? "🔄"
+                   : j.status === "done" ? "✅"
+                   : j.status === "error" ? "❌"
+                   : "⏳"}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{j.payload.title}</p>
