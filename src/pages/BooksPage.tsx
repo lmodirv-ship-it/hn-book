@@ -83,8 +83,10 @@ const BooksPage = () => {
 
   // fetch page data
   const fetchPage = useCallback(async (page: number, search: string) => {
-    setLoading(true);
+    // Only show full skeleton on first load (no existing data)
+    if (products.length === 0) setLoading(true);
     setError(null);
+    setPageTransitioning(true);
 
     const offset = (page - 1) * PAGE_SIZE;
     const filter = {
