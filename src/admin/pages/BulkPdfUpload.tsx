@@ -93,16 +93,25 @@ const BulkPdfUpload = () => {
     }
   };
 
+  const BATCH_SIZE = 4;
+
   const processAll = async () => {
     setProcessing(true);
+
+    // Collect queued indices
+    const queued: number[] = [];
+    setFiles((prev) => {
+      prev.forEach((f, i) => { if (f.status === "queued") queued.push(i); });
+      return prev;
+    });
+
     let success = 0, failed = 0;
 
-    for (let i = 0; i < files.length; i++) {
-      let status: FileStatus = "queued";
-      setFiles((prev) => { status = prev[i].status; return prev; });
-      if (status !== "queued") continue;
-
-      (await processFile(i)) ? success++ : failed++;
+    // Process in parallel batches
+    for (let b = 0; b < queued.length; b += BATCH_SIZE) {
+      const batch = queued.slice(b, b + BATCH_SIZE);
+      const results = await Promise.all(batch.map((i) => processFile(i)));
+      results.forEach((ok) => (ok ? success++ : failed++));
     }
 
     setProcessing(false);
