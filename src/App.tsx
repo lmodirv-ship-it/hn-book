@@ -43,6 +43,7 @@ import SalesManagement from "./admin/pages/SalesManagement.tsx";
 import RecommendationsManagement from "./admin/pages/RecommendationsManagement.tsx";
 import PrintOrdersAdmin from "./admin/pages/PrintOrdersAdmin.tsx";
 import CardTemplatesAdmin from "./admin/pages/CardTemplatesAdmin.tsx";
+import LogosAdmin from "./admin/pages/LogosAdmin.tsx";
 import CarteVisite from "./pages/CarteVisite.tsx";
 
 const queryClient = new QueryClient();
@@ -98,6 +99,7 @@ const App = () => (
               <Route path="recommendations" element={<RecommendationsManagement />} />
               <Route path="print-orders" element={<PrintOrdersAdmin />} />
               <Route path="card-templates" element={<CardTemplatesAdmin />} />
+              <Route path="logos" element={<LogosAdmin />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />

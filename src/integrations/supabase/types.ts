@@ -178,6 +178,36 @@ export type Database = {
         }
         Relationships: []
       }
+      logos: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          image_url: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          id?: string
+          image_url: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       manual_recommendations: {
         Row: {
           book_id: string
@@ -437,6 +467,7 @@ export type Database = {
           email: string
           id: string
           job_title: string
+          logo_id: string | null
           notes: string | null
           paper_type: string
           phone: string
@@ -458,6 +489,7 @@ export type Database = {
           email?: string
           id?: string
           job_title?: string
+          logo_id?: string | null
           notes?: string | null
           paper_type?: string
           phone: string
@@ -479,6 +511,7 @@ export type Database = {
           email?: string
           id?: string
           job_title?: string
+          logo_id?: string | null
           notes?: string | null
           paper_type?: string
           phone?: string
@@ -491,6 +524,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "print_orders_logo_id_fkey"
+            columns: ["logo_id"]
+            isOneToOne: false
+            referencedRelation: "logos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "print_orders_template_id_fkey"
             columns: ["template_id"]
