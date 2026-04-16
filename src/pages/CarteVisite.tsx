@@ -10,12 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  printService, calculatePrice, QUANTITIES, PAPER_TYPES, PRINT_TYPES,
+  printService, calculatePrice, QUANTITIES, PAPER_TYPES, PRINT_TYPES, TEMPLATE_CATEGORIES,
   type CardTemplate,
 } from "@/services/printService";
 import {
   CreditCard, CheckCircle2, ChevronLeft, ChevronRight,
-  Loader2, Layers, Palette, Truck, Phone, MapPin, User, FileText,
+  Loader2, Layers, Palette, User, Star, Briefcase, Mail, Phone, MapPin, Building2,
 } from "lucide-react";
 
 const STEPS = [
@@ -30,17 +30,47 @@ const CarteVisite = () => {
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState(0);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState("all");
   const [quantity, setQuantity] = useState(100);
   const [paperType, setPaperType] = useState("standard");
   const [printType, setPrintType] = useState("one_side");
   const [notes, setNotes] = useState("");
-  const [form, setForm] = useState({ name: "", phone: "", address: "", city: "", country: "MA" });
+  const [popularIds, setPopularIds] = useState<string[]>([]);
+  const [form, setForm] = useState({
+    name: "", job_title: "", phone: "", email: "", address: "", city: "", country: "MA", company: "",
+  });
   const [submitting, setSubmitting] = useState(false);
   const [orderDone, setOrderDone] = useState(false);
 
   useEffect(() => {
-    printService.getTemplates().then(t => { setTemplates(t); setLoading(false); });
+    Promise.all([
+      printService.getTemplates(),
+      printService.getPopularTemplates(),
+    ]).then(([t, pop]) => {
+      setTemplates(t);
+      setPopularIds(pop);
+      setLoading(false);
+    });
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        supabase.from("profiles").select("*").eq("user_id", user.id).single().then(({ data }: any) => {
+          if (data) {
+            setForm(f => ({
+              ...f,
+              name: data.display_name || "",
+              phone: data.phone || "",
+              email: user.email || "",
+            }));
+          }
+        });
+      }
+    });
   }, []);
+
+  const filteredTemplates = useMemo(() => {
+    if (activeCategory === "all") return templates;
+    return templates.filter(t => t.category === activeCategory);
+  }, [templates, activeCategory]);
 
   const price = useMemo(() => calculatePrice(quantity, paperType, printType), [quantity, paperType, printType]);
   const selectedTpl = templates.find(t => t.id === selectedTemplate);
@@ -48,7 +78,7 @@ const CarteVisite = () => {
   const canNext = () => {
     if (step === 0) return !!selectedTemplate;
     if (step === 1) return true;
-    if (step === 2) return form.name.trim() && form.phone.trim() && form.address.trim() && form.city.trim();
+    if (step === 2) return form.name.trim() && form.phone.trim() && form.address.trim() && form.city.trim() && form.email.trim();
     return true;
   };
 
@@ -69,6 +99,9 @@ const CarteVisite = () => {
         print_type: printType,
         total_price: price,
         customer_name: form.name,
+        job_title: form.job_title,
+        email: form.email,
+        company: form.company,
         phone: form.phone,
         address: form.address,
         city: form.city,
@@ -108,8 +141,6 @@ const CarteVisite = () => {
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       <Navbar />
-
-      {/* Hero */}
       <section className="relative py-16 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent" />
         <div className="container mx-auto px-4 relative z-10 text-center">
@@ -118,12 +149,11 @@ const CarteVisite = () => {
             بطاقات <span className="text-primary">أعمال</span> احترافية
           </h1>
           <p className="text-muted-foreground max-w-lg mx-auto">
-            اختر تصميمك المفضل واطلب طباعة بطاقاتك بجودة عالية
+            اختر تصميمك المفضل، أدخل بياناتك، واطلب طباعة بطاقاتك بجودة عالية
           </p>
         </div>
       </section>
 
-      {/* Steps indicator */}
       <div className="container mx-auto px-4 mb-8">
         <div className="flex items-center justify-center gap-2 md:gap-4">
           {STEPS.map((s, i) => {
@@ -147,47 +177,38 @@ const CarteVisite = () => {
 
       <div className="container mx-auto px-4 pb-16">
         <AnimatePresence mode="wait">
-          {/* Step 0: Choose Template */}
           {step === 0 && (
             <motion.div key="step0" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}>
-              <h2 className="text-xl font-bold text-foreground mb-6">اختر التصميم</h2>
+              <h2 className="text-xl font-bold text-foreground mb-4">اختر التصميم</h2>
+              <div className="flex flex-wrap gap-2 mb-6">
+                <button onClick={() => setActiveCategory("all")} className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${activeCategory === "all" ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground hover:border-primary/40"}`}>الكل</button>
+                {TEMPLATE_CATEGORIES.map(c => (
+                  <button key={c.value} onClick={() => setActiveCategory(c.value)} className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${activeCategory === c.value ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground hover:border-primary/40"}`}>{c.label}</button>
+                ))}
+              </div>
               {loading ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="aspect-[1.8/1] bg-muted/10 rounded-xl animate-pulse" />
-                  ))}
+                  {Array.from({ length: 8 }).map((_, i) => (<div key={i} className="aspect-[1.8/1] bg-muted/10 rounded-xl animate-pulse" />))}
                 </div>
-              ) : templates.length === 0 ? (
+              ) : filteredTemplates.length === 0 ? (
                 <div className="text-center py-20 text-muted-foreground">
                   <CreditCard className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                  <p className="text-lg font-semibold">لا توجد تصاميم متاحة حالياً</p>
-                  <p className="text-sm mt-1">سيتم إضافة تصاميم جديدة قريباً</p>
+                  <p className="text-lg font-semibold">لا توجد تصاميم في هذه الفئة</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {templates.map(t => (
-                    <motion.button
-                      key={t.id}
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => setSelectedTemplate(t.id)}
-                      className={`relative rounded-xl overflow-hidden border-2 transition-all ${
-                        selectedTemplate === t.id
-                          ? "border-primary shadow-lg shadow-primary/20"
-                          : "border-border hover:border-primary/40"
-                      }`}
-                    >
-                      <div className="aspect-[1.8/1] bg-muted/10">
-                        <img src={t.image_url} alt={t.name} className="w-full h-full object-cover" />
-                      </div>
-                      <div className="p-2.5 bg-card">
-                        <p className="text-sm font-medium text-foreground truncate">{t.name}</p>
-                      </div>
-                      {selectedTemplate === t.id && (
-                        <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                          <CheckCircle2 className="w-4 h-4 text-primary-foreground" />
+                  {filteredTemplates.map(t => (
+                    <motion.button key={t.id} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => setSelectedTemplate(t.id)}
+                      className={`relative rounded-xl overflow-hidden border-2 transition-all text-right ${selectedTemplate === t.id ? "border-primary shadow-lg shadow-primary/20" : "border-border hover:border-primary/40"}`}>
+                      <div className="aspect-[1.8/1] bg-muted/10"><img src={t.image_url} alt={t.name} className="w-full h-full object-cover" /></div>
+                      <div className="p-2.5 bg-card flex items-center justify-between">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{t.name}</p>
+                          <p className="text-[10px] text-muted-foreground">{TEMPLATE_CATEGORIES.find(c => c.value === t.category)?.label || t.category}</p>
                         </div>
-                      )}
+                        {popularIds.includes(t.id) && (<Badge variant="secondary" className="text-[9px] px-1.5 py-0 gap-0.5 shrink-0"><Star className="w-2.5 h-2.5" /> شائع</Badge>)}
+                      </div>
+                      {selectedTemplate === t.id && (<div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center"><CheckCircle2 className="w-4 h-4 text-primary-foreground" /></div>)}
                     </motion.button>
                   ))}
                 </div>
@@ -195,92 +216,37 @@ const CarteVisite = () => {
             </motion.div>
           )}
 
-          {/* Step 1: Customization */}
           {step === 1 && (
-            <motion.div key="step1" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
-              className="max-w-2xl mx-auto space-y-6"
-            >
+            <motion.div key="step1" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="max-w-2xl mx-auto space-y-6">
               <h2 className="text-xl font-bold text-foreground mb-2">خيارات الطباعة</h2>
-
-              {/* Selected template preview */}
               {selectedTpl && (
                 <div className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border">
                   <img src={selectedTpl.image_url} alt={selectedTpl.name} className="w-24 h-14 rounded-lg object-cover" />
-                  <div>
-                    <p className="font-semibold text-foreground">{selectedTpl.name}</p>
-                    <p className="text-xs text-muted-foreground">التصميم المختار</p>
-                  </div>
+                  <div><p className="font-semibold text-foreground">{selectedTpl.name}</p><p className="text-xs text-muted-foreground">التصميم المختار</p></div>
                 </div>
               )}
-
-              {/* Quantity */}
               <div>
                 <Label className="text-sm font-semibold mb-2 block">الكمية</Label>
                 <div className="grid grid-cols-4 gap-2">
-                  {QUANTITIES.map(q => (
-                    <button
-                      key={q}
-                      onClick={() => setQuantity(q)}
-                      className={`py-3 rounded-xl text-center font-bold transition-all border ${
-                        quantity === q
-                          ? "bg-primary/10 border-primary text-primary"
-                          : "bg-card border-border text-foreground hover:border-primary/40"
-                      }`}
-                    >
-                      {q}
-                    </button>
-                  ))}
+                  {QUANTITIES.map(q => (<button key={q} onClick={() => setQuantity(q)} className={`py-3 rounded-xl text-center font-bold transition-all border ${quantity === q ? "bg-primary/10 border-primary text-primary" : "bg-card border-border text-foreground hover:border-primary/40"}`}>{q}</button>))}
                 </div>
               </div>
-
-              {/* Paper type */}
               <div>
                 <Label className="text-sm font-semibold mb-2 block">نوع الورق</Label>
                 <div className="grid grid-cols-3 gap-2">
-                  {PAPER_TYPES.map(p => (
-                    <button
-                      key={p.value}
-                      onClick={() => setPaperType(p.value)}
-                      className={`p-3 rounded-xl text-center transition-all border ${
-                        paperType === p.value
-                          ? "bg-primary/10 border-primary text-primary"
-                          : "bg-card border-border text-foreground hover:border-primary/40"
-                      }`}
-                    >
-                      <p className="font-bold text-sm">{p.label}</p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">{p.description}</p>
-                    </button>
-                  ))}
+                  {PAPER_TYPES.map(p => (<button key={p.value} onClick={() => setPaperType(p.value)} className={`p-3 rounded-xl text-center transition-all border ${paperType === p.value ? "bg-primary/10 border-primary text-primary" : "bg-card border-border text-foreground hover:border-primary/40"}`}><p className="font-bold text-sm">{p.label}</p><p className="text-[11px] text-muted-foreground mt-0.5">{p.description}</p></button>))}
                 </div>
               </div>
-
-              {/* Print type */}
               <div>
                 <Label className="text-sm font-semibold mb-2 block">نوع الطباعة</Label>
                 <div className="grid grid-cols-2 gap-2">
-                  {PRINT_TYPES.map(p => (
-                    <button
-                      key={p.value}
-                      onClick={() => setPrintType(p.value)}
-                      className={`py-3 rounded-xl text-center font-bold transition-all border ${
-                        printType === p.value
-                          ? "bg-primary/10 border-primary text-primary"
-                          : "bg-card border-border text-foreground hover:border-primary/40"
-                      }`}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
+                  {PRINT_TYPES.map(p => (<button key={p.value} onClick={() => setPrintType(p.value)} className={`py-3 rounded-xl text-center font-bold transition-all border ${printType === p.value ? "bg-primary/10 border-primary text-primary" : "bg-card border-border text-foreground hover:border-primary/40"}`}>{p.label}</button>))}
                 </div>
               </div>
-
-              {/* Notes */}
               <div>
                 <Label className="text-sm font-semibold mb-1 block">ملاحظات (اختياري)</Label>
                 <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="أي تعديلات أو ملاحظات خاصة..." rows={2} />
               </div>
-
-              {/* Price */}
               <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 text-center">
                 <p className="text-sm text-muted-foreground mb-1">السعر الإجمالي</p>
                 <p className="text-3xl font-bold text-primary">{price} <span className="text-base">د.م</span></p>
@@ -288,51 +254,31 @@ const CarteVisite = () => {
             </motion.div>
           )}
 
-          {/* Step 2: Customer Info */}
           {step === 2 && (
-            <motion.div key="step2" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
-              className="max-w-lg mx-auto space-y-4"
-            >
-              <h2 className="text-xl font-bold text-foreground mb-2">معلومات التوصيل</h2>
-              <div>
-                <Label className="flex items-center gap-1.5 mb-1"><User className="w-3.5 h-3.5" /> الاسم الكامل</Label>
-                <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="محمد أمين" />
-              </div>
-              <div>
-                <Label className="flex items-center gap-1.5 mb-1"><Phone className="w-3.5 h-3.5" /> الهاتف</Label>
-                <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+212 6XX XXX XXX" />
-              </div>
-              <div>
-                <Label className="flex items-center gap-1.5 mb-1"><MapPin className="w-3.5 h-3.5" /> العنوان</Label>
-                <Input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} placeholder="شارع..." />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="mb-1 block">المدينة</Label>
-                  <Input value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} placeholder="الدار البيضاء" />
-                </div>
-                <div>
-                  <Label className="mb-1 block">البلد</Label>
-                  <Input value={form.country} onChange={e => setForm({ ...form, country: e.target.value })} placeholder="MA" />
-                </div>
+            <motion.div key="step2" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="max-w-lg mx-auto space-y-4">
+              <h2 className="text-xl font-bold text-foreground mb-2">بيانات البطاقة والتوصيل</h2>
+              <p className="text-sm text-muted-foreground mb-4">هذه البيانات ستُطبع على بطاقتك</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><Label className="flex items-center gap-1.5 mb-1"><User className="w-3.5 h-3.5" /> الاسم الكامل *</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="محمد أمين" /></div>
+                <div><Label className="flex items-center gap-1.5 mb-1"><Briefcase className="w-3.5 h-3.5" /> المسمى الوظيفي</Label><Input value={form.job_title} onChange={e => setForm({ ...form, job_title: e.target.value })} placeholder="مدير تسويق" /></div>
+                <div><Label className="flex items-center gap-1.5 mb-1"><Building2 className="w-3.5 h-3.5" /> الشركة</Label><Input value={form.company} onChange={e => setForm({ ...form, company: e.target.value })} placeholder="HN Groupe" /></div>
+                <div><Label className="flex items-center gap-1.5 mb-1"><Phone className="w-3.5 h-3.5" /> الهاتف *</Label><Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+212 6XX XXX XXX" /></div>
+                <div><Label className="flex items-center gap-1.5 mb-1"><Mail className="w-3.5 h-3.5" /> البريد الإلكتروني *</Label><Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="email@example.com" /></div>
+                <div><Label className="flex items-center gap-1.5 mb-1"><MapPin className="w-3.5 h-3.5" /> العنوان *</Label><Input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} placeholder="شارع..." /></div>
+                <div><Label className="mb-1 block">المدينة *</Label><Input value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} placeholder="الدار البيضاء" /></div>
+                <div><Label className="mb-1 block">البلد</Label><Input value={form.country} onChange={e => setForm({ ...form, country: e.target.value })} placeholder="MA" /></div>
               </div>
             </motion.div>
           )}
 
-          {/* Step 3: Confirmation */}
           {step === 3 && (
-            <motion.div key="step3" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
-              className="max-w-lg mx-auto"
-            >
+            <motion.div key="step3" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="max-w-lg mx-auto">
               <h2 className="text-xl font-bold text-foreground mb-4">تأكيد الطلب</h2>
               <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
                 {selectedTpl && (
                   <div className="p-4 flex items-center gap-4">
                     <img src={selectedTpl.image_url} alt="" className="w-20 h-12 rounded-lg object-cover" />
-                    <div>
-                      <p className="font-semibold text-foreground">{selectedTpl.name}</p>
-                      <p className="text-xs text-muted-foreground">التصميم المختار</p>
-                    </div>
+                    <div><p className="font-semibold text-foreground">{selectedTpl.name}</p><p className="text-xs text-muted-foreground">{TEMPLATE_CATEGORIES.find(c => c.value === selectedTpl.category)?.label}</p></div>
                   </div>
                 )}
                 <div className="p-4 grid grid-cols-2 gap-y-2 text-sm">
@@ -342,7 +288,10 @@ const CarteVisite = () => {
                 </div>
                 <div className="p-4 grid grid-cols-2 gap-y-2 text-sm">
                   <span className="text-muted-foreground">الاسم</span><span className="text-foreground font-medium text-left">{form.name}</span>
+                  {form.job_title && <><span className="text-muted-foreground">الوظيفة</span><span className="text-foreground font-medium text-left">{form.job_title}</span></>}
+                  {form.company && <><span className="text-muted-foreground">الشركة</span><span className="text-foreground font-medium text-left">{form.company}</span></>}
                   <span className="text-muted-foreground">الهاتف</span><span className="text-foreground font-medium text-left">{form.phone}</span>
+                  <span className="text-muted-foreground">البريد</span><span className="text-foreground font-medium text-left">{form.email}</span>
                   <span className="text-muted-foreground">العنوان</span><span className="text-foreground font-medium text-left">{form.address}, {form.city}</span>
                 </div>
                 <div className="p-4 text-center">
@@ -354,17 +303,10 @@ const CarteVisite = () => {
           )}
         </AnimatePresence>
 
-        {/* Navigation buttons */}
         <div className="flex items-center justify-between max-w-2xl mx-auto mt-8">
-          <Button
-            variant="outline"
-            onClick={() => setStep(s => s - 1)}
-            disabled={step === 0}
-            className="gap-1.5"
-          >
+          <Button variant="outline" onClick={() => setStep(s => s - 1)} disabled={step === 0} className="gap-1.5">
             <ChevronRight className="w-4 h-4" /> السابق
           </Button>
-
           {step < 3 ? (
             <Button onClick={() => setStep(s => s + 1)} disabled={!canNext()} className="gap-1.5">
               التالي <ChevronLeft className="w-4 h-4" />
@@ -377,7 +319,6 @@ const CarteVisite = () => {
           )}
         </div>
       </div>
-
       <Footer />
     </div>
   );
