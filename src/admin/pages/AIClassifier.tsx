@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import {
   Brain, RefreshCw, CheckCircle2, XCircle, BarChart3,
   TrendingUp, Database, Loader2, Edit3, Save, AlertTriangle,
+  Activity, Wifi, WifiOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { aiService, type AIEngineStatus } from "@/services/aiService";
 
 interface ModelStats {
   type: string;
@@ -62,7 +64,9 @@ const AIClassifier = () => {
   const [training, setTraining] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
-  const [tab, setTab] = useState<"overview" | "corrections">("overview");
+  const [tab, setTab] = useState<"engine" | "overview" | "corrections">("engine");
+  const [engineStatus, setEngineStatus] = useState<AIEngineStatus | null>(null);
+  const [checkingHealth, setCheckingHealth] = useState(false);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -84,9 +88,19 @@ const AIClassifier = () => {
     if (data) setRecords(data as unknown as ClassificationRecord[]);
   }, []);
 
+  const checkHealth = useCallback(async () => {
+    setCheckingHealth(true);
+    try {
+      const status = await aiService.checkAIHealth();
+      setEngineStatus(status);
+    } finally {
+      setCheckingHealth(false);
+    }
+  }, []);
+
   useEffect(() => {
-    Promise.all([fetchStats(), fetchRecords()]).finally(() => setLoading(false));
-  }, [fetchStats, fetchRecords]);
+    Promise.all([fetchStats(), fetchRecords(), checkHealth()]).finally(() => setLoading(false));
+  }, [fetchStats, fetchRecords, checkHealth]);
 
   const handleTrain = async () => {
     setTraining(true);
@@ -167,6 +181,12 @@ const AIClassifier = () => {
       {/* Tabs */}
       <div className="flex gap-2 border-b border-border pb-2">
         <button
+          className={`px-4 py-2 text-sm rounded-t-lg transition-colors ${tab === "engine" ? "bg-primary/10 text-primary font-semibold border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
+          onClick={() => setTab("engine")}
+        >
+          <span className="flex items-center gap-1"><Activity className="w-3 h-3" /> محرك AI</span>
+        </button>
+        <button
           className={`px-4 py-2 text-sm rounded-t-lg transition-colors ${tab === "overview" ? "bg-primary/10 text-primary font-semibold border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
           onClick={() => setTab("overview")}
         >
@@ -179,6 +199,89 @@ const AIClassifier = () => {
           التصنيفات والتصحيحات ({records.length})
         </button>
       </div>
+
+      {/* Tab: AI Engine Status */}
+      {tab === "engine" && (
+        <div className="space-y-4">
+          <motion.div
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border border-border bg-card p-6"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                <Activity className="w-5 h-5 text-primary" />
+                حالة محرك الذكاء الاصطناعي
+              </h2>
+              <Button variant="outline" size="sm" onClick={checkHealth} disabled={checkingHealth}>
+                {checkingHealth ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                <span className="mr-1">فحص</span>
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Status */}
+              <div className="flex items-center gap-4 p-4 rounded-lg bg-background border border-border">
+                {engineStatus?.running ? (
+                  <Wifi className="w-8 h-8 text-green-500" />
+                ) : (
+                  <WifiOff className="w-8 h-8 text-red-500" />
+                )}
+                <div>
+                  <p className="text-sm text-muted-foreground">الحالة</p>
+                  <p className="text-lg font-bold">
+                    {engineStatus?.running ? (
+                      <Badge variant="default" className="bg-green-600">يعمل ✓</Badge>
+                    ) : (
+                      <Badge variant="destructive">متوقف ✗</Badge>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Accuracy */}
+              <div className="flex items-center gap-4 p-4 rounded-lg bg-background border border-border">
+                <TrendingUp className="w-8 h-8 text-primary" />
+                <div>
+                  <p className="text-sm text-muted-foreground">دقة النموذج</p>
+                  <p className="text-lg font-bold">{engineStatus?.overallAccuracy ?? 0}%</p>
+                </div>
+              </div>
+
+              {/* Total Samples */}
+              <div className="flex items-center gap-4 p-4 rounded-lg bg-background border border-border">
+                <Database className="w-8 h-8 text-primary" />
+                <div>
+                  <p className="text-sm text-muted-foreground">عينات التدريب</p>
+                  <p className="text-lg font-bold">{engineStatus?.totalSamples ?? 0}</p>
+                </div>
+              </div>
+
+              {/* Model Count */}
+              <div className="flex items-center gap-4 p-4 rounded-lg bg-background border border-border">
+                <Brain className="w-8 h-8 text-primary" />
+                <div>
+                  <p className="text-sm text-muted-foreground">أنواع مدربة</p>
+                  <p className="text-lg font-bold">{engineStatus?.modelCount ?? 0}</p>
+                </div>
+              </div>
+            </div>
+
+            {!engineStatus?.running && (
+              <div className="mt-4 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 flex items-start gap-2">
+                <AlertTriangle className="w-5 h-5 text-yellow-500 mt-0.5 shrink-0" />
+                <div className="text-sm">
+                  <p className="font-semibold text-yellow-500">المحرك غير متاح</p>
+                  <p className="text-muted-foreground">النظام يستخدم التصنيف المحلي (rule-based) كبديل تلقائي. جميع عمليات الرفع تعمل بشكل طبيعي.</p>
+                </div>
+              </div>
+            )}
+          </motion.div>
+
+          {/* Quick Test */}
+          <QuickTestPanel />
+        </div>
+      )}
 
       {/* Tab: Overview */}
       {tab === "overview" && stats && (
@@ -334,6 +437,96 @@ function StatCard({ icon: Icon, label, value, color }: { icon: any; label: strin
       </div>
       <p className={`text-2xl font-bold ${color || "text-foreground"}`}>{value}</p>
     </div>
+  );
+}
+
+function QuickTestPanel() {
+  const [filename, setFilename] = useState("carte-visite.jpg");
+  const [width, setWidth] = useState("1050");
+  const [height, setHeight] = useState("600");
+  const [testing, setTesting] = useState(false);
+  const [result, setResult] = useState<any>(null);
+
+  const handleTest = async () => {
+    setTesting(true);
+    setResult(null);
+    try {
+      const res = await aiService.classifyFile({
+        filename,
+        width: Number(width) || null,
+        height: Number(height) || null,
+        file_type: filename.split(".").pop() || null,
+      });
+      setResult(res);
+    } catch (e) {
+      toast.error("فشل الاختبار");
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 5 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-xl border border-border bg-card p-6"
+    >
+      <h3 className="text-md font-bold mb-4 flex items-center gap-2">
+        <Brain className="w-4 h-4 text-primary" />
+        اختبار سريع
+      </h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+        <input
+          className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+          placeholder="اسم الملف"
+          value={filename}
+          onChange={(e) => setFilename(e.target.value)}
+        />
+        <input
+          className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+          placeholder="العرض"
+          type="number"
+          value={width}
+          onChange={(e) => setWidth(e.target.value)}
+        />
+        <input
+          className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+          placeholder="الارتفاع"
+          type="number"
+          value={height}
+          onChange={(e) => setHeight(e.target.value)}
+        />
+      </div>
+      <Button size="sm" onClick={handleTest} disabled={testing}>
+        {testing ? <Loader2 className="w-4 h-4 animate-spin ml-1" /> : <Brain className="w-4 h-4 ml-1" />}
+        تصنيف
+      </Button>
+
+      {result && (
+        <div className="mt-4 p-4 rounded-lg bg-background border border-border">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+            <div>
+              <span className="text-muted-foreground">النوع:</span>
+              <p className="font-bold text-primary">{result.type}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">الثقة:</span>
+              <p className="font-bold">{(result.confidence * 100).toFixed(0)}%</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">المصدر:</span>
+              <Badge variant={result.source === "ml" ? "default" : "secondary"}>
+                {result.source === "ml" ? "ML Model" : result.source === "rules" ? "Rules" : "Fallback"}
+              </Badge>
+            </div>
+            <div>
+              <span className="text-muted-foreground">النسبة:</span>
+              <p className="font-mono">{result.ratio ?? "—"}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </motion.div>
   );
 }
 
