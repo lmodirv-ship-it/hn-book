@@ -15,6 +15,7 @@
 export { authService } from "./authService";
 export { bookService } from "./bookService";
 export { readerService } from "./readerService";
+export { storageService } from "./storageService";
 
 // Re-export types
 export type {
@@ -45,3 +46,5 @@ export type {
   ReaderNote,
   ReaderSettings,
 } from "./readerService";
+
+export type { UploadFileResult } from "./storageService";
