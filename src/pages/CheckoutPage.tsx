@@ -97,7 +97,7 @@ const CheckoutPage = () => {
     setSubmitting(true);
     const result = await orderService.createOrder({
       items: items.map((i) => ({ bookId: i.bookId, price: i.price })),
-      totalAmount: totalPrice,
+      totalAmount: finalTotal,
       shippingName: form.name.trim(),
       shippingEmail: form.email.trim(),
       shippingPhone: form.phone.trim(),
@@ -110,6 +110,11 @@ const CheckoutPage = () => {
     if (result.error) {
       toast.error(result.error);
       return;
+    }
+
+    // Increment coupon usage
+    if (couponResult?.isValid) {
+      await couponService.incrementUsage(couponResult.code);
     }
 
     clearCart();
