@@ -110,7 +110,7 @@ export const booksService = {
     const dbInput = toDbInput(input) as any;
     const { data, error } = await supabase
       .from("products")
-      .update(toDbInput(input))
+      .update(dbInput)
       .eq("id", id)
       .select()
       .single();
