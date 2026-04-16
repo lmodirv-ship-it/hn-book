@@ -10,42 +10,42 @@ export interface DbJob {
   file_name: string;
   status: DbJobStatus;
   created_at: string;
+  updated_at: string;
   result: Record<string, any> | null;
 }
 
 interface UseJobProcessorOptions {
-  /** Poll interval in ms (default 2000) */
-  pollInterval?: number;
-  /** Auto-trigger backend worker when pending jobs exist (default true) */
+  /** Auto-trigger backend worker when pending jobs exist */
   autoTrigger?: boolean;
+  onJobDone?: (job: DbJob) => void;
   onBatchComplete?: (stats: { success: number; failed: number }) => void;
 }
 
 /**
- * Polls upload_jobs table for status changes and triggers
- * the backend worker to process pending jobs.
- * All heavy processing happens server-side.
+ * Realtime-powered job tracker.
+ * Subscribes to upload_jobs changes and auto-triggers
+ * the backend worker when pending jobs exist.
  */
 export function useJobProcessor(opts: UseJobProcessorOptions = {}) {
-  const { pollInterval = 2000, autoTrigger = true, onBatchComplete } = opts;
+  const { autoTrigger = true, onJobDone, onBatchComplete } = opts;
 
   const [jobs, setJobs] = useState<DbJob[]>([]);
   const [workerActive, setWorkerActive] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const triggeringRef = useRef(false);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  // Fetch all recent jobs
+  // ── Fetch all jobs ──
   const refreshJobs = useCallback(async () => {
     const { data } = await db
       .from("upload_jobs")
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(50);
+      .limit(100);
     if (data) setJobs(data as unknown as DbJob[]);
     return data as unknown as DbJob[] | null;
   }, []);
 
-  // Trigger the backend worker edge function
+  // ── Trigger backend worker ──
   const triggerWorker = useCallback(async () => {
     if (triggeringRef.current) return;
     triggeringRef.current = true;
@@ -56,45 +56,111 @@ export function useJobProcessor(opts: UseJobProcessorOptions = {}) {
         body: {},
       });
 
-      if (error) {
-        console.error("[JobProcessor] worker error:", error);
-      } else if (data) {
-        const result = data as { success?: number; failed?: number; processed?: number };
-        if ((result.success ?? 0) > 0) {
-          invalidateBookCache();
-          onBatchComplete?.({
-            success: result.success ?? 0,
-            failed: result.failed ?? 0,
-          });
-        }
+      if (!error && data) {
+        const result = data as { success?: number; failed?: number };
+        if ((result.success ?? 0) > 0) invalidateBookCache();
+        onBatchComplete?.({
+          success: result.success ?? 0,
+          failed: result.failed ?? 0,
+        });
       }
     } catch (err) {
       console.error("[JobProcessor] trigger error:", err);
     } finally {
       setWorkerActive(false);
       triggeringRef.current = false;
-      await refreshJobs();
     }
-  }, [onBatchComplete, refreshJobs]);
+  }, [onBatchComplete]);
 
-  // Poll loop: refresh jobs + auto-trigger worker if pending exist
+  // ── Retry failed jobs ──
+  const retryFailed = useCallback(async () => {
+    const failedIds = jobs.filter((j) => j.status === "error").map((j) => j.id);
+    if (!failedIds.length) return;
+
+    await db
+      .from("upload_jobs")
+      .update({ status: "pending" } as any)
+      .in("id", failedIds);
+
+    // Realtime will pick up the change, but also refresh immediately
+    await refreshJobs();
+  }, [jobs, refreshJobs]);
+
+  // ── Retry a single job ──
+  const retryJob = useCallback(async (jobId: string) => {
+    await db
+      .from("upload_jobs")
+      .update({ status: "pending" } as any)
+      .eq("id", jobId);
+    await refreshJobs();
+  }, [refreshJobs]);
+
+  // ── Realtime subscription ──
   useEffect(() => {
+    // Initial load
     refreshJobs();
 
-    intervalRef.current = setInterval(async () => {
-      const freshJobs = await refreshJobs();
-      if (!freshJobs) return;
+    // Subscribe to all changes on upload_jobs
+    const channel = supabase
+      .channel("upload-jobs-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "upload_jobs" },
+        (payload) => {
+          const newRecord = payload.new as DbJob | undefined;
+          const eventType = payload.eventType;
 
-      const hasPending = freshJobs.some((j) => j.status === "pending");
-      if (hasPending && autoTrigger && !triggeringRef.current) {
-        triggerWorker();
-      }
-    }, pollInterval);
+          setJobs((prev) => {
+            if (eventType === "INSERT" && newRecord) {
+              // Add to top if not already present
+              if (prev.some((j) => j.id === newRecord.id)) return prev;
+              return [newRecord, ...prev];
+            }
+
+            if (eventType === "UPDATE" && newRecord) {
+              const updated = prev.map((j) =>
+                j.id === newRecord.id ? newRecord : j
+              );
+
+              // If job just became "done", fire callback
+              const oldJob = prev.find((j) => j.id === newRecord.id);
+              if (oldJob && oldJob.status !== "done" && newRecord.status === "done") {
+                onJobDone?.(newRecord);
+                invalidateBookCache();
+              }
+
+              return updated;
+            }
+
+            if (eventType === "DELETE") {
+              const oldId = (payload.old as any)?.id;
+              if (oldId) return prev.filter((j) => j.id !== oldId);
+            }
+
+            return prev;
+          });
+
+          // Auto-trigger worker if a new pending job appeared
+          if (
+            autoTrigger &&
+            newRecord?.status === "pending" &&
+            !triggeringRef.current
+          ) {
+            triggerWorker();
+          }
+        }
+      )
+      .subscribe();
+
+    channelRef.current = channel;
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
-  }, [pollInterval, autoTrigger, refreshJobs, triggerWorker]);
+  }, [autoTrigger, onJobDone, refreshJobs, triggerWorker]);
 
   const stats = {
     total: jobs.length,
@@ -104,5 +170,13 @@ export function useJobProcessor(opts: UseJobProcessorOptions = {}) {
     errors: jobs.filter((j) => j.status === "error").length,
   };
 
-  return { jobs, stats, workerActive, refreshJobs, triggerWorker };
+  return {
+    jobs,
+    stats,
+    workerActive,
+    refreshJobs,
+    triggerWorker,
+    retryFailed,
+    retryJob,
+  };
 }
