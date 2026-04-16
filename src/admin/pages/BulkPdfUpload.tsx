@@ -1,107 +1,168 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { Upload, FileText, Check, X, Loader2, AlertCircle, Search } from "lucide-react";
+import {
+  Upload, FileText, Check, X, Loader2, AlertCircle, BookOpen, Image,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { db } from "@/api/client";
 import { storageService } from "@/services/storageService";
-import { bookService } from "@/services/bookService";
+import { detectCategory } from "@/lib/category-detection";
+import { extractPdfCover, getPdfPageCount, cleanFilenameToTitle } from "@/lib/pdf-cover-extractor";
 
-interface PendingFile {
+type FileStatus = "queued" | "extracting" | "uploading" | "done" | "error";
+
+interface SmartFile {
   file: File;
-  refCode: string;
-  matchedProductId: string | null;
-  matchedProductName: string | null;
-  status: "pending" | "uploading" | "done" | "error" | "manual";
+  title: string;
+  category: string;
+  pageCount: number | null;
+  coverBlob: Blob | null;
+  coverPreview: string | null;
+  status: FileStatus;
   error?: string;
+  progress: string;
 }
 
-interface Product {
-  id: string;
-  name: string;
-  badge: string | null;
-  reference_code: string | null;
-  pdf_url: string | null;
-}
-
-const BulkPdfUpload = () => {
-  const [files, setFiles] = useState<PendingFile[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-  const [manualPickIndex, setManualPickIndex] = useState<number | null>(null);
-  const [manualSearch, setManualSearch] = useState("");
+const SmartBulkUpload = () => {
+  const [files, setFiles] = useState<SmartFile[]>([]);
+  const [processing, setProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch ALL products via bookService
-  const loadProducts = useCallback(async () => {
-    if (loaded) return products;
-    const result = await bookService.getAll({ limit: 5000 });
-    const allProducts: Product[] = (result.data || []).map(b => ({
-      id: b.id,
-      name: b.name,
-      badge: b.badge || null,
-      reference_code: b.referenceCode || null,
-      pdf_url: b.pdfUrl || null,
+  const updateFile = (index: number, updates: Partial<SmartFile>) => {
+    setFiles((prev) => prev.map((f, i) => (i === index ? { ...f, ...updates } : f)));
+  };
+
+  const handleFilesSelected = (selectedFiles: File[]) => {
+    const pdfFiles = selectedFiles.filter(
+      (f) => f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf")
+    );
+
+    if (pdfFiles.length === 0) {
+      toast.error("يرجى اختيار ملفات PDF فقط");
+      return;
+    }
+
+    const newFiles: SmartFile[] = pdfFiles.map((file) => {
+      const title = cleanFilenameToTitle(file.name);
+      const { category } = detectCategory(title);
+      return {
+        file,
+        title,
+        category,
+        pageCount: null,
+        coverBlob: null,
+        coverPreview: null,
+        status: "queued" as const,
+        progress: "في الانتظار",
+      };
+    });
+
+    setFiles((prev) => [...prev, ...newFiles]);
+  };
+
+  const processFile = async (index: number): Promise<boolean> => {
+    const f = files[index] || (await new Promise<SmartFile>((r) => {
+      setFiles((prev) => { r(prev[index]); return prev; });
     }));
 
-    setProducts(allProducts);
-    setLoaded(true);
-    return allProducts;
-  }, [loaded, products]);
+    // Get latest state
+    let current: SmartFile = f;
+    setFiles((prev) => { current = prev[index]; return prev; });
 
-  const matchFiles = async (selectedFiles: File[]) => {
-    const prods = await loadProducts();
-    const pending: PendingFile[] = selectedFiles
-      .filter((f) => f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf"))
-      .map((file) => {
-        const baseName = file.name.replace(/\.pdf$/i, "").trim();
-        const normalizedRef = baseName.toUpperCase();
-        const badgeMatch = prods.find(
-          (p) => p.badge && p.badge.toLowerCase() === baseName.toLowerCase()
-        );
-        const refMatch = !badgeMatch
-          ? prods.find((p) => p.reference_code && p.reference_code.toLowerCase() === baseName.toLowerCase())
-          : null;
-        const nameMatch = !badgeMatch && !refMatch
-          ? prods.find((p) => p.name.toLowerCase() === baseName.toLowerCase())
-          : null;
-        const matched = badgeMatch || refMatch || nameMatch;
-        return {
-          file,
-          refCode: normalizedRef,
-          matchedProductId: matched?.id || null,
-          matchedProductName: matched?.name || null,
-          status: matched ? ("pending" as const) : ("manual" as const),
-        };
+    try {
+      // Step 1: Extract cover from first page
+      updateFile(index, { status: "extracting", progress: "استخراج الغلاف..." });
+
+      let coverBlob: Blob;
+      try {
+        coverBlob = await extractPdfCover(current.file);
+      } catch {
+        updateFile(index, { status: "error", error: "فشل استخراج الغلاف من PDF", progress: "خطأ" });
+        return false;
+      }
+
+      const coverPreview = URL.createObjectURL(coverBlob);
+      updateFile(index, { coverBlob, coverPreview, progress: "حساب عدد الصفحات..." });
+
+      // Step 2: Get page count
+      let pageCount = 0;
+      try {
+        pageCount = await getPdfPageCount(current.file);
+      } catch {
+        // Non-critical — continue with 0
+      }
+      updateFile(index, { pageCount, progress: "رفع الملفات..." });
+
+      // Step 3: Create product record first (with placeholder image to pass NOT NULL)
+      updateFile(index, { status: "uploading", progress: "إنشاء سجل الكتاب..." });
+
+      const desc = pageCount > 0 ? `عدد الصفحات: ${pageCount}` : "";
+      const { data: product, error: createError } = await db
+        .from("products")
+        .insert({
+          name: current.title,
+          description: desc,
+          category: current.category,
+          price: 0,
+          pdf_url: "pending",    // temporary — will be updated
+          image: "pending",       // temporary — will be updated
+        })
+        .select("id, reference_code")
+        .single();
+
+      if (createError) throw new Error(createError.message);
+      const productId = product.id;
+      const refCode = product.reference_code;
+
+      // Step 4: Upload PDF
+      updateFile(index, { progress: "رفع ملف PDF..." });
+      const pdfResult = await storageService.uploadBookPdf(productId, current.file, refCode);
+      if (pdfResult.error) throw new Error(pdfResult.error);
+
+      // Step 5: Upload cover image
+      updateFile(index, { progress: "رفع صورة الغلاف..." });
+      const coverFile = new File([coverBlob], `${refCode || productId}.jpg`, { type: "image/jpeg" });
+      const coverResult = await storageService.uploadBookImage(productId, coverFile, pdfResult.data!.referenceCode);
+      if (coverResult.error) throw new Error(coverResult.error);
+
+      updateFile(index, {
+        status: "done",
+        progress: "✓ تم بنجاح",
       });
-    setFiles((prev) => [...prev, ...pending]);
+      return true;
+    } catch (err: any) {
+      updateFile(index, {
+        status: "error",
+        error: err.message || "خطأ غير متوقع",
+        progress: "خطأ",
+      });
+      return false;
+    }
   };
 
-  const handleFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = Array.from(e.target.files || []);
-    if (selected.length) matchFiles(selected);
-    e.target.value = "";
-  };
+  const processAll = async () => {
+    setProcessing(true);
+    let success = 0;
+    let failed = 0;
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    const dropped = Array.from(e.dataTransfer.files);
-    if (dropped.length) matchFiles(dropped);
-  };
+    for (let i = 0; i < files.length; i++) {
+      // Re-read current status
+      let status: FileStatus = "queued";
+      setFiles((prev) => { status = prev[i].status; return prev; });
+      if (status !== "queued") continue;
 
-  const assignProduct = (index: number, product: Product) => {
-    setFiles((prev) =>
-      prev.map((f, i) =>
-        i === index
-          ? { ...f, matchedProductId: product.id, matchedProductName: product.name, status: "pending" }
-          : f
-      )
-    );
-    setManualPickIndex(null);
-    setManualSearch("");
+      const ok = await processFile(i);
+      if (ok) success++;
+      else failed++;
+    }
+
+    setProcessing(false);
+    if (success > 0) {
+      toast.success(`تم إنشاء ${success} كتاب بنجاح${failed ? ` · فشل ${failed}` : ""}`);
+    } else if (failed > 0) {
+      toast.error(`فشل رفع جميع الملفات (${failed})`);
+    }
   };
 
   const removeFile = (index: number) => {
@@ -112,132 +173,67 @@ const BulkPdfUpload = () => {
     setFiles((prev) => prev.filter((f) => f.status !== "done"));
   };
 
-  const uploadAll = async () => {
-    const toUpload = files.filter((f) => f.status === "pending" && f.matchedProductId);
-    if (!toUpload.length) {
-      toast.error("لا توجد ملفات جاهزة للرفع");
-      return;
-    }
-    setUploading(true);
-    let success = 0;
-    let failed = 0;
-
-    for (let i = 0; i < files.length; i++) {
-      const f = files[i];
-      if (f.status !== "pending" || !f.matchedProductId) continue;
-
-      setFiles((prev) => prev.map((ff, idx) => (idx === i ? { ...ff, status: "uploading" } : ff)));
-
-      const matchedProduct = products.find((product) => product.id === f.matchedProductId);
-      const result = await storageService.uploadBookPdf(
-        f.matchedProductId,
-        f.file,
-        matchedProduct?.reference_code
-      );
-
-      if (result.error) {
-        setFiles((prev) =>
-          prev.map((ff, idx) =>
-            idx === i ? { ...ff, status: "error", error: result.error || "فشل الرفع" } : ff
-          )
-        );
-        failed++;
-      } else {
-        setProducts((prev) =>
-          prev.map((product) =>
-            product.id === f.matchedProductId
-              ? { ...product, pdf_url: result.data!.publicUrl, reference_code: result.data!.referenceCode }
-              : product
-          )
-        );
-        setFiles((prev) =>
-          prev.map((ff, idx) =>
-            idx === i ? { ...ff, refCode: result.data!.referenceCode, status: "done" } : ff
-          )
-        );
-        success++;
-      }
-    }
-
-    setUploading(false);
-    toast.success(`تم رفع ${success} ملف بنجاح${failed ? ` · فشل ${failed}` : ""}`);
-  };
-
   const stats = {
     total: files.length,
-    matched: files.filter((f) => f.status === "pending").length,
-    manual: files.filter((f) => f.status === "manual").length,
+    queued: files.filter((f) => f.status === "queued").length,
     done: files.filter((f) => f.status === "done").length,
     errors: files.filter((f) => f.status === "error").length,
+    active: files.filter((f) => f.status === "extracting" || f.status === "uploading").length,
   };
-
-  const filteredProducts = manualSearch
-    ? products.filter(
-        (p) =>
-          p.name.toLowerCase().includes(manualSearch.toLowerCase()) ||
-          (p.badge && p.badge.toLowerCase().includes(manualSearch.toLowerCase())) ||
-          (p.reference_code && p.reference_code.toLowerCase().includes(manualSearch.toLowerCase()))
-      )
-    : products;
 
   return (
     <div className="space-y-6" dir="rtl">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-extrabold text-foreground">📤 رفع PDF بالجملة</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          سمّ الملفات بالمرجع (مثل B123456.pdf) للربط التلقائي، أو اختر المنتج يدوياً
+        <h1 className="text-2xl font-extrabold text-foreground">🚀 رفع ذكي للكتب</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          ارفع ملفات PDF — سيتم تلقائياً: استخراج الغلاف، تحديد التصنيف، إنشاء الكتاب
         </p>
-        {loaded && (
-          <p className="text-xs text-muted-foreground mt-1">
-            تم تحميل {products.length} منتج من قاعدة البيانات
-          </p>
-        )}
       </motion.div>
+
+      {/* How it works */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { icon: FileText, label: "رفع PDF", desc: "ملف أو عدة ملفات" },
+          { icon: Image, label: "استخراج الغلاف", desc: "من الصفحة الأولى" },
+          { icon: BookOpen, label: "تحديد التصنيف", desc: "تلقائي من العنوان" },
+          { icon: Check, label: "إنشاء الكتاب", desc: "كامل ومجهز" },
+        ].map((step, i) => (
+          <div key={i} className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-card border border-border text-center">
+            <step.icon className="w-5 h-5 text-primary" />
+            <span className="text-xs font-semibold text-foreground">{step.label}</span>
+            <span className="text-[10px] text-muted-foreground">{step.desc}</span>
+          </div>
+        ))}
+      </div>
 
       {/* Drop zone */}
       <div
         onDragOver={(e) => e.preventDefault()}
-        onDrop={handleDrop}
+        onDrop={(e) => { e.preventDefault(); handleFilesSelected(Array.from(e.dataTransfer.files)); }}
         onClick={() => fileInputRef.current?.click()}
         className="cursor-pointer rounded-2xl border-2 border-dashed border-border hover:border-primary/50 bg-card/50 p-10 flex flex-col items-center justify-center gap-3 transition-colors"
       >
         <Upload className="w-10 h-10 text-muted-foreground" />
         <p className="text-sm text-muted-foreground">اسحب ملفات PDF هنا أو اضغط لاختيارها</p>
-        <p className="text-xs text-muted-foreground/60">يمكنك اختيار عدة ملفات دفعة واحدة</p>
+        <p className="text-xs text-muted-foreground/60">يمكنك اختيار عدة ملفات — سيتم معالجتها تلقائياً</p>
       </div>
       <input
         ref={fileInputRef}
         type="file"
         accept=".pdf,application/pdf"
         multiple
-        onChange={handleFilesSelected}
+        onChange={(e) => { handleFilesSelected(Array.from(e.target.files || [])); e.target.value = ""; }}
         className="hidden"
       />
 
-      {/* Stats bar */}
+      {/* Stats */}
       {files.length > 0 && (
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-xs px-3 py-1.5 rounded-full bg-secondary text-muted-foreground">
-            الكل: {stats.total}
-          </span>
-          <span className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary">
-            مطابق: {stats.matched}
-          </span>
-          {stats.manual > 0 && (
-            <span className="text-xs px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-400">
-              يحتاج ربط: {stats.manual}
-            </span>
-          )}
-          {stats.done > 0 && (
-            <span className="text-xs px-3 py-1.5 rounded-full bg-green-500/10 text-green-400">
-              تم: {stats.done}
-            </span>
-          )}
-          {stats.errors > 0 && (
-            <span className="text-xs px-3 py-1.5 rounded-full bg-destructive/10 text-destructive">
-              خطأ: {stats.errors}
-            </span>
-          )}
+          <Stat label="الكل" value={stats.total} color="bg-secondary text-muted-foreground" />
+          <Stat label="في الانتظار" value={stats.queued} color="bg-primary/10 text-primary" />
+          {stats.active > 0 && <Stat label="جاري المعالجة" value={stats.active} color="bg-blue-500/10 text-blue-400" />}
+          {stats.done > 0 && <Stat label="تم" value={stats.done} color="bg-green-500/10 text-green-400" />}
+          {stats.errors > 0 && <Stat label="خطأ" value={stats.errors} color="bg-destructive/10 text-destructive" />}
           {stats.done > 0 && (
             <Button variant="ghost" size="sm" className="text-xs h-7" onClick={clearDone}>
               إزالة المكتملة
@@ -248,117 +244,79 @@ const BulkPdfUpload = () => {
 
       {/* File list */}
       {files.length > 0 && (
-        <div className="rounded-2xl border border-border bg-card overflow-hidden">
-          <div className="divide-y divide-border/50">
-            {files.map((f, i) => (
-              <div key={i} className="flex items-center gap-3 px-4 py-3">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  {f.status === "uploading" ? (
-                    <Loader2 className="w-4 h-4 text-primary animate-spin" />
-                  ) : f.status === "done" ? (
-                    <Check className="w-4 h-4 text-green-400" />
-                  ) : f.status === "error" ? (
-                    <AlertCircle className="w-4 h-4 text-destructive" />
-                  ) : (
-                    <FileText className="w-4 h-4 text-primary" />
-                  )}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{f.file.name}</p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {f.status === "manual" && (
-                      <span className="text-amber-400">لم يتم العثور على منتج مطابق</span>
-                    )}
-                    {f.status === "error" && (
-                      <span className="text-destructive">{f.error}</span>
-                    )}
-                    {f.status === "done" && (
-                      <span className="text-green-400">✓ تم الرفع بنجاح</span>
-                    )}
-                    {f.matchedProductName && (
-                      <span className="text-primary"> ← {f.matchedProductName}</span>
-                    )}
-                  </p>
-                </div>
-
-                {f.status === "manual" && (
-                  <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => setManualPickIndex(i)}>
-                    اختر منتج
-                  </Button>
-                )}
-
-                {(f.status === "pending" || f.status === "manual" || f.status === "error") && (
-                  <button
-                    onClick={() => removeFile(i)}
-                    className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
+        <div className="rounded-2xl border border-border bg-card overflow-hidden divide-y divide-border/50">
+          {files.map((f, i) => (
+            <div key={i} className="flex items-center gap-3 px-4 py-3">
+              {/* Cover preview or icon */}
+              <div className="w-10 h-14 rounded-lg overflow-hidden bg-secondary/30 flex items-center justify-center flex-shrink-0 border border-border/50">
+                {f.coverPreview ? (
+                  <img src={f.coverPreview} alt="غلاف" className="w-full h-full object-cover" />
+                ) : f.status === "extracting" || f.status === "uploading" ? (
+                  <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                ) : f.status === "done" ? (
+                  <Check className="w-4 h-4 text-green-400" />
+                ) : f.status === "error" ? (
+                  <AlertCircle className="w-4 h-4 text-destructive" />
+                ) : (
+                  <FileText className="w-4 h-4 text-muted-foreground" />
                 )}
               </div>
-            ))}
-          </div>
+
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">{f.title}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">{f.category}</span>
+                  {f.pageCount && <span className="text-[10px] text-muted-foreground">{f.pageCount} صفحة</span>}
+                  <span className="text-[10px] text-muted-foreground">{(f.file.size / 1024 / 1024).toFixed(1)} MB</span>
+                </div>
+                <p className={`text-[11px] mt-0.5 ${
+                  f.status === "error" ? "text-destructive" :
+                  f.status === "done" ? "text-green-400" :
+                  "text-muted-foreground"
+                }`}>
+                  {f.status === "error" ? f.error : f.progress}
+                </p>
+              </div>
+
+              {/* Remove button */}
+              {(f.status === "queued" || f.status === "error") && !processing && (
+                <button
+                  onClick={() => removeFile(i)}
+                  className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
-      {/* Action buttons */}
+      {/* Actions */}
       <div className="flex gap-3">
-        {stats.matched > 0 && (
-          <Button onClick={uploadAll} disabled={uploading} className="gap-2">
-            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-            رفع {stats.matched} ملف مطابق
+        {stats.queued > 0 && (
+          <Button onClick={processAll} disabled={processing} className="gap-2">
+            {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+            {processing ? "جاري المعالجة..." : `معالجة ورفع ${stats.queued} كتاب`}
           </Button>
         )}
-        {files.length > 0 && !uploading && (
+        {files.length > 0 && !processing && (
           <Button variant="outline" onClick={() => setFiles([])}>
             مسح الكل
           </Button>
         )}
       </div>
-
-      {/* Manual product picker dialog */}
-      <Dialog open={manualPickIndex !== null} onOpenChange={(open) => { if (!open) { setManualPickIndex(null); setManualSearch(""); } }}>
-        <DialogContent className="max-w-md max-h-[80vh]" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="text-sm">
-              اختر المنتج لملف: {manualPickIndex !== null && files[manualPickIndex]?.file.name}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="relative">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              value={manualSearch}
-              onChange={(e) => setManualSearch(e.target.value)}
-              placeholder="بحث بالاسم أو الكود..."
-              className="pr-9"
-            />
-          </div>
-          <ScrollArea className="h-[350px]">
-            <div className="space-y-1">
-              {filteredProducts.slice(0, 100).map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => manualPickIndex !== null && assignProduct(manualPickIndex, p)}
-                  className="w-full text-right px-3 py-2 rounded-lg hover:bg-secondary/50 transition-colors flex items-center gap-2"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-foreground truncate">{p.name}</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {p.badge || p.reference_code || "—"} {p.pdf_url ? "· 📄 PDF موجود" : ""}
-                    </p>
-                  </div>
-                </button>
-              ))}
-              {filteredProducts.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">لا توجد نتائج</p>
-              )}
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
 
-export default BulkPdfUpload;
+function Stat({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <span className={`text-xs px-3 py-1.5 rounded-full ${color}`}>
+      {label}: {value}
+    </span>
+  );
+}
+
+export default SmartBulkUpload;
