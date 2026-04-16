@@ -533,7 +533,7 @@ const ProductDetail = () => {
                     <ShoppingCart className="h-5 w-5" />
                     اشترِ الآن — {product.price} د.م
                   </Button>
-                ) : (
+                ) : hasPdf ? (
                   <Button
                     size="lg"
                     className="w-full gap-2.5 text-base font-semibold h-14 rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:scale-[1.01] active:scale-[0.99] transition-all"
@@ -544,10 +544,19 @@ const ProductDetail = () => {
                       اقرأ الآن مجاناً
                     </Link>
                   </Button>
+                ) : (
+                  <Button
+                    size="lg"
+                    disabled
+                    className="w-full gap-2.5 text-base font-semibold h-14 rounded-xl opacity-50 cursor-not-allowed"
+                  >
+                    <BookOpen className="h-5 w-5" />
+                    غير متوفر للقراءة حالياً
+                  </Button>
                 )}
               </motion.div>
 
-              {/* Read / Preview button - only for PDFs */}
+              {/* Read / Preview button - only for paid books with PDF */}
               {hasPdf && product.price > 0 && (
                 <Button
                   variant="outline"
@@ -562,12 +571,17 @@ const ProductDetail = () => {
                 </Button>
               )}
 
-              {/* No PDF warning */}
-              {!hasPdf && (
-                <div className="mt-3 flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  هذا الكتاب غير متوفر للقراءة حالياً
-                </div>
+              {/* Read button disabled for paid books without PDF */}
+              {!hasPdf && product.price > 0 && (
+                <Button
+                  variant="outline"
+                  size="lg"
+                  disabled
+                  className="mt-3 w-full gap-2.5 text-base font-semibold h-12 rounded-xl opacity-50 cursor-not-allowed"
+                >
+                  <BookOpen className="h-5 w-5" />
+                  المطالعة غير متوفرة
+                </Button>
               )}
 
               {/* Sub-info */}
