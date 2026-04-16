@@ -144,11 +144,23 @@ const ProductDetail = () => {
       <div className="min-h-screen bg-background">
         <Navbar />
         <div className="container mx-auto flex flex-col items-center justify-center px-4 py-32">
-          <BookOpen className="w-16 h-16 text-muted-foreground/30 mb-4" />
-          <h1 className="text-2xl font-bold">المنتج غير موجود</h1>
-          <Button asChild className="mt-6">
-            <Link to="/">العودة للمتجر</Link>
-          </Button>
+          {error ? (
+            <>
+              <AlertCircle className="w-16 h-16 text-destructive/50 mb-4" />
+              <h1 className="text-xl font-bold text-foreground">{error}</h1>
+              <p className="text-sm text-muted-foreground mt-2">تحقق من الرابط أو حاول مرة أخرى</p>
+              <div className="flex gap-3 mt-6">
+                <Button variant="outline" onClick={() => window.location.reload()}>إعادة المحاولة</Button>
+                <Button asChild><Link to="/books">تصفح الكتب</Link></Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <BookOpen className="w-16 h-16 text-muted-foreground/30 mb-4" />
+              <h1 className="text-2xl font-bold">المنتج غير موجود</h1>
+              <Button asChild className="mt-6"><Link to="/books">تصفح الكتب</Link></Button>
+            </>
+          )}
         </div>
       </div>
     );
