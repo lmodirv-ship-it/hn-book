@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      card_templates: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -392,6 +419,71 @@ export type Database = {
           value?: Json
         }
         Relationships: []
+      }
+      print_orders: {
+        Row: {
+          address: string
+          city: string
+          country: string
+          created_at: string
+          customer_name: string
+          id: string
+          notes: string | null
+          paper_type: string
+          phone: string
+          print_type: string
+          quantity: number
+          status: string
+          template_id: string
+          total_price: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          address: string
+          city?: string
+          country?: string
+          created_at?: string
+          customer_name: string
+          id?: string
+          notes?: string | null
+          paper_type?: string
+          phone: string
+          print_type?: string
+          quantity?: number
+          status?: string
+          template_id: string
+          total_price?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          address?: string
+          city?: string
+          country?: string
+          created_at?: string
+          customer_name?: string
+          id?: string
+          notes?: string | null
+          paper_type?: string
+          phone?: string
+          print_type?: string
+          quantity?: number
+          status?: string
+          template_id?: string
+          total_price?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "print_orders_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "card_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       processed_documents: {
         Row: {

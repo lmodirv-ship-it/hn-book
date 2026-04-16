@@ -41,6 +41,9 @@ import PricingManagement from "./admin/pages/PricingManagement.tsx";
 import DatabaseManager from "./admin/pages/DatabaseManager.tsx";
 import SalesManagement from "./admin/pages/SalesManagement.tsx";
 import RecommendationsManagement from "./admin/pages/RecommendationsManagement.tsx";
+import PrintOrdersAdmin from "./admin/pages/PrintOrdersAdmin.tsx";
+import CardTemplatesAdmin from "./admin/pages/CardTemplatesAdmin.tsx";
+import CarteVisite from "./pages/CarteVisite.tsx";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +65,7 @@ const App = () => (
             <Route path="/category/:category" element={<CategoryPage />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/book/:id" element={<ProductDetail />} />
+            <Route path="/carte-visite" element={<CarteVisite />} />
             <Route path="/read/:id" element={<BookReader />} />
             <Route path="/document-processing" element={<DocumentProcessing />} />
             <Route path="/auth" element={<CustomerAuth />} />
@@ -92,6 +96,8 @@ const App = () => (
               <Route path="database" element={<DatabaseManager />} />
               <Route path="sales" element={<SalesManagement />} />
               <Route path="recommendations" element={<RecommendationsManagement />} />
+              <Route path="print-orders" element={<PrintOrdersAdmin />} />
+              <Route path="card-templates" element={<CardTemplatesAdmin />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />
