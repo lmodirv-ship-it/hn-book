@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Package, Search, Plus, Edit, Trash2, Eye, X, Upload, ExternalLink, Copy, FileText } from "lucide-react";
+import { Package, Search, Plus, Edit, Trash2, Eye, X, Upload, ExternalLink, Copy, FileText, BookOpen, DollarSign, Sparkles } from "lucide-react";
 import { bookService } from "@/services";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ProductImageUpload } from "@/admin/components/ProductImageUpload";
 import { BookPdfUpload } from "@/admin/components/BookPdfUpload";
 import { ProductCreateDialog } from "@/admin/components/ProductCreateDialog";
+import { calculateSuggestedPrice } from "@/lib/pricing";
+import { supabase } from "@/integrations/supabase/client";
 
 import { toast } from "sonner";
 
@@ -23,6 +25,7 @@ interface Product {
   is_active: boolean | null;
   badge: string | null;
   pdf_url: string | null;
+  page_count: number | null;
 }
 
 const AdminProducts = () => {
@@ -49,6 +52,7 @@ const AdminProducts = () => {
         is_active: b.isActive,
         badge: b.badge || null,
         pdf_url: b.pdfUrl || null,
+        page_count: b.pageCount || null,
       })));
     }
     setLoading(false);
