@@ -1,17 +1,13 @@
 import { useState, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Upload, FileText, Check, X, Loader2, AlertCircle, Search } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  buildBookPdfStoragePath,
-  ensureProductReferenceCode,
-  getBookFilePublicUrl,
-} from "@/lib/reference-code";
+import { storageService } from "@/services/storageService";
+import { bookService } from "@/services/bookService";
 
 interface PendingFile {
   file: File;
