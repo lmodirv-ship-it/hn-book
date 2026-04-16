@@ -98,11 +98,9 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
   }, []);
 
   const navLinks = [
-    { href: "#products", label: t("nav.products") },
-    { href: "/books", label: "📚 كتب", isRoute: true },
-    { href: "/carte-visite", label: "🪪 بطاقات", isRoute: true },
-    { href: "#features", label: t("nav.features") },
-    { href: "#pricing", label: t("nav.pricing") },
+    { href: "/books", label: "📚 كتب" },
+    { href: "/carte-visite", label: "🪪 بطاقات" },
+    { href: "/tablou", label: "🖼️ لوحات" },
   ];
 
   const allCategories = categories ? ["All", ...categories] : [];
