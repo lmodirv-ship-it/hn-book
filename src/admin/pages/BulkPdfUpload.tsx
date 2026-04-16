@@ -12,6 +12,7 @@ import { useJobProcessor } from "@/hooks/useJobProcessor";
 import { storageService } from "@/services/storageService";
 import { detectCategory } from "@/lib/category-detection";
 import { generateCoverAsync, terminateCoverWorker } from "@/lib/cover-worker-client";
+import { getPdfPageCount } from "@/lib/pdf-cover-extractor";
 import { db } from "@/api/client";
 
 // ── Types ──
@@ -37,10 +38,11 @@ function cleanFilename(filename: string): string {
  * All book creation happens in the backend worker.
  */
 async function uploadFilesAndCreateJob(payload: BookPayload): Promise<void> {
-  // 1. Upload PDF + generate cover in parallel (Web Worker)
-  const [pdfResult, coverBlob] = await Promise.all([
+  // 1. Upload PDF + generate cover + extract page count in parallel
+  const [pdfResult, coverBlob, pageCount] = await Promise.all([
     storageService.uploadBookPdf(payload.file),
     generateCoverAsync(payload.title, "GEN"),
+    getPdfPageCount(payload.file).catch(() => null),
   ]);
 
   if (pdfResult.error) throw new Error(pdfResult.error);
@@ -64,6 +66,7 @@ async function uploadFilesAndCreateJob(payload: BookPayload): Promise<void> {
         image,
         referenceCode,
         storagePath,
+        pageCount,
       },
     } as any);
 

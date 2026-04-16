@@ -32,7 +32,7 @@ function buildProductsRestUrl(filter?: BookFilter, maxLimit = 100) {
   const offset = Math.max(filter?.offset ?? 0, 0);
   const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/products`);
 
-  url.searchParams.set("select", "id,name,description,short_description,price,original_price,category,image,badge,is_flash_deal,deal_ends_in,reference_code,pdf_url,slug");
+  url.searchParams.set("select", "id,name,description,short_description,price,original_price,category,image,badge,is_flash_deal,deal_ends_in,reference_code,pdf_url,slug,page_count");
   url.searchParams.set("order", "created_at.desc");
   url.searchParams.set("limit", String(limit));
   url.searchParams.set("offset", String(offset));
@@ -143,6 +143,7 @@ function mapRow(row: any): Book {
     referenceCode: row.reference_code ?? row.referenceCode ?? undefined,
     pdfUrl: (row.pdf_url ?? row.pdfUrl) && (row.pdf_url ?? row.pdfUrl).trim() ? (row.pdf_url ?? row.pdfUrl) : undefined,
     slug: row.slug ?? undefined,
+    pageCount: row.page_count ?? row.pageCount ?? undefined,
     isActive: row.is_active ?? row.isActive ?? true,
     createdAt: row.created_at ?? row.createdAt,
     updatedAt: row.updated_at ?? row.updatedAt,

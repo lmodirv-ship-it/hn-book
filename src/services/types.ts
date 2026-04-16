@@ -55,6 +55,7 @@ export interface Book {
   referenceCode?: string;
   pdfUrl?: string;
   slug?: string;
+  pageCount?: number;
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;

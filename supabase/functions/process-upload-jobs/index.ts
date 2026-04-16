@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
 
     for (const job of pendingJobs) {
       const jobData = job.result || {};
-      const { title, category, pdfUrl, image, referenceCode } = jobData as any;
+      const { title, category, pdfUrl, image, referenceCode, pageCount } = jobData as any;
 
       // Validate required fields
       if (!pdfUrl || !image) {
@@ -100,6 +100,7 @@ Deno.serve(async (req) => {
             pdf_url: pdfUrl,
             image: image,
             reference_code: referenceCode || null,
+            page_count: pageCount || null,
           })
           .select("id, name, reference_code")
           .single();
