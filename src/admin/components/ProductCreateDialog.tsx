@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Wand2, PenLine, Loader2, Plus, Sparkles } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { detectCategory } from "@/lib/category-detection";
 
 interface ProductCreateDialogProps {
   open: boolean;
@@ -40,6 +41,7 @@ export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: Pr
   const [price, setPrice] = useState("");
   const [originalPrice, setOriginalPrice] = useState("");
   const [category, setCategory] = useState(categoryNames[0] || "كتب عامة");
+  const [categorySuggested, setCategorySuggested] = useState(false);
   const [badge, setBadge] = useState("");
   const [features, setFeatures] = useState("");
 
@@ -54,6 +56,26 @@ export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: Pr
     setName(""); setShortDesc(""); setDescription(""); setAuthor(""); setPages("");
     setPrice(""); setOriginalPrice(""); setCategory(categoryNames[0] || "كتب عامة"); setBadge(""); setFeatures("");
     setGeneratedBooks([]); setAutoCount("5"); setGenerating(false);
+  };
+
+  // Auto-detect category when name or description changes
+  const runAutoDetect = (newName: string, newDesc: string) => {
+    if (!newName.trim()) return;
+    const suggestion = detectCategory(newName, newDesc, categoryNames);
+    if (suggestion.matchedKeywords.length > 0) {
+      setCategory(suggestion.category);
+      setCategorySuggested(true);
+    }
+  };
+
+  const handleNameChange = (val: string) => {
+    setName(val);
+    runAutoDetect(val, description);
+  };
+
+  const handleDescChange = (val: string) => {
+    setDescription(val);
+    runAutoDetect(name, val);
   };
 
   const handleManualSave = async () => {
@@ -136,13 +158,13 @@ export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: Pr
         {mode === "manual" && (
           <div className="space-y-3 pt-2">
             <Field label="اسم الكتاب *">
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="مثال: فن الإدارة الحديثة" className="bg-card" />
+              <Input value={name} onChange={(e) => handleNameChange(e.target.value)} placeholder="مثال: فن الإدارة الحديثة" className="bg-card" />
             </Field>
             <Field label="وصف قصير">
               <Input value={shortDesc} onChange={(e) => setShortDesc(e.target.value)} placeholder="وصف مختصر سطر واحد" className="bg-card" />
             </Field>
             <Field label="الوصف المفصل">
-              <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="وصف تفصيلي للكتاب..." className="bg-card min-h-[60px]" />
+              <Textarea value={description} onChange={(e) => handleDescChange(e.target.value)} placeholder="وصف تفصيلي للكتاب..." className="bg-card min-h-[60px]" />
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="المؤلف">
@@ -160,11 +182,14 @@ export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: Pr
                 <Input type="number" value={originalPrice} onChange={(e) => setOriginalPrice(e.target.value)} placeholder="59" className="bg-card" />
               </Field>
             </div>
-            <Field label="التصنيف">
-              <select value={category} onChange={(e) => setCategory(e.target.value)}
-                className="w-full h-10 rounded-md border border-input bg-card px-3 text-sm text-foreground">
+            <Field label={`التصنيف${categorySuggested ? " ✨ مقترح تلقائياً" : ""}`}>
+              <select value={category} onChange={(e) => { setCategory(e.target.value); setCategorySuggested(false); }}
+                className={`w-full h-10 rounded-md border px-3 text-sm text-foreground ${categorySuggested ? "border-primary/50 bg-primary/5" : "border-input bg-card"}`}>
                 {categoryNames.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
+              {categorySuggested && (
+                <p className="text-[10px] text-primary mt-1">تم اقتراح التصنيف بناءً على العنوان والوصف — يمكنك تغييره</p>
+              )}
             </Field>
             <Field label="المميزات (سطر لكل ميزة)">
               <Textarea value={features} onChange={(e) => setFeatures(e.target.value)} placeholder={"PDF عالي الجودة\nقابل للطباعة\nتحديثات مجانية"} className="bg-card min-h-[60px]" />
