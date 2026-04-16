@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Check, ShoppingCart, Star, Shield, Download, Clock, Zap, Gift, Award,
-  ChevronRight, ChevronLeft, Loader2, Lock, Eye, Heart, Share2, BookOpen
+  ChevronRight, ChevronLeft, Loader2, Lock, Eye, Heart, Share2, BookOpen, AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import BookCover from "@/components/BookCover";
 import ProductCard from "@/components/ProductCard";
+import { bookService } from "@/services";
 import { supabase } from "@/integrations/supabase/client";
 import type { Product } from "@/lib/products";
 import { mapProductRowToProduct } from "@/lib/product-utils";
@@ -30,6 +31,7 @@ const ProductDetail = () => {
   const [productFiles, setProductFiles] = useState<ProductFile[]>([]);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [liked, setLiked] = useState(false);
   const [hasPdf, setHasPdf] = useState(false);
@@ -37,50 +39,67 @@ const ProductDetail = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       if (!id) return;
+      setLoading(true);
+      setError(null);
 
-      // Try slug first, then UUID
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-      const query = supabase
-        .from("products")
-        .select("*")
-        .eq(isUuid ? "id" : "slug", id)
-        .eq("is_active", true)
-        .single();
+      try {
+        // Use bookService — try slug first, then UUID
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+        const result = isUuid
+          ? await bookService.getById(id)
+          : await bookService.getBySlug(id);
 
-      const { data } = await query;
+        if (result.error || !result.data) {
+          setError("تعذر تحميل الكتاب");
+          return;
+        }
 
-      if (data) {
-        const mapped = mapProductRowToProduct(data);
+        const book = result.data;
+        const mapped: Product = {
+          id: book.id,
+          name: book.name,
+          description: book.description,
+          shortDescription: book.shortDescription,
+          price: book.price,
+          originalPrice: book.originalPrice,
+          category: book.category,
+          image: book.image,
+          features: book.features,
+          badge: book.badge,
+          isFlashDeal: book.isFlashDeal,
+          dealEndsIn: book.dealEndsIn,
+          referenceCode: book.referenceCode,
+          pdfUrl: book.pdfUrl,
+          slug: book.slug,
+        };
         setProduct(mapped);
+        setHasPdf(!!book.pdfUrl);
 
-        // Fetch product files (images)
-        const { data: files } = await supabase
-          .from("product_files")
-          .select("id, file_type, file_name, public_url, is_primary")
-          .eq("product_id", data.id);
+        // Fetch product files (images) in parallel with related
+        const [filesRes, relatedRes] = await Promise.all([
+          supabase
+            .from("product_files")
+            .select("id, file_type, file_name, public_url, is_primary")
+            .eq("product_id", book.id),
+          supabase
+            .from("products")
+            .select("*")
+            .eq("is_active", true)
+            .eq("category", book.category)
+            .neq("id", book.id)
+            .limit(4),
+        ]);
 
-        if (files) {
-          setProductFiles(files);
-          setHasPdf(true);
-        } else {
-          setHasPdf(true);
-        }
-
-        // Fetch related products
-        const { data: related } = await supabase
-          .from("products")
-          .select("*")
-          .eq("is_active", true)
-          .eq("category", data.category)
-          .neq("id", data.id)
-          .limit(4);
-
-        if (related) {
-          setRelatedProducts(related.map(mapProductRowToProduct));
-        }
+        if (filesRes.data) setProductFiles(filesRes.data);
+        if (relatedRes.data) setRelatedProducts(relatedRes.data.map(mapProductRowToProduct));
+      } catch (err) {
+        console.error("[ProductDetail] fetch error", err);
+        setError("تعذر تحميل الكتاب");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
+
     fetchProduct();
   }, [id]);
 
