@@ -101,13 +101,10 @@ export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: Pr
       const desc = [description, author && `المؤلف: ${author}`, pages && `عدد الصفحات: ${pages}`].filter(Boolean).join("\n");
       const featureList = features.split("\n").map(f => f.trim()).filter(Boolean);
 
-      // Create a temp ID for file uploads
-      const tempId = crypto.randomUUID();
-
-      // Upload PDF and cover in parallel
+      // 1. Upload files first (no product record yet)
       const [pdfResult, coverResult] = await Promise.all([
-        storageService.uploadBookPdf(tempId, pdfFile!),
-        storageService.uploadBookImage(tempId, coverFile!),
+        storageService.uploadBookPdf(pdfFile!),
+        storageService.uploadBookImage(coverFile!),
       ]);
 
       if (pdfResult.error) {
@@ -116,9 +113,12 @@ export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: Pr
       }
       if (coverResult.error) {
         toast.error("فشل رفع صورة الغلاف: " + coverResult.error);
+        // Cleanup PDF
+        if (pdfResult.data) await storageService.removePdfByPath(pdfResult.data.storagePath);
         return;
       }
 
+      // 2. Create book with real data
       const result = await bookService.create({
         name: name.trim(),
         shortDescription: shortDesc.trim() || undefined,
@@ -129,6 +129,7 @@ export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: Pr
         badge: badge.trim() || undefined,
         features: featureList.length > 0 ? featureList : undefined,
         pdfUrl: pdfResult.data!.publicUrl,
+        referenceCode: pdfResult.data!.referenceCode,
         image: coverResult.data!.publicUrl,
       });
 
