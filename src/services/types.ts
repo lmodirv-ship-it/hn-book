@@ -67,11 +67,11 @@ export interface BookCreateInput {
   price: number;
   originalPrice?: number;
   category: string;
-  image?: string;
+  image: string;
   features?: string[];
   badge?: string;
   isFlashDeal?: boolean;
-  pdfUrl?: string;
+  pdfUrl: string;
 }
 
 export interface BookUpdateInput extends Partial<BookCreateInput> {
