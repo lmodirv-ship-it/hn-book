@@ -27,8 +27,8 @@ function createAbortController(timeoutMs = QUERY_TIMEOUT_MS) {
   };
 }
 
-function buildProductsRestUrl(filter?: BookFilter) {
-  const limit = Math.max(1, Math.min(filter?.limit ?? 24, 50));
+function buildProductsRestUrl(filter?: BookFilter, maxLimit = 100) {
+  const limit = Math.max(1, Math.min(filter?.limit ?? 50, maxLimit));
   const offset = Math.max(filter?.offset ?? 0, 0);
   const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/products`);
 
@@ -50,7 +50,7 @@ function buildProductsRestUrl(filter?: BookFilter) {
 }
 
 async function fetchProductsViaRest(filter?: BookFilter): Promise<ApiResult<Book[]>> {
-  const { url, limit, offset } = buildProductsRestUrl(filter);
+  const { url, limit, offset } = buildProductsRestUrl(filter, 100);
   const { controller, clear } = createAbortController();
 
   try {
@@ -210,6 +210,39 @@ export const bookService = {
     // ── Future: REST API ──
     // await apiClient.del(`/books/${id}`);
     // return ok(null);
+  },
+
+  /** Get total count of products (with optional category filter) */
+  async getCount(filter?: BookFilter): Promise<ApiResult<number>> {
+    const { controller, clear } = createAbortController();
+    try {
+      const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/products`);
+      url.searchParams.set("select", "*");
+      if (filter?.category && filter.category !== "all") {
+        url.searchParams.set("category", `eq.${filter.category}`);
+      }
+      if (filter?.search?.trim()) {
+        const s = filter.search.trim().replace(/[,%]/g, " ");
+        url.searchParams.set("or", `(name.ilike.*${s}*,category.ilike.*${s}*)`);
+      }
+
+      const response = await fetch(url.toString(), {
+        method: "HEAD",
+        signal: controller.signal,
+        headers: {
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Prefer: "count=exact",
+        },
+      });
+      const total = parseInt(response.headers.get("content-range")?.split("/")?.[1] ?? "0", 10);
+      return ok(total);
+    } catch (error) {
+      console.error("[bookService.getCount] error", error);
+      return fail(error instanceof Error ? error.message : "Failed to count books");
+    } finally {
+      clear();
+    }
   },
 
   /** Get distinct categories */
