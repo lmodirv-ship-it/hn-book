@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { tablouService } from "@/services/tablouService";
 import { printService } from "@/services/printService";
 
-type TargetType = "books" | "tablou" | "cards";
+type TargetType = "auto" | "books" | "tablou" | "cards";
 
 interface ProcessedItem {
   success: boolean;
@@ -33,6 +33,7 @@ interface ProcessedItem {
 }
 
 const TARGET_OPTIONS: { value: TargetType; label: string; icon: any; description: string; accept: string }[] = [
+  { value: "auto", label: "🧠 ذكي (تلقائي)", icon: FileCheck, description: "النظام يكتشف النوع تلقائياً — PDF→كتب، صور→تابلو، ZIP→استخراج ومعالجة", accept: "*/*" },
   { value: "books", label: "كتب ومنتجات", icon: BookOpen, description: "PDF، وثائق، صور — يُحفظ في جدول المنتجات", accept: "*/*" },
   { value: "tablou", label: "تابلوهات", icon: Frame, description: "صور فنية — يُحفظ في جدول التابلوهات مع 3 أحجام تلقائياً", accept: "image/*" },
   { value: "cards", label: "قوالب بطاقات", icon: CreditCard, description: "تصاميم بطاقات أعمال — يُحفظ في جدول القوالب", accept: "image/*" },
@@ -73,7 +74,7 @@ const CATEGORY_PREFIXES: Record<string, string> = {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 const BookGeneration = () => {
-  const [targetType, setTargetType] = useState<TargetType>("books");
+  const [targetType, setTargetType] = useState<TargetType>("auto");
   const [processing, setProcessing] = useState(false);
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -317,11 +318,21 @@ const BookGeneration = () => {
   };
 
   const processFile = async (file: File): Promise<ProcessedItem[]> => {
-    // Route to correct handler based on target type
-    if (targetType === "tablou") return processTablouFile(file);
-    if (targetType === "cards") return processCardFile(file);
+    const ext = file.name.split(".").pop()?.toLowerCase() || "";
+    const isImage = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "avif"].includes(ext);
+    const isZip = ["zip"].includes(ext);
 
-    // Default: books/products (existing logic)
+    // In auto mode: route images to tablou, design to cards, rest to edge function
+    if (targetType === "auto") {
+      // Let the edge function handle everything in auto mode (including ZIP extraction)
+      // It will auto-route each file to the correct target system
+    } else if (targetType === "tablou") {
+      return processTablouFile(file);
+    } else if (targetType === "cards") {
+      return processCardFile(file);
+    }
+
+    // Send to edge function (books mode or auto mode)
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData?.session?.access_token;
@@ -330,11 +341,13 @@ const BookGeneration = () => {
     let response: Response;
 
     if (file.size > EDGE_FUNCTION_LIMIT) {
-      // Very large file: process directly on client side
+      if (targetType === "auto" && isImage) {
+        // Auto mode + large image → tablou
+        return processTablouFile(file);
+      }
       setStatusMessage(`ملف كبير (${formatSize(file.size)}) — رفع مباشر ومعالجة محلية`);
       return processLargeFile(file);
     } else if (file.size > DIRECT_UPLOAD_LIMIT) {
-      // Medium file: upload to storage, then edge function processes
       setStatusMessage("جاري الرفع للتخزين...");
       const tempPath = `temp-uploads/${Date.now()}-${file.name}`;
 
@@ -343,7 +356,7 @@ const BookGeneration = () => {
         return [{ success: false, fileName: file.name, error: "فشل رفع الملف إلى التخزين" }];
       }
 
-      setStatusMessage("جاري التحليل بالذكاء الاصطناعي...");
+      setStatusMessage(targetType === "auto" ? "جاري الاكتشاف التلقائي والمعالجة..." : "جاري التحليل بالذكاء الاصطناعي...");
       response = await fetch(url, {
         method: "POST",
         headers: {
@@ -354,13 +367,14 @@ const BookGeneration = () => {
           storage_path: tempPath,
           file_name: file.name,
           bucket: "book-files",
+          target: targetType === "auto" ? "auto" : targetType,
         }),
       });
     } else {
-      // Small file: send directly
-      setStatusMessage("جاري التحليل والتصنيف...");
+      setStatusMessage(targetType === "auto" ? "🧠 جاري الاكتشاف التلقائي والتصنيف..." : "جاري التحليل والتصنيف...");
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("target", targetType === "auto" ? "auto" : targetType);
 
       response = await fetch(url, {
         method: "POST",
@@ -529,7 +543,7 @@ const BookGeneration = () => {
       </motion.div>
 
       {/* Target type selector */}
-      <div className="grid grid-cols-3 gap-3 max-w-3xl">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-4xl">
         {TARGET_OPTIONS.map(opt => {
           const Icon = opt.icon;
           const active = targetType === opt.value;
@@ -613,6 +627,7 @@ const BookGeneration = () => {
                   اسحب الملفات هنا أو اضغط للتحميل — <span className="text-primary font-bold">{currentTarget.label}</span>
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-1.5">
+                  {targetType === "auto" && "🧠 أي ملف → الذكاء الاصطناعي يكتشف النوع ويوجّهه للنظام المناسب تلقائياً (كتب / تابلو / بطاقات)"}
                   {targetType === "books" && "PDF · صور · Word · PowerPoint · Excel · ZIP · وأكثر"}
                   {targetType === "tablou" && "صور فقط (JPG, PNG, WebP) — يُنشئ تابلو مع 3 أحجام تلقائياً"}
                   {targetType === "cards" && "صور فقط (JPG, PNG) — يُنشئ قالب بطاقة أعمال"}
@@ -790,7 +805,7 @@ const BookGeneration = () => {
                 className="shrink-0 border-green-500/30 text-green-400 hover:bg-green-500/10"
                 onClick={() => window.location.href = targetType === "tablou" ? "/admin/tablou" : targetType === "cards" ? "/admin/card-templates" : "/admin/products"}
               >
-                {targetType === "tablou" ? "عرض التابلوهات" : targetType === "cards" ? "عرض القوالب" : "عرض المنتجات"}
+                {targetType === "auto" ? "عرض المنتجات" : targetType === "tablou" ? "عرض التابلوهات" : targetType === "cards" ? "عرض القوالب" : "عرض المنتجات"}
               </Button>
             </div>
           )}
