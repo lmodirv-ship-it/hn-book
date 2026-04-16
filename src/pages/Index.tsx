@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useVisitorTracking } from "@/hooks/useVisitorTracking";
 import ParticleCanvas from "@/components/ParticleCanvas";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
@@ -34,6 +35,7 @@ const timeoutPromise = () =>
   });
 
 const Index = () => {
+  useVisitorTracking();
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);

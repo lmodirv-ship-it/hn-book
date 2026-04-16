@@ -154,6 +154,9 @@ const AdminDashboard = () => {
   const [earningsRange, setEarningsRange] = useState<"daily" | "weekly" | "monthly">("weekly");
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [totalVisits, setTotalVisits] = useState(0);
+  const [todayVisits, setTodayVisits] = useState(0);
+  const [totalUsers, setTotalUsers] = useState(0);
 
   // System monitoring
   const [jobStats, setJobStats] = useState({ pending: 0, processing: 0, done: 0, error: 0, todayUploads: 0 });
@@ -163,12 +166,15 @@ const AdminDashboard = () => {
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
 
-      const [productsRes, customersRes, ordersRes, topProdsRes, jobsRes] = await Promise.all([
+      const [productsRes, customersRes, ordersRes, topProdsRes, jobsRes, visitorsRes, todayVisitorsRes, profilesRes] = await Promise.all([
         supabase.from("products").select("id, category, is_active", { count: "exact" }),
         supabase.from("customers").select("id", { count: "exact", head: true }),
         supabase.from("orders").select("id, order_number, amount, status, created_at, customers(name), products(name)").order("created_at", { ascending: false }),
         supabase.from("products").select("id, name, category, price, image, is_active").limit(5),
         supabase.from("upload_jobs").select("id, status, created_at"),
+        supabase.from("visitors").select("id", { count: "exact", head: true }),
+        supabase.from("visitors").select("id", { count: "exact", head: true }).gte("visit_time", todayStart.toISOString()),
+        supabase.from("profiles").select("id", { count: "exact", head: true }),
       ]);
 
       const jobs = jobsRes.data || [];
@@ -198,6 +204,9 @@ const AdminDashboard = () => {
       prods.forEach((p: any) => { catMap[p.category] = (catMap[p.category] || 0) + 1; });
       setCategoryStats(Object.entries(catMap).sort((a, b) => b[1] - a[1]));
       setLoading(false);
+      setTotalVisits(visitorsRes.count || 0);
+      setTodayVisits(todayVisitorsRes.count || 0);
+      setTotalUsers(profilesRes.count || 0);
     };
     fetchData();
   }, []);
@@ -239,9 +248,9 @@ const AdminDashboard = () => {
     { icon: Package, label: "إجمالي المنتجات", value: totalProducts.toLocaleString(), color: "text-primary", trend: 12 },
     { icon: ShoppingCart, label: "إجمالي الطلبات", value: String(totalOrders), color: "text-blue-400", trend: 8 },
     { icon: DollarSign, label: "إجمالي الأرباح", value: totalRevenue.toFixed(2), color: "text-yellow-400", isCurrency: true, trend: 23 },
-    { icon: Users, label: "العملاء", value: String(totalCustomers), color: "text-purple-400", trend: 5 },
-    { icon: BookOpen, label: "منتجات نشطة", value: String(activeProducts), color: "text-green-400" },
-    { icon: Star, label: "التقييم العام", value: "4.8", color: "text-amber-400", trend: 2 },
+    { icon: Users, label: "المستخدمون", value: String(totalUsers), color: "text-purple-400", trend: 5 },
+    { icon: Eye, label: "إجمالي الزيارات", value: String(totalVisits), color: "text-green-400" },
+    { icon: Eye, label: "زيارات اليوم", value: String(todayVisits), color: "text-amber-400" },
   ];
 
   if (loading) {

@@ -200,6 +200,18 @@ const CustomerAuth = () => {
             </Button>
           </form>
 
+          {isLogin && (
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => navigate("/forgot-password")}
+                className="text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
+                نسيت كلمة المرور؟
+              </button>
+            </div>
+          )}
+
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-border" />
