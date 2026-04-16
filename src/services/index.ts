@@ -14,7 +14,9 @@
 
 export { authService } from "./authService";
 export { bookService } from "./bookService";
+export { categoryService } from "./categoryService";
 export { readerService } from "./readerService";
+export { storageService } from "./storageService";
 export { storageService } from "./storageService";
 
 // Re-export types
@@ -38,6 +40,8 @@ export type {
   UploadResult,
   ServiceResult,
 } from "./types";
+
+export type { Category, CategoryCreateInput, CategoryUpdateInput } from "./categoryService";
 
 export type {
   ReadingProgress,
