@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Package, Search, Plus, Edit, Trash2, Eye, X, Upload, ExternalLink, Copy, FileText } from "lucide-react";
+import { Package, Search, Plus, Edit, Trash2, Eye, X, Upload, ExternalLink, Copy, FileText, BookOpen, DollarSign, Sparkles } from "lucide-react";
 import { bookService } from "@/services";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ProductImageUpload } from "@/admin/components/ProductImageUpload";
 import { BookPdfUpload } from "@/admin/components/BookPdfUpload";
 import { ProductCreateDialog } from "@/admin/components/ProductCreateDialog";
+import { calculateSuggestedPrice } from "@/lib/pricing";
+import { supabase } from "@/integrations/supabase/client";
 
 import { toast } from "sonner";
 
@@ -23,6 +25,7 @@ interface Product {
   is_active: boolean | null;
   badge: string | null;
   pdf_url: string | null;
+  page_count: number | null;
 }
 
 const AdminProducts = () => {
@@ -49,6 +52,7 @@ const AdminProducts = () => {
         is_active: b.isActive,
         badge: b.badge || null,
         pdf_url: b.pdfUrl || null,
+        page_count: b.pageCount || null,
       })));
     }
     setLoading(false);
@@ -169,11 +173,9 @@ const AdminProducts = () => {
                 <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">المنتج</th>
                 <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">المرجع</th>
                 <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">التصنيف</th>
+                <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">الصفحات</th>
                 <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">السعر</th>
-                <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">الأيقونة</th>
-                <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">الرابط</th>
                 <th className="text-center py-3 px-4 text-xs text-muted-foreground font-medium">PDF</th>
-                <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium hidden md:table-cell">الوصف</th>
                 <th className="text-right py-3 px-4 text-xs text-muted-foreground font-medium">الحالة</th>
                 <th className="text-center py-3 px-4 text-xs text-muted-foreground font-medium">إجراءات</th>
               </tr>
@@ -203,40 +205,36 @@ const AdminProducts = () => {
                     <span className="text-xs px-2 py-1 rounded-full bg-secondary text-muted-foreground">{p.category}</span>
                   </td>
                   <td className="py-3 px-4">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-foreground">${p.price}</span>
-                      {p.original_price && (
-                        <span className="text-xs text-muted-foreground line-through">${p.original_price}</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">
-                    {p.badge ? (
-                      <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">{p.badge}</span>
+                    {p.page_count ? (
+                      <span className="text-xs font-medium text-foreground flex items-center gap-1">
+                        <BookOpen className="w-3 h-3 text-primary" /> {p.page_count}
+                      </span>
                     ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
+                      <span className="text-xs text-muted-foreground/50">—</span>
                     )}
                   </td>
                   <td className="py-3 px-4">
-                    <div className="flex items-center gap-1">
-                      <a
-                        href={productLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-primary hover:underline truncate max-w-[120px]"
-                        title={fullLink}
-                      >
-                        {productLink}
-                      </a>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(fullLink);
-                          toast.success("تم نسخ الرابط");
-                        }}
-                        className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        <Copy className="w-3 h-3" />
-                      </button>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-foreground">{p.price} د.م</span>
+                      {(() => {
+                        const suggestion = calculateSuggestedPrice(p.page_count, p.category);
+                        if (suggestion && p.price === 0 && suggestion.suggestedPrice > 0) {
+                          return (
+                            <button
+                              onClick={async () => {
+                                await supabase.from("products").update({ price: suggestion.suggestedPrice } as any).eq("id", p.id);
+                                setProducts(prev => prev.map(x => x.id === p.id ? { ...x, price: suggestion.suggestedPrice } : x));
+                                toast.success(`تم تطبيق السعر المقترح: ${suggestion.suggestedPrice} د.م`);
+                              }}
+                              className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors flex items-center gap-0.5"
+                              title={`مقترح: ${suggestion.suggestedPrice} د.م`}
+                            >
+                              <Sparkles className="w-2.5 h-2.5" /> {suggestion.suggestedPrice}
+                            </button>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                   </td>
                   <td className="py-3 px-4 text-center">
@@ -248,9 +246,6 @@ const AdminProducts = () => {
                     ) : (
                       <span className="text-xs text-muted-foreground/50">—</span>
                     )}
-                  </td>
-                  <td className="py-3 px-4 hidden md:table-cell">
-                    <p className="text-xs text-muted-foreground truncate max-w-[250px]">{p.short_description}</p>
                   </td>
                   <td className="py-3 px-4">
                     <span className={`text-[10px] font-medium px-2 py-1 rounded-full ${
@@ -299,8 +294,75 @@ const AdminProducts = () => {
             <div className="space-y-6">
               <div>
                 <p className="text-sm font-medium text-foreground">{editProduct.name}</p>
-                <p className="text-xs text-muted-foreground">{editProduct.category} · ${editProduct.price} · {editProduct.reference_code || "بدون مرجع"}</p>
+                <p className="text-xs text-muted-foreground">
+                  {editProduct.category} · {editProduct.price} د.م · {editProduct.reference_code || "بدون مرجع"}
+                  {editProduct.page_count && ` · ${editProduct.page_count} صفحة`}
+                </p>
               </div>
+
+              {/* Smart pricing */}
+              {editProduct.page_count && (() => {
+                const suggestion = calculateSuggestedPrice(editProduct.page_count, editProduct.category);
+                if (!suggestion) return null;
+                return (
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
+                    <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-primary" /> تسعير ذكي
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
+                      <span>📄 {suggestion.breakdown.pageCount} صفحة</span>
+                      <span>× {suggestion.breakdown.perPageRate} د.م/صفحة</span>
+                      <span>📂 معامل التصنيف: {suggestion.breakdown.categoryMultiplier}×</span>
+                      <span>💰 خام: {suggestion.breakdown.rawPrice} د.م</span>
+                    </div>
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-sm font-bold text-primary">{suggestion.suggestedPrice} د.م (مقترح)</span>
+                      {editProduct.price !== suggestion.suggestedPrice && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[11px] gap-1"
+                          onClick={async () => {
+                            await supabase.from("products").update({ price: suggestion.suggestedPrice } as any).eq("id", editProduct.id);
+                            setProducts(prev => prev.map(x => x.id === editProduct.id ? { ...x, price: suggestion.suggestedPrice } : x));
+                            setEditProduct(prev => prev ? { ...prev, price: suggestion.suggestedPrice } : null);
+                            toast.success(`تم تطبيق: ${suggestion.suggestedPrice} د.م`);
+                          }}
+                        >
+                          <Sparkles className="w-3 h-3" /> تطبيق
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Manual price override */}
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">السعر اليدوي (د.م)</label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    value={editProduct.price}
+                    onChange={(e) => setEditProduct(prev => prev ? { ...prev, price: Number(e.target.value) } : null)}
+                    className="w-28 bg-card"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-9 text-xs"
+                    onClick={async () => {
+                      await supabase.from("products").update({ price: editProduct.price } as any).eq("id", editProduct.id);
+                      setProducts(prev => prev.map(x => x.id === editProduct.id ? { ...x, price: editProduct.price } : x));
+                      toast.success("تم حفظ السعر");
+                    }}
+                  >
+                    حفظ
+                  </Button>
+                </div>
+              </div>
+
               <ProductImageUpload
                 productId={editProduct.id}
                 currentImage={editProduct.image}
