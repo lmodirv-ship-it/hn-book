@@ -4,12 +4,16 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { I18nProvider } from "@/lib/i18n";
+import { CartProvider } from "@/contexts/CartContext";
 import ChatBot from "@/components/ChatBot";
 import Index from "./pages/Index.tsx";
 import ProductDetail from "./pages/ProductDetail.tsx";
 import CategoryPage from "./pages/CategoryPage.tsx";
 import BookReader from "./pages/BookReader.tsx";
 import BooksPage from "./pages/BooksPage.tsx";
+import CartPage from "./pages/CartPage.tsx";
+import CheckoutPage from "./pages/CheckoutPage.tsx";
+import OrderConfirmation from "./pages/OrderConfirmation.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import CustomerAuth from "./pages/CustomerAuth.tsx";
 import Profile from "./pages/Profile.tsx";
@@ -41,14 +45,18 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <I18nProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <ChatBot />
+      <CartProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <ChatBot />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/books" element={<BooksPage />} />
+            <Route path="/cart" element={<CartPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/order-confirmation/:id" element={<OrderConfirmation />} />
             <Route path="/category/:category" element={<CategoryPage />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/book/:id" element={<ProductDetail />} />
