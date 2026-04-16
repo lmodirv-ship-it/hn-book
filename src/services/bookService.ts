@@ -205,14 +205,15 @@ export const bookService = {
 
   /** Create a new book */
   async create(input: BookCreateInput): Promise<ApiResult<Book>> {
-    // Client-side validation — DB trigger also enforces this
     if (!input.name?.trim()) return fail("اسم الكتاب مطلوب");
-    if (!input.pdfUrl?.trim()) return fail("ملف PDF مطلوب");
-    if (!input.image?.trim()) return fail("صورة الغلاف مطلوبة");
-
+    // DB trigger enforces: name, pdf_url, image NOT NULL
     const dbInput = toDb(input) as any;
     const { data, error } = await db.from("products").insert(dbInput).select().single();
-    if (error) return fail(error.message);
+    if (error) {
+      if (error.message.includes("pdf_url")) return fail("ملف PDF مطلوب — يرجى رفع ملف PDF");
+      if (error.message.includes("image")) return fail("صورة الغلاف مطلوبة — يرجى رفع صورة");
+      return fail(error.message);
+    }
     return ok(mapRow(data));
   },
 
