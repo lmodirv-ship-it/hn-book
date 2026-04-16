@@ -441,7 +441,7 @@ const BookReader = () => {
         <BookOpen className="w-12 h-12 text-gray-500" />
         <h1 className={`text-lg font-bold ${textColor}`}>{book.name}</h1>
         <p className={`${subTextColor} text-sm`}>لا يوجد ملف قابل للمطالعة</p>
-        <button onClick={() => navigate(`/product/${id}`)} className={`${linkColor} hover:underline text-sm`}>العودة لصفحة المنتج</button>
+        <button onClick={() => navigate(`/product/${book.id}`)} className={`${linkColor} hover:underline text-sm`}>العودة لصفحة المنتج</button>
       </div>
     );
   }
@@ -453,7 +453,7 @@ const BookReader = () => {
         <h1 className={`text-lg font-bold ${textColor}`}>{book.name}</h1>
         <p className={`${subTextColor} text-sm`}>يجب شراء الكتاب أو الاشتراك للقراءة</p>
         <div className="flex gap-3">
-          <button onClick={() => navigate(`/book/${id}`)} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold">
+          <button onClick={() => navigate(`/book/${book.id}`)} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold">
             صفحة الكتاب
           </button>
           <button onClick={() => navigate("/auth")} className={`${linkColor} hover:underline text-sm py-2`}>تسجيل الدخول</button>
@@ -480,7 +480,7 @@ const BookReader = () => {
   // Simple header for non-PDF content
   const simpleHeader = (
     <header className={`flex-shrink-0 h-11 border-b flex items-center justify-between px-3 z-50 ${headerBg}`}>
-      <button onClick={() => navigate(`/product/${id}`)} className={btnClass}><BookOpen className="w-4 h-4" /></button>
+      <button onClick={() => navigate(`/product/${book.id}`)} className={btnClass}><BookOpen className="w-4 h-4" /></button>
       <p className={`text-xs font-medium ${textColor} truncate`}>{book.name}</p>
       <div className="w-8" />
     </header>
@@ -530,7 +530,7 @@ const BookReader = () => {
         <BookOpen className="w-12 h-12 text-gray-500" />
         <h1 className={`text-lg font-bold ${textColor}`}>{book.name}</h1>
         <p className={`${subTextColor} text-sm`}>{isLocalFile ? "تعذر تحميل الملف" : "رابط غير متاح"}</p>
-        <button onClick={() => navigate(`/product/${id}`)} className={`${linkColor} hover:underline text-sm`}>العودة</button>
+        <button onClick={() => navigate(`/product/${book.id}`)} className={`${linkColor} hover:underline text-sm`}>العودة</button>
       </div>
     );
   }
