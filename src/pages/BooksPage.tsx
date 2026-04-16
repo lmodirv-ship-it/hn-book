@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, BookOpen, ChevronLeft, ChevronRight, Filter } from "lucide-react";
+import { Search, BookOpen, ChevronLeft, ChevronRight, Filter, ArrowUpDown } from "lucide-react";
 import { bookService, categoryService } from "@/services";
 import type { Category } from "@/services/categoryService";
 
@@ -18,9 +18,16 @@ const LANGUAGES = [
   { value: "en", label: "English" },
 ] as const;
 
-const PAGE_SIZE = 50;
+const SORT_OPTIONS = [
+  { value: "created_at:desc", label: "الأحدث" },
+  { value: "created_at:asc", label: "الأقدم" },
+  { value: "price:asc", label: "السعر: الأقل" },
+  { value: "price:desc", label: "السعر: الأعلى" },
+  { value: "page_count:desc", label: "الصفحات: الأكثر" },
+  { value: "page_count:asc", label: "الصفحات: الأقل" },
+] as const;
 
-// ─── helpers ─────────────────────────────────────────────────
+const PAGE_SIZE = 50;
 
 const mapBook = (b: any): Product => ({
   id: b.id,
@@ -54,7 +61,6 @@ const SkeletonCard = () => (
   </div>
 );
 
-/** Build visible page numbers: show max 7 with ellipsis */
 function getPageNumbers(current: number, total: number): (number | "...")[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
   const pages: (number | "...")[] = [];
@@ -68,8 +74,6 @@ function getPageNumbers(current: number, total: number): (number | "...")[] {
   return pages;
 }
 
-// ─── component ───────────────────────────────────────────────
-
 const BooksPage = () => {
   useEffect(() => {
     document.title = "كتب | HN-Book";
@@ -81,6 +85,7 @@ const BooksPage = () => {
     }
     meta.content = "أفضل منصة لقراءة وشراء الكتب بجميع اللغات";
   }, []);
+
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -93,9 +98,9 @@ const BooksPage = () => {
   const [searchDebounced, setSearchDebounced] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [sortValue, setSortValue] = useState("created_at:desc");
   const [dbCategories, setDbCategories] = useState<Category[]>([]);
 
-  // Load categories from database
   useEffect(() => {
     categoryService.getAll().then((result) => {
       if (result.data) setDbCategories(result.data);
@@ -104,7 +109,6 @@ const BooksPage = () => {
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
-  // debounce search 400ms
   useEffect(() => {
     const t = setTimeout(() => {
       setSearchDebounced(searchQuery);
@@ -113,16 +117,18 @@ const BooksPage = () => {
     return () => clearTimeout(t);
   }, [searchQuery]);
 
-  // fetch page data
   const fetchPage = useCallback(async (page: number, search: string) => {
     if (!hasLoadedOnce) setLoading(true);
     setError(null);
     setPageTransitioning(true);
 
+    const [sortBy, sortOrder] = sortValue.split(":") as [any, any];
     const offset = (page - 1) * PAGE_SIZE;
     const filter = {
       limit: PAGE_SIZE,
       offset,
+      sortBy,
+      sortOrder,
       ...(search.trim() ? { search: search.trim() } : {}),
       ...(selectedLanguage !== "all" ? { language: selectedLanguage } : {}),
       ...(selectedCategory !== "all" ? { category: selectedCategory } : {}),
@@ -147,30 +153,11 @@ const BooksPage = () => {
       setPageTransitioning(false);
       setHasLoadedOnce(true);
     }
-  }, [hasLoadedOnce, selectedLanguage, selectedCategory]);
-
-  // Prefetch next page in background
-  const prefetchNextPage = useCallback((page: number, search: string) => {
-    const nextPage = page + 1;
-    const nextOffset = nextPage * PAGE_SIZE;
-    if (nextOffset >= totalCount) return;
-    bookService.getAll({
-      limit: PAGE_SIZE,
-      offset: nextOffset,
-      ...(search.trim() ? { search: search.trim() } : {}),
-    });
-  }, [totalCount]);
+  }, [hasLoadedOnce, selectedLanguage, selectedCategory, sortValue]);
 
   useEffect(() => {
     void fetchPage(currentPage, searchDebounced);
   }, [currentPage, searchDebounced, fetchPage]);
-
-  // Prefetch next page after current page loads
-  useEffect(() => {
-    if (hasLoadedOnce && !loading) {
-      prefetchNextPage(currentPage, searchDebounced);
-    }
-  }, [hasLoadedOnce, loading, currentPage, searchDebounced, prefetchNextPage]);
 
   const goToPage = (page: number) => {
     if (page < 1 || page > totalPages || page === currentPage) return;
@@ -179,8 +166,6 @@ const BooksPage = () => {
   };
 
   const pageNumbers = getPageNumbers(currentPage, totalPages);
-
-  // ─── render ──────────────────────────────────────────────────
 
   return (
     <div className="relative min-h-screen noise-bg" dir="rtl">
@@ -192,7 +177,6 @@ const BooksPage = () => {
           <div className="container mx-auto px-4">
             {/* header */}
             <div className="space-y-4 mb-8">
-              {/* Search + Filters row */}
               <div className="flex flex-wrap items-center gap-3">
                 <div className="relative flex-1 min-w-[200px] max-w-md">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
@@ -227,9 +211,20 @@ const BooksPage = () => {
                     ))}
                   </SelectContent>
                 </Select>
+
+                <Select value={sortValue} onValueChange={(v) => { setSortValue(v); setCurrentPage(1); }}>
+                  <SelectTrigger className="w-[160px] rounded-xl bg-card/30 border-border/20">
+                    <ArrowUpDown className="h-3.5 w-3.5 ml-2 text-muted-foreground/50" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SORT_OPTIONS.map((s) => (
+                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Stats */}
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 <span>{totalCount.toLocaleString()} كتاب</span>
                 <span>•</span>
@@ -265,7 +260,6 @@ const BooksPage = () => {
                   ))}
                 </div>
 
-                {/* pagination */}
                 {totalPages > 1 && (
                   <div className="mt-10 flex items-center justify-center gap-1 flex-wrap">
                     <Button

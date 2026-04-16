@@ -33,7 +33,9 @@ function buildProductsRestUrl(filter?: BookFilter, maxLimit = 100) {
   const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/products`);
 
   url.searchParams.set("select", "id,name,description,short_description,price,original_price,category,image,badge,is_flash_deal,deal_ends_in,reference_code,pdf_url,slug,page_count");
-  url.searchParams.set("order", "created_at.desc");
+  const sortBy = filter?.sortBy ?? "created_at";
+  const sortOrder = filter?.sortOrder ?? "desc";
+  url.searchParams.set("order", `${sortBy}.${sortOrder}`);
   url.searchParams.set("limit", String(limit));
   url.searchParams.set("offset", String(offset));
 
@@ -66,7 +68,7 @@ const cache = new Map<string, { data: ApiResult<Book[]>; ts: number }>();
 const CACHE_TTL_MS = 30_000; // 30 seconds
 
 function cacheKey(filter?: BookFilter): string {
-  return `${filter?.limit ?? 50}:${filter?.offset ?? 0}:${filter?.search ?? ""}:${filter?.category ?? ""}:${filter?.language ?? ""}`;
+  return `${filter?.limit ?? 50}:${filter?.offset ?? 0}:${filter?.search ?? ""}:${filter?.category ?? ""}:${filter?.language ?? ""}:${filter?.sortBy ?? ""}:${filter?.sortOrder ?? ""}`;
 }
 
 /** Clear all cached book queries — call after creating/updating books */
