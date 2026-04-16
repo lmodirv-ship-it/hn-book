@@ -7,7 +7,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useI18n, locales } from "@/lib/i18n";
-import { supabase } from "@/integrations/supabase/client";
+import { authService } from "@/services/authService";
 
 interface NavbarProps {
   categories?: string[];
@@ -42,19 +42,13 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
     let mounted = true;
 
     const syncSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const result = await authService.getSession();
       if (!mounted) return;
-      setUser(session?.user ?? null);
+      setUser(result.data ? { id: result.data.user.id, email: result.data.user.email } : null);
 
-      if (session?.user) {
-        const { data } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .eq("role", "admin")
-          .maybeSingle();
-
-        if (mounted) setIsAdmin(!!data);
+      if (result.data) {
+        const admin = await authService.hasRole(result.data.user.id, "admin");
+        if (mounted) setIsAdmin(admin);
       } else {
         setIsAdmin(false);
       }
@@ -62,19 +56,13 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
 
     syncSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const unsubscribe = authService.onAuthStateChange(async (_event, user) => {
       if (!mounted) return;
-      setUser(session?.user ?? null);
+      setUser(user ? { id: user.id, email: user.email } : null);
 
-      if (session?.user) {
-        const { data } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .eq("role", "admin")
-          .maybeSingle();
-
-        if (mounted) setIsAdmin(!!data);
+      if (user) {
+        const admin = await authService.hasRole(user.id, "admin");
+        if (mounted) setIsAdmin(admin);
       } else {
         setIsAdmin(false);
       }
@@ -82,12 +70,12 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
 
     return () => {
       mounted = false;
-      subscription.unsubscribe();
+      unsubscribe();
     };
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await authService.logout();
     setUser(null);
     setIsAdmin(false);
     navigate("/");
