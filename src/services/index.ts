@@ -17,6 +17,7 @@ export { bookService } from "./bookService";
 export { categoryService } from "./categoryService";
 export { readerService } from "./readerService";
 export { storageService } from "./storageService";
+export { accessService } from "./accessService";
 
 // Re-export types
 export type {
