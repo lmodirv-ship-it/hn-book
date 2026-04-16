@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { supabase } from "@/integrations/supabase/client";
 import { printService, LOGO_CATEGORIES, type Logo } from "@/services/printService";
 import { toast } from "@/hooks/use-toast";
+import { optimizeImage } from "@/lib/image-optimizer";
 
 const LogosAdmin = () => {
   const [logos, setLogos] = useState<Logo[]>([]);
@@ -33,9 +34,10 @@ const LogosAdmin = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    const ext = file.name.split(".").pop();
+    const optimized = await optimizeImage(file);
+    const ext = optimized.name.split(".").pop() || "webp";
     const path = `logos/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("book-images").upload(path, file);
+    const { error } = await supabase.storage.from("book-images").upload(path, optimized);
     if (error) {
       toast({ title: "فشل الرفع", variant: "destructive" });
     } else {

@@ -14,6 +14,7 @@ import {
   getBookFilePublicUrl,
   isReferenceCodeValid,
 } from "@/lib/reference-code";
+import { optimizeImage } from "@/lib/image-optimizer";
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -203,13 +204,14 @@ export const storageService = {
     referenceCode?: string | null
   ): Promise<ApiResult<UploadFileResult>> {
     try {
-      const ext = file.name.split(".").pop() || "jpg";
+      const optimized = await optimizeImage(file);
+      const ext = optimized.name.split(".").pop() || "webp";
       const resolvedRef = referenceCode?.trim().toUpperCase() || (await generateStandaloneReferenceCode());
       const storagePath = buildImageStoragePath(resolvedRef, ext);
 
       const { error: uploadError } = await db.storage
         .from("book-images")
-        .upload(storagePath, file, { upsert: true });
+        .upload(storagePath, optimized, { upsert: true });
       if (uploadError) throw uploadError;
 
       const publicUrl = getImagePublicUrl(storagePath);
@@ -228,13 +230,14 @@ export const storageService = {
     referenceCode?: string | null
   ): Promise<ApiResult<UploadFileResult>> {
     try {
-      const ext = file.name.split(".").pop() || "jpg";
+      const optimized = await optimizeImage(file);
+      const ext = optimized.name.split(".").pop() || "webp";
       const resolvedRef = await ensureProductReferenceCode(productId, referenceCode);
       const storagePath = buildImageStoragePath(resolvedRef, ext);
 
       const { error: uploadError } = await db.storage
         .from("book-images")
-        .upload(storagePath, file, { upsert: true });
+        .upload(storagePath, optimized, { upsert: true });
       if (uploadError) throw uploadError;
 
       const publicUrl = getImagePublicUrl(storagePath);
@@ -245,7 +248,7 @@ export const storageService = {
         .eq("id", productId);
       if (updateError) throw updateError;
 
-      await registerFile(productId, "image", `${resolvedRef}.${ext}`, file.size, "book-images", storagePath, publicUrl);
+      await registerFile(productId, "image", `${resolvedRef}.${ext}`, optimized.size, "book-images", storagePath, publicUrl);
 
       return ok({ publicUrl, referenceCode: resolvedRef, storagePath });
     } catch (err: any) {
