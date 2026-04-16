@@ -198,7 +198,7 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    navigate(`/read/${product.id}`);
+                    navigate(`/read/${product.slug || product.id}`);
                   }}
                   className="mt-1 flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 shadow-sm hover:shadow-md hover:shadow-primary/20 active:scale-[0.98] transition-all duration-200"
                 >

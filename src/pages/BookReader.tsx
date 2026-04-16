@@ -75,7 +75,7 @@ const pageFlipVariants = {
 const pageFlipTransition = { duration: 0.5, ease: [0.645, 0.045, 0.355, 1.0] };
 
 const BookReader = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id: slugOrId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [book, setBook] = useState<BookData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -123,10 +123,11 @@ const BookReader = () => {
   const touchStartY = useRef(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  const { bookmarks, addBookmark, removeBookmark, isBookmarked } = useBookmarks(id);
-  const { highlights, addHighlight, removeHighlight } = useHighlights(id);
-  const { notes, addNote, removeNote } = useNotes(id);
-  const { getSaved, save, restored, setRestored } = useReadingProgress(id);
+  const bookKey = book?.id || slugOrId;
+  const { bookmarks, addBookmark, removeBookmark, isBookmarked } = useBookmarks(bookKey);
+  const { highlights, addHighlight, removeHighlight } = useHighlights(bookKey);
+  const { notes, addNote, removeNote } = useNotes(bookKey);
+  const { getSaved, save, restored, setRestored } = useReadingProgress(bookKey);
 
   // Responsive
   useEffect(() => {
@@ -190,9 +191,12 @@ const BookReader = () => {
   useEffect(() => {
     let objectUrlToRevoke: string | null = null;
     const fetchBook = async () => {
-      if (!id) { setLoading(false); return; }
+      if (!slugOrId) { setLoading(false); return; }
       try {
-        const result = await bookService.getById(id);
+        // Try slug first, fallback to UUID
+        const result = slugOrId.includes('-') && slugOrId.length > 30
+          ? await bookService.getById(slugOrId)
+          : await bookService.getBySlug(slugOrId).then(r => r.data ? r : bookService.getById(slugOrId));
         if (!result.data) return;
         const bookData = result.data;
         setBook({
@@ -262,7 +266,7 @@ const BookReader = () => {
     };
     fetchBook();
     return () => { if (objectUrlToRevoke) URL.revokeObjectURL(objectUrlToRevoke); };
-  }, [id]);
+  }, [slugOrId]);
 
   const onDocumentLoadSuccess = useCallback((result: any) => {
     setNumPages(result.numPages);
@@ -438,7 +442,7 @@ const BookReader = () => {
         <BookOpen className="w-12 h-12 text-gray-500" />
         <h1 className={`text-lg font-bold ${textColor}`}>{book.name}</h1>
         <p className={`${subTextColor} text-sm`}>لا يوجد ملف قابل للمطالعة</p>
-        <button onClick={() => navigate(`/product/${id}`)} className={`${linkColor} hover:underline text-sm`}>العودة لصفحة المنتج</button>
+        <button onClick={() => navigate(`/product/${book.id}`)} className={`${linkColor} hover:underline text-sm`}>العودة لصفحة المنتج</button>
       </div>
     );
   }
@@ -450,7 +454,7 @@ const BookReader = () => {
         <h1 className={`text-lg font-bold ${textColor}`}>{book.name}</h1>
         <p className={`${subTextColor} text-sm`}>يجب شراء الكتاب أو الاشتراك للقراءة</p>
         <div className="flex gap-3">
-          <button onClick={() => navigate(`/book/${id}`)} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold">
+          <button onClick={() => navigate(`/book/${book.id}`)} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold">
             صفحة الكتاب
           </button>
           <button onClick={() => navigate("/auth")} className={`${linkColor} hover:underline text-sm py-2`}>تسجيل الدخول</button>
@@ -477,7 +481,7 @@ const BookReader = () => {
   // Simple header for non-PDF content
   const simpleHeader = (
     <header className={`flex-shrink-0 h-11 border-b flex items-center justify-between px-3 z-50 ${headerBg}`}>
-      <button onClick={() => navigate(`/product/${id}`)} className={btnClass}><BookOpen className="w-4 h-4" /></button>
+      <button onClick={() => navigate(`/product/${book.id}`)} className={btnClass}><BookOpen className="w-4 h-4" /></button>
       <p className={`text-xs font-medium ${textColor} truncate`}>{book.name}</p>
       <div className="w-8" />
     </header>
@@ -527,7 +531,7 @@ const BookReader = () => {
         <BookOpen className="w-12 h-12 text-gray-500" />
         <h1 className={`text-lg font-bold ${textColor}`}>{book.name}</h1>
         <p className={`${subTextColor} text-sm`}>{isLocalFile ? "تعذر تحميل الملف" : "رابط غير متاح"}</p>
-        <button onClick={() => navigate(`/product/${id}`)} className={`${linkColor} hover:underline text-sm`}>العودة</button>
+        <button onClick={() => navigate(`/product/${book.id}`)} className={`${linkColor} hover:underline text-sm`}>العودة</button>
       </div>
     );
   }
