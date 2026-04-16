@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { CreditCard, Truck, User, Mail, Phone, MapPin, Globe, ArrowLeft, ShoppingCart, Loader2, Shield } from "lucide-react";
+import { CreditCard, Truck, User, Mail, Phone, MapPin, Globe, ArrowLeft, ShoppingCart, Loader2, Shield, Ticket, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useCart } from "@/contexts/CartContext";
 import { orderService } from "@/services/orderService";
+import { couponService, type CouponValidation } from "@/services/couponService";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
