@@ -113,8 +113,9 @@ const BooksPage = () => {
     } finally {
       setLoading(false);
       setPageTransitioning(false);
+      setHasLoadedOnce(true);
     }
-  }, []);
+  }, [hasLoadedOnce]);
 
   useEffect(() => {
     void fetchPage(currentPage, searchDebounced);
