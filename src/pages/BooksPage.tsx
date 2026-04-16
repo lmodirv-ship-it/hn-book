@@ -85,8 +85,7 @@ const BooksPage = () => {
 
   // fetch page data
   const fetchPage = useCallback(async (page: number, search: string) => {
-    // Only show full skeleton on first load (no existing data)
-    if (products.length === 0) setLoading(true);
+    if (!hasLoadedOnce) setLoading(true);
     setError(null);
     setPageTransitioning(true);
 
