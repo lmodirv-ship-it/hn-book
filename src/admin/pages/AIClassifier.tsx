@@ -64,7 +64,9 @@ const AIClassifier = () => {
   const [training, setTraining] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
-  const [tab, setTab] = useState<"overview" | "corrections">("overview");
+  const [tab, setTab] = useState<"engine" | "overview" | "corrections">("engine");
+  const [engineStatus, setEngineStatus] = useState<AIEngineStatus | null>(null);
+  const [checkingHealth, setCheckingHealth] = useState(false);
 
   const fetchStats = useCallback(async () => {
     try {
