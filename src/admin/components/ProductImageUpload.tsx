@@ -1,11 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Upload, X, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import {
-  ensureProductReferenceCode,
-  isReferenceCodeValid,
-} from "@/lib/reference-code";
+import { storageService } from "@/services/storageService";
+import { isReferenceCodeValid } from "@/lib/reference-code";
 
 interface ProductImageUploadProps {
   productId: string;
@@ -13,14 +10,6 @@ interface ProductImageUploadProps {
   referenceCode?: string | null;
   onImageUpdated: (url: string, referenceCode?: string) => void;
 }
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-
-const buildImageStoragePath = (referenceCode: string, ext: string) =>
-  `books/${referenceCode}/${referenceCode}.${ext}`;
-
-const getImagePublicUrl = (storagePath: string) =>
-  `${SUPABASE_URL}/storage/v1/object/public/book-images/${storagePath}`;
 
 export const ProductImageUpload = ({ productId, currentImage, referenceCode, onImageUpdated }: ProductImageUploadProps) => {
   const [uploading, setUploading] = useState(false);
@@ -46,90 +35,32 @@ export const ProductImageUpload = ({ productId, currentImage, referenceCode, onI
     }
 
     setUploading(true);
-    try {
-      const ext = file.name.split(".").pop();
-      const resolvedRef = await ensureProductReferenceCode(productId, referenceCode);
-      const storagePath = buildImageStoragePath(resolvedRef, ext || "jpg");
+    const result = await storageService.uploadBookImage(productId, file, referenceCode);
+    setUploading(false);
 
-      const { error: uploadError } = await supabase.storage
-        .from("book-images")
-        .upload(storagePath, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const publicUrl = getImagePublicUrl(storagePath);
-
-      // Update product image field
-      const { error: updateError } = await supabase
-        .from("products")
-        .update({ image: publicUrl, reference_code: resolvedRef } as never)
-        .eq("id", productId);
-
-      if (updateError) throw updateError;
-
-      // Register file in product_files with reference
-      // First remove old primary image reference
-      await supabase
-        .from("product_files")
-        .delete()
-        .eq("product_id", productId)
-        .eq("file_type", "image")
-        .eq("is_primary", true);
-
-      // Insert new reference
-      await supabase.from("product_files").insert({
-        product_id: productId,
-        file_type: "image" as any,
-        file_name: `${resolvedRef}.${ext}`,
-        file_size: file.size,
-        storage_path: `book-images/${storagePath}`,
-        public_url: publicUrl,
-        is_primary: true,
-      });
-
-      setPreview(publicUrl);
-      onImageUpdated(publicUrl, resolvedRef);
-      toast.success(`تم رفع الصورة بنجاح · المرجع ${resolvedRef}`);
-    } catch (err: any) {
-      console.error(err);
-      toast.error("فشل رفع الصورة: " + (err.message || "خطأ غير معروف"));
-    } finally {
-      setUploading(false);
+    if (result.error) {
+      toast.error("فشل رفع الصورة: " + result.error);
+      return;
     }
+
+    setPreview(result.data!.publicUrl);
+    onImageUpdated(result.data!.publicUrl, result.data!.referenceCode);
+    toast.success(`تم رفع الصورة بنجاح · المرجع ${result.data!.referenceCode}`);
   };
 
   const handleRemove = async () => {
     setUploading(true);
-    try {
-      if (isReferenceCodeValid(referenceCode)) {
-        // Try removing common image extensions
-        const ref = referenceCode!.trim().toUpperCase();
-        for (const ext of ["jpg", "jpeg", "png", "webp"]) {
-          await supabase.storage.from("book-images").remove([buildImageStoragePath(ref, ext)]);
-        }
-      } else if (preview?.includes("book-images/")) {
-        const path = preview.split("book-images/")[1];
-        await supabase.storage.from("book-images").remove([path]);
-      }
+    const result = await storageService.removeBookImage(productId, preview, referenceCode);
+    setUploading(false);
 
-      await supabase.from("products").update({ image: null }).eq("id", productId);
-
-      // Remove reference from product_files
-      await supabase
-        .from("product_files")
-        .delete()
-        .eq("product_id", productId)
-        .eq("file_type", "image")
-        .eq("is_primary", true);
-
-      setPreview(null);
-      onImageUpdated("");
-      toast.success("تم حذف الصورة");
-    } catch (err: any) {
+    if (result.error) {
       toast.error("فشل حذف الصورة");
-    } finally {
-      setUploading(false);
+      return;
     }
+
+    setPreview(null);
+    onImageUpdated("");
+    toast.success("تم حذف الصورة");
   };
 
   return (

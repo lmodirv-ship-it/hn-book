@@ -1,13 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { FileText, Upload, X, Loader2, Download } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import {
-  buildBookPdfStoragePath,
-  ensureProductReferenceCode,
-  getBookFilePublicUrl,
-  isReferenceCodeValid,
-} from "@/lib/reference-code";
+import { storageService } from "@/services/storageService";
+import { isReferenceCodeValid } from "@/lib/reference-code";
 
 interface BookPdfUploadProps {
   productId: string;
@@ -34,85 +29,33 @@ export const BookPdfUpload = ({ productId, currentPdfUrl, referenceCode, onPdfUp
       return;
     }
 
-    // No size limit - files of any size are supported
-
     setUploading(true);
-    try {
-      const resolvedReferenceCode = await ensureProductReferenceCode(productId, referenceCode);
-      const storagePath = buildBookPdfStoragePath(resolvedReferenceCode);
+    const result = await storageService.uploadBookPdf(productId, file, referenceCode);
+    setUploading(false);
 
-      const { error: uploadError } = await supabase.storage
-        .from("book-files")
-        .upload(storagePath, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const publicUrl = getBookFilePublicUrl(storagePath);
-
-      // Update product pdf_url field
-      const { error: updateError } = await supabase
-        .from("products")
-        .update({ pdf_url: publicUrl, reference_code: resolvedReferenceCode } as never)
-        .eq("id", productId);
-
-      if (updateError) throw updateError;
-
-      // Remove old PDF reference
-      await supabase
-        .from("product_files")
-        .delete()
-        .eq("product_id", productId)
-        .eq("file_type", "pdf");
-
-      // Insert new reference
-      await supabase.from("product_files").insert({
-        product_id: productId,
-        file_type: "pdf" as any,
-        file_name: `${resolvedReferenceCode}.pdf`,
-        file_size: file.size,
-        storage_path: `book-files/${storagePath}`,
-        public_url: publicUrl,
-        is_primary: true,
-      });
-
-      setPdfUrl(publicUrl);
-      onPdfUpdated(publicUrl, resolvedReferenceCode);
-      toast.success(`تم رفع ملف PDF بنجاح · المرجع ${resolvedReferenceCode}`);
-    } catch (err: any) {
-      console.error(err);
-      toast.error("فشل رفع الملف: " + (err.message || "خطأ غير معروف"));
-    } finally {
-      setUploading(false);
+    if (result.error) {
+      toast.error("فشل رفع الملف: " + result.error);
+      return;
     }
+
+    setPdfUrl(result.data!.publicUrl);
+    onPdfUpdated(result.data!.publicUrl, result.data!.referenceCode);
+    toast.success(`تم رفع ملف PDF بنجاح · المرجع ${result.data!.referenceCode}`);
   };
 
   const handleRemove = async () => {
     setUploading(true);
-    try {
-      if (isReferenceCodeValid(referenceCode)) {
-        await supabase.storage.from("book-files").remove([buildBookPdfStoragePath(referenceCode!.trim().toUpperCase())]);
-      } else if (pdfUrl?.includes("book-files/")) {
-        const path = pdfUrl.split("book-files/")[1];
-        await supabase.storage.from("book-files").remove([path]);
-      }
+    const result = await storageService.removeBookPdf(productId, pdfUrl, referenceCode);
+    setUploading(false);
 
-      await supabase.from("products").update({ pdf_url: null } as any).eq("id", productId);
-
-      // Remove reference
-      await supabase
-        .from("product_files")
-        .delete()
-        .eq("product_id", productId)
-        .eq("file_type", "pdf");
-
-      setPdfUrl(null);
-      onPdfUpdated("");
-      toast.success("تم حذف ملف PDF");
-    } catch (err: any) {
+    if (result.error) {
       toast.error("فشل حذف الملف");
-    } finally {
-      setUploading(false);
+      return;
     }
+
+    setPdfUrl(null);
+    onPdfUpdated("");
+    toast.success("تم حذف ملف PDF");
   };
 
   return (
