@@ -64,6 +64,7 @@ const BooksPage = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pageTransitioning, setPageTransitioning] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -83,8 +84,10 @@ const BooksPage = () => {
 
   // fetch page data
   const fetchPage = useCallback(async (page: number, search: string) => {
-    setLoading(true);
+    // Only show full skeleton on first load (no existing data)
+    if (products.length === 0) setLoading(true);
     setError(null);
+    setPageTransitioning(true);
 
     const offset = (page - 1) * PAGE_SIZE;
     const filter = {
@@ -109,6 +112,7 @@ const BooksPage = () => {
       setError("تعذر تحميل الكتب حالياً. حاول مرة أخرى.");
     } finally {
       setLoading(false);
+      setPageTransitioning(false);
     }
   }, []);
 
@@ -154,7 +158,7 @@ const BooksPage = () => {
             </div>
 
             {/* content */}
-            {loading ? (
+            {loading && products.length === 0 ? (
               <div className="grid gap-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 bg-black/90 rounded-2xl p-2 border border-white/5 shadow-[inset_0_0_30px_-10px_rgba(0,0,0,0.8)]">
                 {Array.from({ length: 12 }).map((_, i) => (
                   <SkeletonCard key={i} />
@@ -175,7 +179,7 @@ const BooksPage = () => {
               </div>
             ) : (
               <>
-                <div className="grid gap-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 bg-black/90 rounded-2xl p-2 border border-white/5 shadow-[inset_0_0_30px_-10px_rgba(0,0,0,0.8)]">
+                <div className={`relative grid gap-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 bg-black/90 rounded-2xl p-2 border border-white/5 shadow-[inset_0_0_30px_-10px_rgba(0,0,0,0.8)] transition-opacity duration-300 ${pageTransitioning ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
                   {products.map((product, i) => (
                     <ProductCard key={product.id} product={product} index={i} />
                   ))}
