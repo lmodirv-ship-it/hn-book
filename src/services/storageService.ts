@@ -96,19 +96,39 @@ async function registerFile(
 
 export const storageService = {
   /**
-   * Upload a book PDF file.
-   * - With productId: uploads and links the file to an existing product.
-   * - Without productId: uploads first and returns pdf_url + reference_code for later book creation.
+   * Upload a PDF file to storage (standalone — no product record needed).
+   * Returns publicUrl, referenceCode, storagePath.
    */
   async uploadBookPdf(
-    productId: string | null,
     file: File,
     referenceCode?: string | null
   ): Promise<ApiResult<UploadFileResult>> {
     try {
-      const resolvedRef = productId
-        ? await ensureProductReferenceCode(productId, referenceCode)
-        : await generateStandaloneReferenceCode(referenceCode);
+      const resolvedRef = await generateStandaloneReferenceCode(referenceCode);
+      const storagePath = buildBookPdfStoragePath(resolvedRef);
+
+      const { error: uploadError } = await db.storage
+        .from("book-files")
+        .upload(storagePath, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const publicUrl = getBookFilePublicUrl(storagePath);
+      return ok({ publicUrl, referenceCode: resolvedRef, storagePath });
+    } catch (err: any) {
+      return fail(err.message || "فشل رفع ملف PDF");
+    }
+  },
+
+  /**
+   * Upload a PDF for an EXISTING product (updates product record + registers file).
+   */
+  async uploadBookPdfForProduct(
+    productId: string,
+    file: File,
+    referenceCode?: string | null
+  ): Promise<ApiResult<UploadFileResult>> {
+    try {
+      const resolvedRef = await ensureProductReferenceCode(productId, referenceCode);
       const storagePath = buildBookPdfStoragePath(resolvedRef);
 
       const { error: uploadError } = await db.storage
@@ -118,19 +138,29 @@ export const storageService = {
 
       const publicUrl = getBookFilePublicUrl(storagePath);
 
-      if (productId) {
-        const { error: updateError } = await db
-          .from("products")
-          .update({ pdf_url: publicUrl, reference_code: resolvedRef } as never)
-          .eq("id", productId);
-        if (updateError) throw updateError;
+      const { error: updateError } = await db
+        .from("products")
+        .update({ pdf_url: publicUrl, reference_code: resolvedRef } as never)
+        .eq("id", productId);
+      if (updateError) throw updateError;
 
-        await registerFile(productId, "pdf", `${resolvedRef}.pdf`, file.size, "book-files", storagePath, publicUrl);
-      }
+      await registerFile(productId, "pdf", `${resolvedRef}.pdf`, file.size, "book-files", storagePath, publicUrl);
 
       return ok({ publicUrl, referenceCode: resolvedRef, storagePath });
     } catch (err: any) {
       return fail(err.message || "فشل رفع ملف PDF");
+    }
+  },
+
+  /**
+   * Remove a PDF file by its storage path (cleanup for failed book creation).
+   */
+  async removePdfByPath(storagePath: string): Promise<ApiResult<null>> {
+    try {
+      await db.storage.from("book-files").remove([storagePath]);
+      return ok(null);
+    } catch (err: any) {
+      return fail(err.message || "فشل حذف ملف PDF");
     }
   },
 
@@ -166,9 +196,33 @@ export const storageService = {
   },
 
   /**
-   * Upload a book cover image for a product.
+   * Upload a cover image to storage (standalone — no product record needed).
    */
   async uploadBookImage(
+    file: File,
+    referenceCode?: string | null
+  ): Promise<ApiResult<UploadFileResult>> {
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const resolvedRef = referenceCode?.trim().toUpperCase() || (await generateStandaloneReferenceCode());
+      const storagePath = buildImageStoragePath(resolvedRef, ext);
+
+      const { error: uploadError } = await db.storage
+        .from("book-images")
+        .upload(storagePath, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const publicUrl = getImagePublicUrl(storagePath);
+      return ok({ publicUrl, referenceCode: resolvedRef, storagePath });
+    } catch (err: any) {
+      return fail(err.message || "فشل رفع الصورة");
+    }
+  },
+
+  /**
+   * Upload a cover image for an EXISTING product (updates product record + registers file).
+   */
+  async uploadBookImageForProduct(
     productId: string,
     file: File,
     referenceCode?: string | null
@@ -185,23 +239,15 @@ export const storageService = {
 
       const publicUrl = getImagePublicUrl(storagePath);
 
-      // Update product
       const { error: updateError } = await db
         .from("products")
         .update({ image: publicUrl, reference_code: resolvedRef } as never)
         .eq("id", productId);
       if (updateError) throw updateError;
 
-      // Register in product_files
       await registerFile(productId, "image", `${resolvedRef}.${ext}`, file.size, "book-images", storagePath, publicUrl);
 
       return ok({ publicUrl, referenceCode: resolvedRef, storagePath });
-
-      // ── Future: REST API ──
-      // const formData = new FormData();
-      // formData.append("image", file);
-      // const result = await fetch(`${API_BASE}/books/${productId}/image`, { method: "POST", body: formData });
-      // return ok(await result.json());
     } catch (err: any) {
       return fail(err.message || "فشل رفع الصورة");
     }

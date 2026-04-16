@@ -56,23 +56,22 @@ const BulkPdfUpload = () => {
       updateFile(i, { status: "uploading" });
 
       // 1. Upload PDF first
-      const uploadResult = await storageService.uploadBookPdf(null, current.file);
-      if (uploadResult.error) throw new Error(uploadResult.error);
+      const pdfResult = await storageService.uploadBookPdf(current.file);
+      if (pdfResult.error) throw new Error(pdfResult.error);
 
-      const { publicUrl, referenceCode } = uploadResult.data!;
-
-      // 2. Create book only after successful upload
+      // 2. Create book with real data
       const createResult = await bookService.create({
         name: current.title,
         category: current.category,
         price: 0,
-        pdfUrl: publicUrl,
-        referenceCode,
-        image: publicUrl,
+        pdfUrl: pdfResult.data!.publicUrl,
+        referenceCode: pdfResult.data!.referenceCode,
+        image: pdfResult.data!.publicUrl,
       });
 
       if (createResult.error) {
-        await storageService.removeBookPdf("", publicUrl, referenceCode);
+        // Cleanup orphaned PDF
+        await storageService.removePdfByPath(pdfResult.data!.storagePath);
         throw new Error(createResult.error);
       }
 

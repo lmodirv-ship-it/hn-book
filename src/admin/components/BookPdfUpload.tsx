@@ -30,7 +30,7 @@ export const BookPdfUpload = ({ productId, currentPdfUrl, referenceCode, onPdfUp
     }
 
     setUploading(true);
-    const result = await storageService.uploadBookPdf(productId, file, referenceCode);
+    const result = await storageService.uploadBookPdfForProduct(productId, file, referenceCode);
     setUploading(false);
 
     if (result.error) {
