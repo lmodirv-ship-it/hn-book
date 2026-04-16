@@ -201,17 +201,44 @@ const BooksPage = () => {
         <section className="relative py-8 sm:py-12">
           <div className="container mx-auto px-4">
             {/* header */}
-            <div className="space-y-3 mb-8">
-              <div className="relative max-w-md">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
-                <Input
-                  placeholder="ابحث عن كتاب..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 rounded-xl bg-card/30 border-border/20 focus:border-primary/30 transition-colors"
-                />
+            <div className="space-y-4 mb-8">
+              {/* Search + Filters row */}
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="relative flex-1 min-w-[200px] max-w-md">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
+                  <Input
+                    placeholder="ابحث عن كتاب..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 rounded-xl bg-card/30 border-border/20 focus:border-primary/30 transition-colors"
+                  />
+                </div>
+
+                <Select value={selectedLanguage} onValueChange={(v) => { setSelectedLanguage(v); setSelectedCategory("all"); setCurrentPage(1); }}>
+                  <SelectTrigger className="w-[140px] rounded-xl bg-card/30 border-border/20">
+                    <Filter className="h-3.5 w-3.5 ml-2 text-muted-foreground/50" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LANGUAGES.map((l) => (
+                      <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={selectedCategory} onValueChange={(v) => { setSelectedCategory(v); setCurrentPage(1); }}>
+                  <SelectTrigger className="w-[160px] rounded-xl bg-card/30 border-border/20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
+              {/* Stats */}
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 <span>{totalCount.toLocaleString()} كتاب</span>
                 <span>•</span>
