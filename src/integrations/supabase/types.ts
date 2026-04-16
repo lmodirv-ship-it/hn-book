@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          parent_id: string | null
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          parent_id?: string | null
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          parent_id?: string | null
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coupons: {
         Row: {
           applies_to: string
@@ -284,6 +328,7 @@ export type Database = {
         Row: {
           badge: string | null
           category: string
+          category_id: string | null
           created_at: string
           deal_ends_in: number | null
           description: string | null
@@ -304,6 +349,7 @@ export type Database = {
         Insert: {
           badge?: string | null
           category?: string
+          category_id?: string | null
           created_at?: string
           deal_ends_in?: number | null
           description?: string | null
@@ -324,6 +370,7 @@ export type Database = {
         Update: {
           badge?: string | null
           category?: string
+          category_id?: string | null
           created_at?: string
           deal_ends_in?: number | null
           description?: string | null
@@ -341,7 +388,15 @@ export type Database = {
           slug?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
