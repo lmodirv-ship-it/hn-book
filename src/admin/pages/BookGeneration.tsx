@@ -606,15 +606,19 @@ const BookGeneration = () => {
           ) : (
             <>
               <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-                <Upload className="w-8 h-8 text-primary" />
+                <currentTarget.icon className="w-8 h-8 text-primary" />
               </div>
               <div className="text-center">
-                <p className="text-sm font-medium text-foreground">اسحب الملفات هنا أو اضغط للتحميل</p>
+                <p className="text-sm font-medium text-foreground">
+                  اسحب الملفات هنا أو اضغط للتحميل — <span className="text-primary font-bold">{currentTarget.label}</span>
+                </p>
                 <p className="text-[11px] text-muted-foreground mt-1.5">
-                  PDF · صور · Word · PowerPoint · Excel · <strong>ZIP</strong> · وأكثر
+                  {targetType === "books" && "PDF · صور · Word · PowerPoint · Excel · ZIP · وأكثر"}
+                  {targetType === "tablou" && "صور فقط (JPG, PNG, WebP) — يُنشئ تابلو مع 3 أحجام تلقائياً"}
+                  {targetType === "cards" && "صور فقط (JPG, PNG) — يُنشئ قالب بطاقة أعمال"}
                 </p>
                 <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-                  نظام متكامل: تحليل ← تصنيف ← ترقيم ← رفع ← حفظ ← رابط تحميل · <strong>بدون حد للحجم</strong>
+                  نظام متكامل: رفع ← تصنيف ← ترقيم ← حفظ تلقائي
                 </p>
               </div>
             </>
@@ -624,7 +628,7 @@ const BookGeneration = () => {
         <input
           ref={fileInputRef}
           type="file"
-          accept="*/*"
+          accept={currentTarget.accept}
           multiple
           onChange={(e) => e.target.files && handleFiles(e.target.files)}
           className="hidden"
