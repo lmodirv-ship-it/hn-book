@@ -334,12 +334,12 @@ export type Database = {
           description: string | null
           features: string[] | null
           id: string
-          image: string | null
+          image: string
           is_active: boolean | null
           is_flash_deal: boolean | null
           name: string
           original_price: number | null
-          pdf_url: string | null
+          pdf_url: string
           price: number
           reference_code: string | null
           short_description: string | null
@@ -355,12 +355,12 @@ export type Database = {
           description?: string | null
           features?: string[] | null
           id?: string
-          image?: string | null
+          image?: string
           is_active?: boolean | null
           is_flash_deal?: boolean | null
           name: string
           original_price?: number | null
-          pdf_url?: string | null
+          pdf_url: string
           price?: number
           reference_code?: string | null
           short_description?: string | null
@@ -376,12 +376,12 @@ export type Database = {
           description?: string | null
           features?: string[] | null
           id?: string
-          image?: string | null
+          image?: string
           is_active?: boolean | null
           is_flash_deal?: boolean | null
           name?: string
           original_price?: number | null
-          pdf_url?: string | null
+          pdf_url?: string
           price?: number
           reference_code?: string | null
           short_description?: string | null
