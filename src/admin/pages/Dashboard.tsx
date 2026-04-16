@@ -166,12 +166,15 @@ const AdminDashboard = () => {
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
 
-      const [productsRes, customersRes, ordersRes, topProdsRes, jobsRes] = await Promise.all([
+      const [productsRes, customersRes, ordersRes, topProdsRes, jobsRes, visitorsRes, todayVisitorsRes, profilesRes] = await Promise.all([
         supabase.from("products").select("id, category, is_active", { count: "exact" }),
         supabase.from("customers").select("id", { count: "exact", head: true }),
         supabase.from("orders").select("id, order_number, amount, status, created_at, customers(name), products(name)").order("created_at", { ascending: false }),
         supabase.from("products").select("id, name, category, price, image, is_active").limit(5),
         supabase.from("upload_jobs").select("id, status, created_at"),
+        supabase.from("visitors").select("id", { count: "exact", head: true }),
+        supabase.from("visitors").select("id", { count: "exact", head: true }).gte("visit_time", todayStart.toISOString()),
+        supabase.from("profiles").select("id", { count: "exact", head: true }),
       ]);
 
       const jobs = jobsRes.data || [];
