@@ -38,8 +38,8 @@ function buildProductsRestUrl(filter?: BookFilter, maxLimit = 100) {
   url.searchParams.set("offset", String(offset));
 
   // Only show books with valid PDF
-  url.searchParams.set("pdf_url", "not.is.null");
-  url.searchParams.set("pdf_url", "neq.");
+  url.searchParams.append("pdf_url", "not.is.null");
+  url.searchParams.append("pdf_url", "neq.");
 
   // Apply category filter
   if (filter?.category && filter.category !== "all") {
