@@ -12,6 +12,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import BookCover from "@/components/BookCover";
 import ProductCard from "@/components/ProductCard";
+import BookRecommendations from "@/components/BookRecommendations";
 import Paywall from "@/components/Paywall";
 import { bookService } from "@/services";
 import { accessService } from "@/services/accessService";
@@ -683,37 +684,21 @@ const ProductDetail = () => {
           </motion.div>
         </div>
 
-        {/* Related Products */}
-        {relatedProducts.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true, margin: "-50px" }}
-            className="mt-16 lg:mt-24"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-foreground">منتجات مشابهة</h2>
-              <Link to="/" className="text-sm text-primary hover:underline flex items-center gap-1">
-                عرض الكل
-                <ChevronLeft className="w-4 h-4" />
-              </Link>
-            </div>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-              {relatedProducts.map((p, i) => (
-                <motion.div
-                  key={p.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  viewport={{ once: true }}
-                >
-                  <ProductCard product={p} index={i} />
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        )}
+        {/* Recommendations */}
+        <div className="mt-16 lg:mt-24 space-y-12">
+          <BookRecommendations
+            type="similar"
+            bookId={product.id}
+            category={product.category}
+            title="كتب مشابهة"
+            limit={4}
+          />
+          <BookRecommendations
+            type="popular"
+            title="الأكثر شعبية"
+            limit={4}
+          />
+        </div>
       </div>
 
       <Footer />

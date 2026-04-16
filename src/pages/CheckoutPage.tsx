@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { CreditCard, Truck, User, Mail, Phone, MapPin, Globe, ArrowLeft, ShoppingCart, Loader2, Shield } from "lucide-react";
+import { CreditCard, Truck, User, Mail, Phone, MapPin, Globe, ArrowLeft, ShoppingCart, Loader2, Shield, Ticket, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useCart } from "@/contexts/CartContext";
 import { orderService } from "@/services/orderService";
+import { couponService, type CouponValidation } from "@/services/couponService";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -29,6 +30,9 @@ const CheckoutPage = () => {
   const navigate = useNavigate();
   const { items, totalPrice, clearCart, itemCount } = useCart();
   const [submitting, setSubmitting] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponResult, setCouponResult] = useState<CouponValidation | null>(null);
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -38,6 +42,31 @@ const CheckoutPage = () => {
     paymentMethod: "cod",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const discountAmount = couponResult?.isValid ? couponResult.discountAmount : 0;
+  const finalTotal = Math.max(0, totalPrice - discountAmount);
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setValidatingCoupon(true);
+    const result = await couponService.validate(couponCode, totalPrice);
+    setValidatingCoupon(false);
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+    setCouponResult(result.data!);
+    if (result.data!.isValid) {
+      toast.success(result.data!.message);
+    } else {
+      toast.error(result.data!.message);
+    }
+  };
+
+  const removeCoupon = () => {
+    setCouponCode("");
+    setCouponResult(null);
+  };
 
   const validate = (): boolean => {
     const e: Record<string, string> = {};
@@ -68,7 +97,7 @@ const CheckoutPage = () => {
     setSubmitting(true);
     const result = await orderService.createOrder({
       items: items.map((i) => ({ bookId: i.bookId, price: i.price })),
-      totalAmount: totalPrice,
+      totalAmount: finalTotal,
       shippingName: form.name.trim(),
       shippingEmail: form.email.trim(),
       shippingPhone: form.phone.trim(),
@@ -81,6 +110,11 @@ const CheckoutPage = () => {
     if (result.error) {
       toast.error(result.error);
       return;
+    }
+
+    // Increment coupon usage
+    if (couponResult?.isValid) {
+      await couponService.incrementUsage(couponResult.code);
     }
 
     clearCart();
@@ -255,21 +289,69 @@ const CheckoutPage = () => {
                       </div>
                     ))}
                   </div>
+
+                  {/* Coupon */}
+                  <Separator className="bg-border/20" />
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1"><Ticket className="w-3 h-3" /> كوبون خصم</p>
+                    {couponResult?.isValid ? (
+                      <div className="flex items-center justify-between rounded-lg bg-primary/5 border border-primary/20 px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          <Check className="w-3.5 h-3.5 text-primary" />
+                          <span className="text-xs font-semibold text-primary">{couponResult.code}</span>
+                          <span className="text-[10px] text-muted-foreground">{couponResult.message}</span>
+                        </div>
+                        <button onClick={removeCoupon} className="p-1 hover:bg-destructive/10 rounded transition-colors">
+                          <X className="w-3 h-3 text-destructive" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Input
+                          value={couponCode}
+                          onChange={(e) => setCouponCode(e.target.value)}
+                          placeholder="أدخل الكوبون"
+                          className="rounded-lg bg-background/50 border-border/20 text-xs h-9"
+                          dir="ltr"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="rounded-lg h-9 text-xs px-3"
+                          disabled={validatingCoupon || !couponCode.trim()}
+                          onClick={handleApplyCoupon}
+                        >
+                          {validatingCoupon ? <Loader2 className="w-3 h-3 animate-spin" /> : "تطبيق"}
+                        </Button>
+                      </div>
+                    )}
+                    {couponResult && !couponResult.isValid && (
+                      <p className="text-[10px] text-destructive">{couponResult.message}</p>
+                    )}
+                  </div>
+
                   <Separator className="bg-border/20" />
                   <div className="space-y-1.5 text-sm">
                     <div className="flex justify-between text-muted-foreground">
                       <span>الكتب ({itemCount})</span>
                       <span>{totalPrice} د.م</span>
                     </div>
+                    {discountAmount > 0 && (
+                      <div className="flex justify-between text-primary">
+                        <span className="text-xs">الخصم</span>
+                        <span className="text-xs font-semibold">-{discountAmount} د.م</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-muted-foreground">
                       <span>التوصيل</span>
-                      <span className="text-green-500 text-xs font-semibold">مجاني</span>
+                      <span className="text-xs font-semibold" style={{ color: "hsl(var(--primary))" }}>مجاني</span>
                     </div>
                   </div>
                   <Separator className="bg-border/20" />
                   <div className="flex justify-between font-bold text-foreground">
                     <span>الإجمالي</span>
-                    <span className="text-primary text-lg">{totalPrice} د.م</span>
+                    <span className="text-primary text-lg">{finalTotal} د.م</span>
                   </div>
                   <Button
                     type="submit"
@@ -279,7 +361,7 @@ const CheckoutPage = () => {
                     {submitting ? (
                       <><Loader2 className="w-4 h-4 animate-spin" /> جارٍ إنشاء الطلب...</>
                     ) : (
-                      <><ArrowLeft className="w-4 h-4" /> تأكيد الطلب — {totalPrice} د.م</>
+                      <><ArrowLeft className="w-4 h-4" /> تأكيد الطلب — {finalTotal} د.م</>
                     )}
                   </Button>
                   <p className="text-[10px] text-center text-muted-foreground flex items-center justify-center gap-1">

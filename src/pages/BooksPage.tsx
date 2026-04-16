@@ -4,6 +4,7 @@ import ParticleCanvas from "@/components/ParticleCanvas";
 import Navbar from "@/components/Navbar";
 import ProductCard from "@/components/ProductCard";
 import Footer from "@/components/Footer";
+import BookRecommendations from "@/components/BookRecommendations";
 import type { Product } from "@/lib/products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -371,6 +372,15 @@ const BooksPage = () => {
             </AnimatePresence>
           </div>
         </section>
+
+        {/* Recommendations */}
+        <section className="py-10">
+          <div className="container mx-auto px-4 space-y-12">
+            <BookRecommendations type="popular" title="الأكثر شعبية 🔥" limit={4} />
+            <BookRecommendations type="newest" title="أحدث الإضافات ✨" limit={4} />
+          </div>
+        </section>
+
         <Footer />
       </div>
     </div>
