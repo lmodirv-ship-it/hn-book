@@ -33,6 +33,7 @@ import DocumentProcessing from "./pages/DocumentProcessing.tsx";
 import DocumentProcessor from "./admin/pages/DocumentProcessor.tsx";
 import CategoryManagement from "./admin/pages/CategoryManagement.tsx";
 import PricingManagement from "./admin/pages/PricingManagement.tsx";
+import DatabaseManager from "./admin/pages/DatabaseManager.tsx";
 
 const queryClient = new QueryClient();
 
@@ -76,6 +77,7 @@ const App = () => (
               <Route path="health-check" element={<SystemHealthCheck />} />
               <Route path="settings" element={<AdminSettings />} />
               <Route path="pricing" element={<PricingManagement />} />
+              <Route path="database" element={<DatabaseManager />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />
