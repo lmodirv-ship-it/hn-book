@@ -100,8 +100,12 @@ const BulkPdfUpload = () => {
     }
 
     setProcessing(false);
-    if (success) toast.success(`تم إنشاء ${success} كتاب${failed ? ` · فشل ${failed}` : ""}`);
-    else if (failed) toast.error(`فشل رفع جميع الملفات (${failed})`);
+    if (success) {
+      invalidateBookCache();
+      toast.success(`تم إنشاء ${success} كتاب${failed ? ` · فشل ${failed}` : ""}`);
+    } else if (failed) {
+      toast.error(`فشل رفع جميع الملفات (${failed})`);
+    }
   };
 
   const stats = {
