@@ -61,15 +61,46 @@ function toDb(input: BookCreateInput | BookUpdateInput): Record<string, any> {
 export const bookService = {
   /** Get all books with optional filtering */
   async getAll(filter?: BookFilter): Promise<ApiResult<Book[]>> {
-    // ── Current: Supabase ──
-    let query = db.from("products").select("*").order("created_at", { ascending: false });
-    if (filter?.category && filter.category !== "all") query = query.eq("category", filter.category);
-    if (filter?.search) query = query.or(`name.ilike.%${filter.search}%,category.ilike.%${filter.search}%`);
-    if (filter?.limit) query = query.limit(filter.limit);
-    if (filter?.offset) query = query.range(filter.offset, filter.offset + (filter?.limit ?? 50) - 1);
-    const { data, error } = await query;
-    if (error) return fail(error.message);
-    return ok((data || []).map(mapRow));
+    try {
+      let query = db.from("products").select("*").order("created_at", { ascending: false });
+
+      if (filter?.category && filter.category !== "all") {
+        query = query.eq("category", filter.category);
+      }
+
+      if (filter?.search?.trim()) {
+        const escapedSearch = filter.search.trim().replace(/[,%]/g, " ");
+        query = query.or(`name.ilike.%${escapedSearch}%,category.ilike.%${escapedSearch}%`);
+      }
+
+      const limit = Math.max(1, Math.min(filter?.limit ?? 24, 50));
+      const offset = Math.max(filter?.offset ?? 0, 0);
+
+      query = query.range(offset, offset + limit - 1);
+
+      const { data, error } = await query;
+      if (error) {
+        console.error("[bookService.getAll] query failed", {
+          filter,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        });
+        return fail(error.message);
+      }
+
+      console.log("[bookService.getAll] query success", {
+        limit,
+        offset,
+        count: data?.length ?? 0,
+      });
+
+      return ok((data || []).map(mapRow));
+    } catch (error) {
+      console.error("[bookService.getAll] unexpected error", error);
+      return fail(error instanceof Error ? error.message : "Failed to fetch books");
+    }
 
     // ── Future: REST API ──
     // const params = new URLSearchParams();
