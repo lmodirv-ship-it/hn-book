@@ -29,7 +29,10 @@ interface ProcessedItem {
   fileSizeKB?: number;
   fileExt?: string;
   error?: string;
-  targetType?: TargetType;
+  targetType?: string;
+  designType?: string;
+  designReason?: string;
+  dimensions?: string | null;
 }
 
 const TARGET_OPTIONS: { value: TargetType; label: string; icon: any; description: string; accept: string }[] = [
