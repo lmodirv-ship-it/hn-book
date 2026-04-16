@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useVisitorTracking } from "@/hooks/useVisitorTracking";
 import ParticleCanvas from "@/components/ParticleCanvas";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
