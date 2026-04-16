@@ -15,7 +15,9 @@ import ReaderSettings from "@/components/reader/ReaderSettings";
 import BookIntroPage from "@/components/reader/BookIntroPage";
 import { useBookmarks } from "@/components/reader/useBookmarks";
 import { useNotes } from "@/components/reader/useNotes";
+import { useHighlights } from "@/components/reader/useHighlights";
 import { useReadingProgress } from "@/components/reader/useReadingProgress";
+import TextSelectionPopup from "@/components/reader/TextSelectionPopup";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -113,6 +115,7 @@ const BookReader = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const { bookmarks, addBookmark, removeBookmark, isBookmarked } = useBookmarks(id);
+  const { highlights, addHighlight, removeHighlight } = useHighlights(id);
   const { notes, addNote, removeNote } = useNotes(id);
   const { getSaved, save, restored, setRestored } = useReadingProgress(id);
 
@@ -566,6 +569,7 @@ const BookReader = () => {
             currentPage={currentPage}
             bookmarks={bookmarks}
             notes={notes}
+            highlights={highlights}
             bookDescription={book.description}
             isDarkTheme={isDarkTheme}
             isMobile={isMobile}
@@ -574,6 +578,7 @@ const BookReader = () => {
             onRemoveBookmark={removeBookmark}
             onAddNote={addNote}
             onRemoveNote={removeNote}
+            onRemoveHighlight={removeHighlight}
           />
         )}
 
@@ -694,6 +699,14 @@ const BookReader = () => {
             )}
           </Document>
 
+          {/* Text Selection Popup */}
+          <TextSelectionPopup
+            currentPage={currentPage}
+            isDarkTheme={isDarkTheme}
+            onHighlight={addHighlight}
+            onAddNote={addNote}
+          />
+
           {/* Focus mode indicator */}
           {isFocusMode && (
             <motion.div
@@ -749,8 +762,17 @@ const BookReader = () => {
 
       <style>{`
         .book-page canvas { display: block !important; }
-        .book-page .react-pdf__Page__textContent { user-select: text; font-family: ${fontFamily}; font-size: ${fontSize}px; }
+        .book-page .react-pdf__Page__textContent {
+          user-select: text;
+          font-family: ${fontFamily};
+          font-size: ${fontSize}px;
+          line-height: 1.9;
+          letter-spacing: 0.3px;
+        }
         .book-page .react-pdf__Page__annotations { pointer-events: auto; }
+        .book-page .react-pdf__Page__textContent ::selection {
+          background: rgba(16, 185, 129, 0.3);
+        }
       `}</style>
     </div>
   );
