@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpRight, Lock, Eye, Star, BookOpen } from "lucide-react";
+import { Lock, Eye, Star, BookOpen, Sparkles, Crown } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import type { Product } from "@/lib/products";
 import BookCover from "@/components/BookCover";
@@ -17,48 +17,59 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
-  // Generate consistent star rating (2-5) based on product id
   const starRating = useMemo(() => {
     let hash = 0;
     for (let i = 0; i < product.id.length; i++) {
       hash = product.id.charCodeAt(i) + ((hash << 5) - hash);
     }
-    return (Math.abs(hash) % 4) + 2; // 2 to 5
+    return (Math.abs(hash) % 4) + 2;
   }, [product.id]);
+
+  // Determine badges
+  const isNew = useMemo(() => {
+    if (!product.id) return false;
+    // Consider "new" if created within last 7 days (hash-based for demo)
+    let hash = 0;
+    for (let i = 0; i < product.id.length; i++) hash = product.id.charCodeAt(i) + ((hash << 3) - hash);
+    return Math.abs(hash) % 5 === 0;
+  }, [product.id]);
+
+  const isFree = product.price === 0;
+  const isPaid = product.price > 0;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, delay: Math.min(index * 0.02, 0.15) }}
-      viewport={{ once: true, margin: "-20px" }}
+      transition={{ duration: 0.35, delay: Math.min(index * 0.03, 0.2), ease: "easeOut" }}
+      viewport={{ once: true, margin: "-30px" }}
+      whileHover={{ y: -4 }}
     >
       <Link to={`/book/${product.slug || product.id}`}>
-        {/* Outer box - black glossy */}
-        <div className="group relative rounded-2xl p-3 bg-black/95 border border-black/80 shadow-[0_4px_30px_-5px_rgba(0,0,0,0.9),inset_0_0_25px_-3px_hsl(199,89%,68%,0.25),inset_0_0_50px_-8px_hsl(199,89%,68%,0.1)]">
+        <div className="group relative rounded-2xl p-3 bg-card/80 border border-border/30 shadow-lg hover:shadow-xl hover:shadow-primary/10 hover:border-primary/30 transition-all duration-500">
           {/* Inner box */}
-          <div className="relative overflow-hidden rounded-xl bg-black/90 border border-[hsl(199,89%,68%,0.5)] shadow-[0_0_35px_0px_hsl(199,89%,68%,0.55),0_0_60px_-5px_hsl(199,89%,68%,0.3),inset_0_0_25px_-2px_hsl(199,89%,68%,0.35)]">
+          <div className="relative overflow-hidden rounded-xl bg-background/50 border border-border/20 group-hover:border-primary/20 transition-colors duration-500">
             {/* Image */}
-            <div className="relative aspect-[4/5] overflow-hidden bg-muted/20 p-3">
+            <div className="relative aspect-[4/5] overflow-hidden bg-muted/10 p-3">
               {product.image ? (
                 <>
                   <img
                     src={product.image}
                     alt={`كتاب ${product.name}${product.category ? ` - ${product.category}` : ''}`}
-                    className="w-full h-full object-contain rounded-lg transition-all duration-700 group-hover:scale-110 group-hover:brightness-110"
+                    className="w-full h-full object-contain rounded-lg transition-all duration-700 group-hover:scale-105"
                     loading="lazy"
                   />
-                  {/* Overlay on hover */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500" />
-                  
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/30 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500" />
+
                   {/* Watermark */}
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="absolute inset-0 overflow-hidden opacity-[0.05]">
+                    <div className="absolute inset-0 overflow-hidden opacity-[0.04]">
                       {Array.from({ length: 4 }).map((_, row) =>
                         Array.from({ length: 3 }).map((_, col) => (
                           <span
                             key={`${row}-${col}`}
-                            className="absolute text-white font-bold text-sm"
+                            className="absolute text-foreground font-bold text-sm"
                             style={{
                               top: `${10 + row * 25}%`,
                               left: `${5 + col * 35}%`,
@@ -74,16 +85,20 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
                   </div>
 
                   {/* Protected badge */}
-                  <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-1 rounded-lg bg-black/60 backdrop-blur-md border border-primary/20">
-                    <Lock className="w-2.5 h-2.5 text-primary/60" />
-                    <span className="text-[9px] text-primary/60 font-medium">محمي</span>
+                  <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-1 rounded-lg bg-background/70 backdrop-blur-md border border-border/30">
+                    <Lock className="w-2.5 h-2.5 text-muted-foreground" />
+                    <span className="text-[9px] text-muted-foreground font-medium">محمي</span>
                   </div>
 
                   {/* View icon on hover */}
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/90 text-primary-foreground shadow-[0_0_20px_-2px_hsl(199,89%,48%,0.5)] backdrop-blur-sm scale-75 group-hover:scale-100 transition-transform duration-500">
+                    <motion.div
+                      initial={{ scale: 0.6 }}
+                      whileHover={{ scale: 1.1 }}
+                      className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 backdrop-blur-sm"
+                    >
                       <Eye className="h-5 w-5" />
-                    </div>
+                    </motion.div>
                   </div>
                 </>
               ) : (
@@ -95,66 +110,84 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
                 />
               )}
 
-              {/* Stars & Badges */}
-              <div className="absolute right-2 top-2 flex items-center gap-1.5">
-                <div className="flex gap-0.5 px-2 py-1 rounded-lg bg-black/60 backdrop-blur-md">
+              {/* Top-right: stars + badges */}
+              <div className="absolute right-2 top-2 flex flex-col items-end gap-1.5">
+                <div className="flex gap-0.5 px-2 py-1 rounded-lg bg-background/70 backdrop-blur-md border border-border/20">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Star
                       key={i}
-                      className={`h-2.5 w-2.5 ${i < starRating ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/30'}`}
+                      className={`h-2.5 w-2.5 ${i < starRating ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/20'}`}
                     />
                   ))}
                 </div>
                 {product.isFlashDeal && (
-                  <Badge className="bg-destructive/90 text-destructive-foreground text-[10px] px-2.5 py-0.5 border-0 backdrop-blur-sm">
+                  <Badge className="bg-destructive text-destructive-foreground text-[10px] px-2 py-0.5 border-0 shadow-sm">
                     ⚡ {product.dealEndsIn}h
                   </Badge>
                 )}
               </div>
 
-              {discount > 0 && (
-                <div className="absolute left-2 top-2">
-                  <Badge className="text-[10px] font-bold px-2.5 py-0.5 border-0 bg-primary/80 text-primary-foreground backdrop-blur-sm">
+              {/* Top-left: discount + status badges */}
+              <div className="absolute left-2 top-2 flex flex-col items-start gap-1.5">
+                {discount > 0 && (
+                  <Badge className="text-[10px] font-bold px-2 py-0.5 border-0 bg-primary text-primary-foreground shadow-sm">
                     -{discount}%
                   </Badge>
-                </div>
-              )}
+                )}
+                {isNew && (
+                  <Badge className="text-[9px] font-bold px-2 py-0.5 border-0 bg-accent text-accent-foreground shadow-sm gap-1">
+                    <Sparkles className="w-2.5 h-2.5" /> جديد
+                  </Badge>
+                )}
+                {isFree && (
+                  <Badge className="text-[9px] font-bold px-2 py-0.5 border-0 bg-green-500/90 text-white shadow-sm">
+                    مجاني
+                  </Badge>
+                )}
+              </div>
             </div>
 
-            {/* Content - inside inner box */}
-            <div className="p-4 bg-gradient-to-b from-primary/5 to-transparent">
-              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-primary/70 drop-shadow-[0_0_4px_rgba(255,255,255,0.2)]">
-                {product.category}
-              </p>
-              <h3 className="mt-1.5 text-base font-bold leading-snug line-clamp-1 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.3)] group-hover:drop-shadow-[0_0_12px_rgba(255,255,255,0.5)] transition-all">
+            {/* Content */}
+            <div className="p-4 space-y-1.5">
+              <div className="flex items-center gap-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-primary/80">
+                  {product.category}
+                </p>
+                {isPaid && (
+                  <Crown className="w-3 h-3 text-yellow-500/60" />
+                )}
+              </div>
+              <h3 className="text-sm font-bold leading-snug line-clamp-1 text-foreground group-hover:text-primary transition-colors duration-300">
                 {product.name}
               </h3>
-              <p className="mt-1 text-sm text-white/60 line-clamp-1">
-                {product.shortDescription}
-              </p>
+              {product.shortDescription && (
+                <p className="text-xs text-muted-foreground line-clamp-1">
+                  {product.shortDescription}
+                </p>
+              )}
               {product.pageCount && (
-                <p className="mt-1 text-[10px] text-muted-foreground flex items-center gap-1">
+                <p className="text-[10px] text-muted-foreground/70 flex items-center gap-1">
                   <BookOpen className="w-3 h-3" /> {product.pageCount} صفحة
                 </p>
               )}
-              <div className="mt-3 flex items-center justify-between pt-3 border-t border-primary/10">
+              <div className="flex items-center justify-between pt-2 border-t border-border/20">
                 <div className="flex items-baseline gap-2">
                   {product.price > 0 ? (
                     <>
                       <span className="text-base font-bold text-foreground">
-                        {product.price} <span className="text-xs font-medium text-muted-foreground">د.م</span>
+                        {product.price} <span className="text-[10px] font-medium text-muted-foreground">د.م</span>
                       </span>
                       {product.originalPrice && (
-                        <span className="text-[11px] text-muted-foreground/40 line-through">
+                        <span className="text-[10px] text-muted-foreground/40 line-through">
                           {product.originalPrice}
                         </span>
                       )}
                     </>
                   ) : (
-                    <span className="text-base font-bold text-accent">مجاني</span>
+                    <span className="text-base font-bold text-green-500">مجاني</span>
                   )}
                 </div>
-                <span className="text-[11px] font-mono font-bold text-foreground tracking-wide drop-shadow-[0_0_6px_rgba(255,255,255,0.4)]">
+                <span className="text-[10px] font-mono font-semibold text-muted-foreground/60 tracking-wide">
                   {product.referenceCode || product.id.slice(0, 6).toUpperCase()}
                 </span>
               </div>
@@ -167,7 +200,7 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
                     e.stopPropagation();
                     navigate(`/read/${product.id}`);
                   }}
-                  className="mt-2 flex items-center justify-center gap-1.5 w-full py-2 rounded-lg text-xs font-semibold text-primary bg-primary/10 border border-primary/20 hover:bg-primary/20 hover:border-primary/40 transition-all"
+                  className="mt-1 flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 shadow-sm hover:shadow-md hover:shadow-primary/20 active:scale-[0.98] transition-all duration-200"
                 >
                   <BookOpen className="h-3.5 w-3.5" />
                   مطالعة

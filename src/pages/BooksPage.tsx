@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import ParticleCanvas from "@/components/ParticleCanvas";
 import Navbar from "@/components/Navbar";
 import ProductCard from "@/components/ProductCard";
@@ -7,8 +8,9 @@ import type { Product } from "@/lib/products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, BookOpen, ChevronLeft, ChevronRight, Filter, ArrowUpDown } from "lucide-react";
+import { Search, BookOpen, ChevronLeft, ChevronRight, Filter, ArrowUpDown, Library, Sparkles } from "lucide-react";
 import { bookService, categoryService } from "@/services";
 import type { Category } from "@/services/categoryService";
 
@@ -49,14 +51,17 @@ const mapBook = (b: any): Product => ({
 });
 
 const SkeletonCard = () => (
-  <div className="p-2 space-y-2">
+  <div className="rounded-2xl p-3 bg-card/30 border border-border/10 space-y-3">
     <Skeleton className="aspect-[4/5] w-full rounded-xl" />
-    <Skeleton className="h-3 w-1/3" />
-    <Skeleton className="h-4 w-4/5" />
-    <Skeleton className="h-3 w-2/3" />
-    <div className="flex justify-between pt-1">
-      <Skeleton className="h-4 w-1/4" />
-      <Skeleton className="h-3 w-1/3" />
+    <div className="space-y-2 px-1">
+      <Skeleton className="h-3 w-1/3 rounded-full" />
+      <Skeleton className="h-4 w-4/5 rounded-full" />
+      <Skeleton className="h-3 w-2/3 rounded-full" />
+      <div className="flex justify-between pt-2">
+        <Skeleton className="h-5 w-1/4 rounded-full" />
+        <Skeleton className="h-4 w-1/3 rounded-full" />
+      </div>
+      <Skeleton className="h-9 w-full rounded-lg" />
     </div>
   </div>
 );
@@ -76,7 +81,7 @@ function getPageNumbers(current: number, total: number): (number | "...")[] {
 
 const BooksPage = () => {
   useEffect(() => {
-    document.title = "كتب | HN-Book";
+    document.title = "المكتبة | HN-Book";
     let meta = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
     if (!meta) {
       meta = document.createElement("meta");
@@ -173,10 +178,35 @@ const BooksPage = () => {
       <div className="relative z-10 pt-14">
         <Navbar categories={[]} activeCategory="" onCategorySelect={() => {}} productCounts={{}} />
 
-        <section className="relative py-8 sm:py-12">
-          <div className="container mx-auto px-4">
-            {/* header */}
-            <div className="space-y-4 mb-8">
+        {/* Hero Header */}
+        <section className="relative py-12 sm:py-16 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
+          <div className="container mx-auto px-4 relative">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-center mb-8"
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-4">
+                <Sparkles className="w-3.5 h-3.5 text-primary" />
+                <span className="text-xs font-semibold text-primary">مكتبة HN-Book الرقمية</span>
+              </div>
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-foreground mb-2 tracking-tight">
+                استكشف مكتبتنا
+              </h1>
+              <p className="text-sm sm:text-base text-muted-foreground max-w-lg mx-auto">
+                تصفّح آلاف الكتب في مختلف المجالات واللغات
+              </p>
+            </motion.div>
+
+            {/* Filters bar */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.15 }}
+              className="rounded-2xl bg-card/40 backdrop-blur-md border border-border/20 p-4 mb-6 space-y-3"
+            >
               <div className="flex flex-wrap items-center gap-3">
                 <div className="relative flex-1 min-w-[200px] max-w-md">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
@@ -184,12 +214,12 @@ const BooksPage = () => {
                     placeholder="ابحث عن كتاب..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 rounded-xl bg-card/30 border-border/20 focus:border-primary/30 transition-colors"
+                    className="pl-10 rounded-xl bg-background/50 border-border/20 focus:border-primary/40 focus:ring-1 focus:ring-primary/20 transition-all"
                   />
                 </div>
 
                 <Select value={selectedLanguage} onValueChange={(v) => { setSelectedLanguage(v); setSelectedCategory("all"); setCurrentPage(1); }}>
-                  <SelectTrigger className="w-[140px] rounded-xl bg-card/30 border-border/20">
+                  <SelectTrigger className="w-[140px] rounded-xl bg-background/50 border-border/20 hover:border-border/40 transition-colors">
                     <Filter className="h-3.5 w-3.5 ml-2 text-muted-foreground/50" />
                     <SelectValue />
                   </SelectTrigger>
@@ -201,7 +231,7 @@ const BooksPage = () => {
                 </Select>
 
                 <Select value={selectedCategory} onValueChange={(v) => { setSelectedCategory(v); setCurrentPage(1); }}>
-                  <SelectTrigger className="w-[160px] rounded-xl bg-card/30 border-border/20">
+                  <SelectTrigger className="w-[160px] rounded-xl bg-background/50 border-border/20 hover:border-border/40 transition-colors">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -213,7 +243,7 @@ const BooksPage = () => {
                 </Select>
 
                 <Select value={sortValue} onValueChange={(v) => { setSortValue(v); setCurrentPage(1); }}>
-                  <SelectTrigger className="w-[160px] rounded-xl bg-card/30 border-border/20">
+                  <SelectTrigger className="w-[160px] rounded-xl bg-background/50 border-border/20 hover:border-border/40 transition-colors">
                     <ArrowUpDown className="h-3.5 w-3.5 ml-2 text-muted-foreground/50" />
                     <SelectValue />
                   </SelectTrigger>
@@ -226,85 +256,119 @@ const BooksPage = () => {
               </div>
 
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <span>{totalCount.toLocaleString()} كتاب</span>
-                <span>•</span>
+                <Library className="w-3.5 h-3.5" />
+                <span className="font-semibold text-foreground">{totalCount.toLocaleString()}</span>
+                <span>كتاب</span>
+                <span className="text-border">|</span>
                 <span>صفحة {currentPage} من {totalPages}</span>
               </div>
-            </div>
+            </motion.div>
 
-            {/* content */}
-            {loading && products.length === 0 ? (
-              <div className="grid gap-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 bg-black/90 rounded-2xl p-2 border border-white/5 shadow-[inset_0_0_30px_-10px_rgba(0,0,0,0.8)]">
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <SkeletonCard key={i} />
-                ))}
-              </div>
-            ) : error ? (
-              <div className="mt-20 text-center space-y-4">
-                <BookOpen className="w-12 h-12 text-muted-foreground/30 mx-auto" />
-                <p className="text-muted-foreground">{error}</p>
-                <Button variant="outline" onClick={() => void fetchPage(currentPage, searchDebounced)}>
-                  إعادة المحاولة
-                </Button>
-              </div>
-            ) : products.length === 0 ? (
-              <div className="mt-20 text-center">
-                <BookOpen className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-                <p className="text-muted-foreground">لا توجد كتب مطابقة</p>
-              </div>
-            ) : (
-              <>
-                <div className={`relative grid gap-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 bg-black/90 rounded-2xl p-2 border border-white/5 shadow-[inset_0_0_30px_-10px_rgba(0,0,0,0.8)] transition-opacity duration-300 ${pageTransitioning ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
-                  {products.map((product, i) => (
-                    <ProductCard key={product.id} product={product} index={i} />
+            {/* Content */}
+            <AnimatePresence mode="wait">
+              {loading && products.length === 0 ? (
+                <motion.div
+                  key="skeleton"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"
+                >
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <SkeletonCard key={i} />
                   ))}
-                </div>
-
-                {totalPages > 1 && (
-                  <div className="mt-10 flex items-center justify-center gap-1 flex-wrap">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => goToPage(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className="h-9 w-9 rounded-lg text-muted-foreground hover:text-foreground"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-
-                    {pageNumbers.map((p, idx) =>
-                      p === "..." ? (
-                        <span key={`ellipsis-${idx}`} className="px-2 text-muted-foreground/50 text-sm select-none">…</span>
-                      ) : (
-                        <Button
-                          key={p}
-                          variant={p === currentPage ? "default" : "ghost"}
-                          size="sm"
-                          onClick={() => goToPage(p)}
-                          className={`h-9 w-9 rounded-lg text-sm font-semibold ${
-                            p === currentPage
-                              ? "bg-primary text-primary-foreground shadow-[0_0_15px_-3px_hsl(var(--primary)/0.5)]"
-                              : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          {p}
-                        </Button>
-                      )
-                    )}
-
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => goToPage(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                      className="h-9 w-9 rounded-lg text-muted-foreground hover:text-foreground"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
+                </motion.div>
+              ) : error ? (
+                <motion.div
+                  key="error"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="mt-20 text-center space-y-4"
+                >
+                  <div className="w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto">
+                    <BookOpen className="w-7 h-7 text-destructive/60" />
                   </div>
-                )}
-              </>
-            )}
+                  <p className="text-muted-foreground">{error}</p>
+                  <Button variant="outline" className="rounded-xl" onClick={() => void fetchPage(currentPage, searchDebounced)}>
+                    إعادة المحاولة
+                  </Button>
+                </motion.div>
+              ) : products.length === 0 ? (
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="mt-20 text-center"
+                >
+                  <div className="w-16 h-16 rounded-2xl bg-muted/20 flex items-center justify-center mx-auto mb-3">
+                    <Search className="w-7 h-7 text-muted-foreground/40" />
+                  </div>
+                  <p className="text-muted-foreground">لا توجد كتب مطابقة</p>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="grid"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className={`grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 transition-all duration-400 ${pageTransitioning ? "opacity-40 scale-[0.99] pointer-events-none" : "opacity-100 scale-100"}`}>
+                    {products.map((product, i) => (
+                      <ProductCard key={product.id} product={product} index={i} />
+                    ))}
+                  </div>
+
+                  {totalPages > 1 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="mt-10 flex items-center justify-center gap-1.5 flex-wrap"
+                    >
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => goToPage(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="h-10 w-10 rounded-xl text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-all"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+
+                      {pageNumbers.map((p, idx) =>
+                        p === "..." ? (
+                          <span key={`ellipsis-${idx}`} className="px-2 text-muted-foreground/50 text-sm select-none">…</span>
+                        ) : (
+                          <Button
+                            key={p}
+                            variant={p === currentPage ? "default" : "ghost"}
+                            size="sm"
+                            onClick={() => goToPage(p)}
+                            className={`h-10 w-10 rounded-xl text-sm font-semibold transition-all ${
+                              p === currentPage
+                                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-105"
+                                : "text-muted-foreground hover:text-foreground hover:bg-primary/10"
+                            }`}
+                          >
+                            {p}
+                          </Button>
+                        )
+                      )}
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => goToPage(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="h-10 w-10 rounded-xl text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-all"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                    </motion.div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </section>
         <Footer />
