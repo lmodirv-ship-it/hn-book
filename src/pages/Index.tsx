@@ -10,13 +10,14 @@ import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, ChevronDown, ArrowRight, Loader2, Sparkles } from "lucide-react";
+import { Search, ChevronDown, ArrowRight, Loader2, Sparkles, BookOpen } from "lucide-react";
 import CategoryBar from "@/components/CategoryBar";
 import { useI18n } from "@/lib/i18n";
-import { supabase } from "@/integrations/supabase/client";
-import { mapProductRowToProduct } from "@/lib/product-utils";
+import { bookService } from "@/services";
 
 const ITEMS_PER_PAGE = 100;
+const INITIAL_FETCH_LIMIT = 10;
+const FETCH_TIMEOUT_MS = 8000;
 
 const ALL_CATEGORIES = ["كتب", "بطاقات", "قوالب", "صور", "وثائق", "عروض", "أخرى"];
 
@@ -27,33 +28,61 @@ const HIDDEN_FROM_NAV = new Set([
   "Biography & Autobiography", "Photography", "مطبخ الدار",
 ]);
 
+const timeoutPromise = () =>
+  new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error("Products fetch timeout")), FETCH_TIMEOUT_MS);
+  });
+
 const Index = () => {
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { t } = useI18n();
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchProducts = async () => {
       try {
-        const { data } = await supabase
-          .from("products")
-          .select("*")
-          .eq("is_active", true)
-          .order("created_at", { ascending: false })
-          .limit(1000);
+        setLoading(true);
+        setError(null);
+        console.log("[Index] Fetching books...", { limit: INITIAL_FETCH_LIMIT });
 
-        if (data) {
-          const mapped: Product[] = data.map(mapProductRowToProduct);
-          setProducts(mapped);
+        const result = await Promise.race([
+          bookService.getAll({ limit: INITIAL_FETCH_LIMIT }),
+          timeoutPromise(),
+        ]);
+
+        console.log("[Index] Books:", result);
+
+        if (result.error) {
+          throw new Error(result.error);
+        }
+
+        if (!cancelled) {
+          setProducts(result.data ?? []);
+        }
+      } catch (error) {
+        console.error("[Index] Error fetching books:", error);
+        if (!cancelled) {
+          setProducts([]);
+          setError("فشل تحميل الكتب");
         }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
-    fetchProducts();
+
+    void fetchProducts();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const categories = useMemo(() => {
@@ -123,6 +152,11 @@ const Index = () => {
               <div className="mt-20 flex flex-col items-center gap-3">
                 <Loader2 className="h-8 w-8 animate-spin text-primary/50" />
                 <span className="text-sm text-muted-foreground/50">جاري التحميل...</span>
+              </div>
+            ) : error ? (
+              <div className="mt-20 flex flex-col items-center gap-3 text-center">
+                <BookOpen className="h-8 w-8 text-muted-foreground/50" />
+                <span className="text-sm text-muted-foreground/70">{error}</span>
               </div>
             ) : (
               <>
