@@ -1,13 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate, Outlet } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart3, Package, Users, TrendingUp, Settings,
   Menu, X, Shield, BookOpen, Tag, LayoutDashboard,
-  ShoppingCart, FileText, LogOut, Ticket, Activity, ShieldCheck, FolderUp, Globe, ScanText, DollarSign
+  ShoppingCart, FileText, LogOut, Ticket, Activity, ShieldCheck, FolderUp, Globe, ScanText, DollarSign,
+  Bell, AlertTriangle, XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+
+interface SmartAlert {
+  id: string;
+  severity: "warning" | "critical";
+  message: string;
+  icon: string;
+}
 
 const navItems = [
   { path: "/admin", icon: LayoutDashboard, label: "لوحة التحكم" },
@@ -33,6 +42,49 @@ const AdminLayout = () => {
   const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [alerts, setAlerts] = useState<SmartAlert[]>([]);
+  const [alertsOpen, setAlertsOpen] = useState(false);
+  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
+
+  const detectAlerts = useCallback(async () => {
+    const detected: SmartAlert[] = [];
+
+    const [jobsRes, noPdfRes, noCoverRes, zeroPriceRes] = await Promise.all([
+      supabase.from("upload_jobs").select("id, status, updated_at"),
+      supabase.from("products").select("id", { count: "exact", head: true }).or("pdf_url.is.null,pdf_url.eq."),
+      supabase.from("products").select("id", { count: "exact", head: true }).or("image.is.null,image.eq.,image.eq./placeholder.svg"),
+      supabase.from("products").select("id", { count: "exact", head: true }).eq("price", 0).not("page_count", "is", null).gt("page_count", 0),
+    ]);
+
+    const jobs = jobsRes.data || [];
+    const failedCount = jobs.filter(j => j.status === "error").length;
+    const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const stuckCount = jobs.filter(j => j.status === "processing" && j.updated_at < tenMinAgo).length;
+
+    if (failedCount > 0) {
+      detected.push({ id: "failed_jobs", severity: failedCount >= 5 ? "critical" : "warning", message: `${failedCount} مهمة رفع فاشلة`, icon: "❌" });
+    }
+    if (stuckCount > 0) {
+      detected.push({ id: "stuck_jobs", severity: "warning", message: `${stuckCount} مهمة عالقة أكثر من 10 دقائق`, icon: "⏳" });
+    }
+    if ((noPdfRes.count || 0) > 0) {
+      detected.push({ id: "no_pdf", severity: "critical", message: `${noPdfRes.count} كتاب بدون ملف PDF`, icon: "📄" });
+    }
+    if ((noCoverRes.count || 0) > 0) {
+      detected.push({ id: "no_cover", severity: "warning", message: `${noCoverRes.count} كتاب بدون غلاف`, icon: "🖼️" });
+    }
+    if ((zeroPriceRes.count || 0) > 0) {
+      detected.push({ id: "zero_price", severity: "warning", message: `${zeroPriceRes.count} كتاب بسعر 0`, icon: "💰" });
+    }
+
+    setAlerts(detected);
+  }, []);
+
+  useEffect(() => {
+    detectAlerts();
+    const interval = setInterval(detectAlerts, 60_000);
+    return () => clearInterval(interval);
+  }, [detectAlerts]);
 
   const isActive = (path: string) => {
     if (path === "/admin") return location.pathname === "/admin";
@@ -171,6 +223,84 @@ const AdminLayout = () => {
             </h2>
           </div>
           <div className="flex items-center gap-2">
+            {/* Alerts Bell */}
+            <div className="relative">
+              <button
+                onClick={() => setAlertsOpen(!alertsOpen)}
+                className="relative p-2 rounded-lg hover:bg-secondary transition-colors"
+              >
+                <Bell className={`w-4.5 h-4.5 ${alerts.filter(a => !dismissedAlerts.has(a.id)).length > 0 ? "text-amber-500" : "text-muted-foreground"}`} />
+                {alerts.filter(a => !dismissedAlerts.has(a.id)).length > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 rounded-full bg-red-500 text-[9px] text-white font-bold flex items-center justify-center">
+                    {alerts.filter(a => !dismissedAlerts.has(a.id)).length}
+                  </span>
+                )}
+              </button>
+
+              <AnimatePresence>
+                {alertsOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                    className="absolute left-0 top-full mt-2 w-80 rounded-xl border border-border bg-card shadow-xl z-50 overflow-hidden"
+                  >
+                    <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                      <button onClick={() => setAlertsOpen(false)} className="p-1 hover:bg-secondary rounded">
+                        <X className="w-3.5 h-3.5 text-muted-foreground" />
+                      </button>
+                      <h4 className="text-xs font-bold text-foreground">🔔 تنبيهات النظام</h4>
+                    </div>
+                    <div className="max-h-72 overflow-y-auto">
+                      {alerts.length === 0 ? (
+                        <div className="p-6 text-center">
+                          <p className="text-xs text-muted-foreground">✅ لا توجد تنبيهات</p>
+                        </div>
+                      ) : (
+                        alerts.map((alert) => (
+                          <div
+                            key={alert.id}
+                            className={`flex items-start gap-3 px-4 py-3 border-b border-border/50 last:border-0 ${
+                              dismissedAlerts.has(alert.id) ? "opacity-40" : ""
+                            } ${alert.severity === "critical" ? "bg-red-500/5" : ""}`}
+                          >
+                            <span className="text-lg mt-0.5">{alert.icon}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <Badge className={`text-[9px] h-4 ${
+                                  alert.severity === "critical" ? "bg-red-500/20 text-red-500" : "bg-yellow-500/20 text-yellow-500"
+                                }`}>
+                                  {alert.severity === "critical" ? "حرج" : "تحذير"}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-foreground">{alert.message}</p>
+                            </div>
+                            {!dismissedAlerts.has(alert.id) && (
+                              <button
+                                onClick={() => setDismissedAlerts(prev => new Set([...prev, alert.id]))}
+                                className="p-1 hover:bg-secondary rounded text-muted-foreground"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    {alerts.length > 0 && (
+                      <div className="px-4 py-2 border-t border-border">
+                        <button
+                          onClick={() => { navigate("/admin/health-check"); setAlertsOpen(false); }}
+                          className="text-[11px] text-primary hover:underline w-full text-center"
+                        >
+                          فتح صفحة الإصلاح التلقائي →
+                        </button>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
             <Button
               variant="outline"
               size="sm"
