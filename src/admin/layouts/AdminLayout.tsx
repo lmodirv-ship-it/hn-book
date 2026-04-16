@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart3, Package, Users, TrendingUp, Settings,
   Menu, X, Shield, BookOpen, Tag, LayoutDashboard,
-  ShoppingCart, FileText, LogOut, Ticket, Activity, ShieldCheck, FolderUp, Globe, ScanText
+  ShoppingCart, FileText, LogOut, Ticket, Activity, ShieldCheck, FolderUp, Globe, ScanText, DollarSign
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +24,7 @@ const navItems = [
   { path: "/admin/pages", icon: FileText, label: "إدارة الصفحات" },
   { path: "/admin/analytics", icon: BarChart3, label: "تحليلات المتجر" },
   { path: "/admin/health-check", icon: ShieldCheck, label: "فحص صحة النظام" },
+  { path: "/admin/pricing", icon: DollarSign, label: "إدارة التسعير" },
   { path: "/admin/settings", icon: Settings, label: "الإعدادات" },
 ];
 
