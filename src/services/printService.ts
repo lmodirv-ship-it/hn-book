@@ -113,7 +113,7 @@ export const printService = {
       .order("created_at", { ascending: false }) as any;
     if (!orders) return [];
 
-    const templateIds = [...new Set(orders.map((o: any) => o.template_id))];
+    const templateIds = [...new Set(orders.map((o: any) => o.template_id))] as string[];
     const { data: templates } = await supabase
       .from("card_templates")
       .select("*")
