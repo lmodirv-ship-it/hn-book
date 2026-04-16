@@ -15,7 +15,7 @@ import type {
   BookFilter,
 } from "./types";
 
-const QUERY_TIMEOUT_MS = 5000;
+const QUERY_TIMEOUT_MS = 8000;
 
 function createAbortController(timeoutMs = QUERY_TIMEOUT_MS) {
   const controller = new AbortController();
@@ -66,7 +66,7 @@ function buildProductsRestUrl(filter?: BookFilter, maxLimit = 100) {
 // ─── Cache ───────────────────────────────────────────────────
 
 const cache = new Map<string, { data: ApiResult<Book[]>; ts: number }>();
-const CACHE_TTL_MS = 30_000; // 30 seconds
+const CACHE_TTL_MS = 60_000; // 60 seconds
 
 function cacheKey(filter?: BookFilter): string {
   return `${filter?.limit ?? 50}:${filter?.offset ?? 0}:${filter?.search ?? ""}:${filter?.category ?? ""}:${filter?.language ?? ""}:${filter?.sortBy ?? ""}:${filter?.sortOrder ?? ""}`;

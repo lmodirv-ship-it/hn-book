@@ -30,7 +30,7 @@ const SORT_OPTIONS = [
   { value: "page_count:asc", label: "الصفحات: الأقل" },
 ] as const;
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 24;
 
 const mapBook = (b: any): Product => ({
   id: b.id,
@@ -123,7 +123,7 @@ const BooksPage = () => {
     return () => clearTimeout(t);
   }, [searchQuery]);
 
-  const fetchPage = useCallback(async (page: number, search: string) => {
+  const fetchPage = useCallback(async (page: number, search: string, isRetry = false) => {
     if (!hasLoadedOnce) setLoading(true);
     setError(null);
     setPageTransitioning(true);
@@ -150,7 +150,18 @@ const BooksPage = () => {
 
       setProducts((booksResult.data ?? []).map(mapBook));
       setTotalCount(countResult.data ?? 0);
+
+      // Prefetch next page silently
+      const nextOffset = page * PAGE_SIZE;
+      if (nextOffset < (countResult.data ?? 0)) {
+        bookService.getAll({ ...filter, offset: nextOffset });
+      }
     } catch (err) {
+      // Retry once
+      if (!isRetry) {
+        console.warn("[BooksPage] retrying...");
+        return fetchPage(page, search, true);
+      }
       console.error("[BooksPage] fetch error", err);
       setProducts([]);
       setError("تعذر تحميل الكتب حالياً. حاول مرة أخرى.");
