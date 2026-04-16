@@ -69,7 +69,7 @@ export const categoryService = {
     if (input.parentId) dbInput.parent_id = input.parentId;
     if (input.sortOrder !== undefined) dbInput.sort_order = input.sortOrder;
 
-    const { data, error } = await db.from("categories").insert(dbInput).select().single();
+    const { data, error } = await db.from("categories").insert(dbInput as any).select().single();
     if (error) return fail(error.message);
     return ok(mapRow(data));
   },
@@ -82,7 +82,7 @@ export const categoryService = {
     if (input.sortOrder !== undefined) dbInput.sort_order = input.sortOrder;
     if (input.isActive !== undefined) dbInput.is_active = input.isActive;
 
-    const { data, error } = await db.from("categories").update(dbInput).eq("id", id).select().single();
+    const { data, error } = await db.from("categories").update(dbInput as any).eq("id", id).select().single();
     if (error) return fail(error.message);
     return ok(mapRow(data));
   },
