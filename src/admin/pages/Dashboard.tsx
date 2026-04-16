@@ -154,6 +154,9 @@ const AdminDashboard = () => {
   const [earningsRange, setEarningsRange] = useState<"daily" | "weekly" | "monthly">("weekly");
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [totalVisits, setTotalVisits] = useState(0);
+  const [todayVisits, setTodayVisits] = useState(0);
+  const [totalUsers, setTotalUsers] = useState(0);
 
   // System monitoring
   const [jobStats, setJobStats] = useState({ pending: 0, processing: 0, done: 0, error: 0, todayUploads: 0 });
