@@ -202,6 +202,70 @@ export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: Pr
             <Field label="اسم الكتاب *">
               <Input value={name} onChange={(e) => handleNameChange(e.target.value)} placeholder="مثال: فن الإدارة الحديثة" className="bg-card" />
             </Field>
+
+            {/* File uploads */}
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="ملف PDF *">
+                <button
+                  type="button"
+                  onClick={() => pdfInputRef.current?.click()}
+                  className={`w-full h-20 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-colors ${
+                    pdfFile
+                      ? "border-primary/50 bg-primary/5"
+                      : "border-border hover:border-primary/30 bg-card"
+                  }`}
+                >
+                  <FileText className={`w-5 h-5 ${pdfFile ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className={`text-[11px] ${pdfFile ? "text-primary font-medium" : "text-muted-foreground"}`}>
+                    {pdfFile ? pdfFile.name.slice(0, 20) : "اختر ملف PDF"}
+                  </span>
+                </button>
+                <input ref={pdfInputRef} type="file" accept=".pdf,application/pdf" className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f && f.type === "application/pdf") setPdfFile(f);
+                    else if (f) toast.error("يرجى اختيار ملف PDF فقط");
+                  }}
+                />
+              </Field>
+              <Field label="صورة الغلاف *">
+                <button
+                  type="button"
+                  onClick={() => coverInputRef.current?.click()}
+                  className={`w-full h-20 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-colors overflow-hidden ${
+                    coverPreview
+                      ? "border-primary/50 bg-primary/5"
+                      : "border-border hover:border-primary/30 bg-card"
+                  }`}
+                >
+                  {coverPreview ? (
+                    <img src={coverPreview} alt="غلاف" className="w-full h-full object-cover" />
+                  ) : (
+                    <>
+                      <ImageIcon className="w-5 h-5 text-muted-foreground" />
+                      <span className="text-[11px] text-muted-foreground">اختر صورة</span>
+                    </>
+                  )}
+                </button>
+                <input ref={coverInputRef} type="file" accept="image/*" className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f && f.type.startsWith("image/")) {
+                      setCoverFile(f);
+                      setCoverPreview(URL.createObjectURL(f));
+                    } else if (f) toast.error("يرجى اختيار ملف صورة");
+                  }}
+                />
+              </Field>
+            </div>
+
+            {(!pdfFile || !coverFile) && (
+              <div className="flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-400">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                {!pdfFile && !coverFile ? "ملف PDF وصورة الغلاف مطلوبان" : !pdfFile ? "ملف PDF مطلوب" : "صورة الغلاف مطلوبة"}
+              </div>
+            )}
+
             <Field label="وصف قصير">
               <Input value={shortDesc} onChange={(e) => setShortDesc(e.target.value)} placeholder="وصف مختصر سطر واحد" className="bg-card" />
             </Field>
@@ -240,7 +304,7 @@ export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: Pr
               <Input value={badge} onChange={(e) => setBadge(e.target.value)} placeholder="مثال: جديد، خصم" className="bg-card" />
             </Field>
             <div className="flex gap-2 pt-2">
-              <Button onClick={handleManualSave} disabled={saving} className="flex-1 gap-1.5">
+              <Button onClick={handleManualSave} disabled={saving || !pdfFile || !coverFile || !name.trim() || !price} className="flex-1 gap-1.5">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                 حفظ الكتاب
               </Button>
