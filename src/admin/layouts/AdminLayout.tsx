@@ -293,7 +293,7 @@ const AdminLayout = () => {
               size="sm"
               className="text-xs gap-1.5 text-destructive hover:text-destructive"
               onClick={async () => {
-                await supabase.auth.signOut();
+                await authService.logout();
                 navigate("/admin/login");
               }}
             >

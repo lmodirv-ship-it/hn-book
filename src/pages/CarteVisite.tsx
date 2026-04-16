@@ -63,13 +63,15 @@ const CarteVisite = () => {
       setLogos(l);
       setLoading(false);
     });
-    const sessionResult = await authService.getSession();
-    if (sessionResult.data) {
-      const profileResult = await authService.getProfile(sessionResult.data.user.id);
-      if (profileResult.data) {
-        setForm(f => ({ ...f, name: profileResult.data!.displayName || "", phone: profileResult.data!.phone || "", email: sessionResult.data!.user.email || "" }));
+    (async () => {
+      const sessionResult = await authService.getSession();
+      if (sessionResult.data) {
+        const profileResult = await authService.getProfile(sessionResult.data.user.id);
+        if (profileResult.data) {
+          setForm(f => ({ ...f, name: profileResult.data!.displayName || "", phone: profileResult.data!.phone || "", email: sessionResult.data!.user.email || "" }));
+        }
       }
-    }
+    })();
   }, []);
 
   const filteredTemplates = useMemo(() => {
@@ -111,12 +113,15 @@ const CarteVisite = () => {
   const handleUploadLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const result = await storageService.uploadFile(file, "book-images", "logos");
-    if (result.error) {
+    const ext = file.name.split(".").pop();
+    const path = `logos/${Date.now()}.${ext}`;
+    const { data: uploadData, error } = await (await import("@/api/client")).db.storage.from("book-images").upload(path, file);
+    if (error) {
       toast({ title: "فشل رفع الشعار", variant: "destructive" });
       return;
     }
-    setCustomLogoUrl(result.data!.publicUrl);
+    const { data: urlData } = (await import("@/api/client")).db.storage.from("book-images").getPublicUrl(path);
+    setCustomLogoUrl(urlData.publicUrl);
     setSelectedLogo(null);
     toast({ title: "تم رفع الشعار ✅" });
   };
