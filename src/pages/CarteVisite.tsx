@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { authService } from "@/services/authService";
-import { storageService } from "@/services/storageService";
 import {
   printService, calculatePrice, QUANTITIES, PAPER_TYPES, PRINT_TYPES, TEMPLATE_CATEGORIES,
   type CardTemplate, type Logo,

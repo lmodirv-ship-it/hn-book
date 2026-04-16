@@ -19,6 +19,13 @@ export { readerService } from "./readerService";
 export { storageService } from "./storageService";
 export { accessService } from "./accessService";
 export { aiService } from "./aiService";
+export { couponService } from "./couponService";
+export { printService } from "./printService";
+export { tablouService } from "./tablouService";
+export { orderService } from "./orderService";
+export { recommendationService } from "./recommendationService";
+export { documentService } from "./documentService";
+export { adminService } from "./adminService";
 export type { ClassifyInput, ClassifyResult, AIEngineStatus } from "./aiService";
 
 // Re-export types
@@ -54,3 +61,5 @@ export type {
 } from "./readerService";
 
 export type { UploadFileResult } from "./storageService";
+export type { ProcessingResult, SavedDoc } from "./documentService";
+export type { SmartAlert } from "./adminService";
