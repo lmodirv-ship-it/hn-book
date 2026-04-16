@@ -2,12 +2,13 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Bookmark as BookmarkIcon, Trash2, StickyNote, BookOpen,
-  FileText, Plus, Send
+  FileText, Send, Highlighter
 } from "lucide-react";
 import type { Bookmark } from "./useBookmarks";
 import type { Note } from "./useNotes";
+import type { Highlight } from "./useHighlights";
 
-type SidebarTab = "bookmarks" | "notes" | "summary" | "pages";
+type SidebarTab = "bookmarks" | "notes" | "highlights" | "summary" | "pages";
 
 interface SmartSidebarProps {
   show: boolean;
@@ -15,6 +16,7 @@ interface SmartSidebarProps {
   currentPage: number;
   bookmarks: Bookmark[];
   notes: Note[];
+  highlights: Highlight[];
   bookDescription: string | null;
   isDarkTheme: boolean;
   isMobile: boolean;
@@ -23,12 +25,13 @@ interface SmartSidebarProps {
   onRemoveBookmark: (page: number) => void;
   onAddNote: (page: number, text: string) => void;
   onRemoveNote: (noteId: string) => void;
+  onRemoveHighlight: (highlightId: string) => void;
 }
 
 const SmartSidebar = ({
-  show, numPages, currentPage, bookmarks, notes, bookDescription,
+  show, numPages, currentPage, bookmarks, notes, highlights, bookDescription,
   isDarkTheme, isMobile,
-  onGoToPage, onClose, onRemoveBookmark, onAddNote, onRemoveNote,
+  onGoToPage, onClose, onRemoveBookmark, onAddNote, onRemoveNote, onRemoveHighlight,
 }: SmartSidebarProps) => {
   const [activeTab, setActiveTab] = useState<SidebarTab>("bookmarks");
   const [noteInput, setNoteInput] = useState("");
@@ -49,9 +52,10 @@ const SmartSidebar = ({
 
   const sidebarWidth = isMobile ? "100vw" : 300;
 
-  const tabs: { id: SidebarTab; icon: typeof BookmarkIcon; label: string }[] = [
-    { id: "bookmarks", icon: BookmarkIcon, label: "علامات" },
-    { id: "notes", icon: StickyNote, label: "ملاحظات" },
+  const tabs: { id: SidebarTab; icon: typeof BookmarkIcon; label: string; count?: number }[] = [
+    { id: "bookmarks", icon: BookmarkIcon, label: "علامات", count: bookmarks.length },
+    { id: "highlights", icon: Highlighter, label: "تمييز", count: highlights.length },
+    { id: "notes", icon: StickyNote, label: "ملاحظات", count: notes.length },
     { id: "summary", icon: FileText, label: "ملخص" },
     { id: "pages", icon: BookOpen, label: "صفحات" },
   ];
@@ -67,7 +71,6 @@ const SmartSidebar = ({
     <AnimatePresence>
       {show && (
         <>
-          {/* Mobile overlay */}
           {isMobile && (
             <motion.div
               initial={{ opacity: 0 }}
@@ -95,17 +98,22 @@ const SmartSidebar = ({
             </div>
 
             {/* Tabs */}
-            <div className={`flex gap-0.5 p-1.5 border-b ${border}`}>
+            <div className={`flex gap-0.5 p-1.5 border-b ${border} overflow-x-auto`}>
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 flex flex-col items-center gap-0.5 py-1.5 rounded-lg text-[10px] font-medium transition-all ${
+                  className={`flex-1 flex flex-col items-center gap-0.5 py-1.5 rounded-lg text-[10px] font-medium transition-all relative ${
                     activeTab === tab.id ? tabActive : tabInactive
                   }`}
                 >
                   <tab.icon className="w-3.5 h-3.5" />
                   {tab.label}
+                  {tab.count !== undefined && tab.count > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 text-white text-[8px] flex items-center justify-center">
+                      {tab.count > 9 ? "9+" : tab.count}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -116,13 +124,7 @@ const SmartSidebar = ({
               {activeTab === "bookmarks" && (
                 <div className="space-y-1">
                   {bookmarks.length === 0 ? (
-                    <div className="text-center py-8">
-                      <BookmarkIcon className={`w-8 h-8 mx-auto mb-2 ${isDarkTheme ? "text-gray-600" : "text-gray-300"}`} />
-                      <p className={`text-xs ${textSub}`}>لا توجد علامات مرجعية</p>
-                      <p className={`text-[10px] ${isDarkTheme ? "text-gray-600" : "text-gray-400"} mt-1`}>
-                        اضغط على أيقونة العلامة في الشريط العلوي
-                      </p>
-                    </div>
+                    <EmptyState icon={BookmarkIcon} text="لا توجد علامات مرجعية" sub="اضغط على أيقونة العلامة في الشريط العلوي" isDarkTheme={isDarkTheme} />
                   ) : (
                     bookmarks.map((b) => (
                       <div key={b.page} className={`flex items-center gap-1 rounded-lg border ${cardBg} p-2`}>
@@ -134,12 +136,42 @@ const SmartSidebar = ({
                         >
                           <span className="text-yellow-500">⭐</span> {b.label}
                         </button>
-                        <button
-                          onClick={() => onRemoveBookmark(b.page)}
-                          className="p-1 rounded text-red-400/60 hover:text-red-400 hover:bg-red-400/10 transition-colors"
-                        >
+                        <button onClick={() => onRemoveBookmark(b.page)} className="p-1 rounded text-red-400/60 hover:text-red-400 hover:bg-red-400/10 transition-colors">
                           <Trash2 className="w-3 h-3" />
                         </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {/* Highlights Tab */}
+              {activeTab === "highlights" && (
+                <div className="space-y-2">
+                  {highlights.length === 0 ? (
+                    <EmptyState icon={Highlighter} text="لا توجد تمييزات" sub="حدد نصًا في الكتاب ثم اختر لون التمييز" isDarkTheme={isDarkTheme} />
+                  ) : (
+                    highlights.map((h) => (
+                      <div key={h.id} className={`rounded-lg border ${cardBg} p-3`}>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <button
+                              onClick={() => { onGoToPage(h.page); if (isMobile) onClose(); }}
+                              className={`text-[10px] font-medium ${isDarkTheme ? "text-emerald-400" : "text-primary"} hover:underline`}
+                            >
+                              صفحة {h.page}
+                            </button>
+                            <p
+                              className={`text-xs mt-1 leading-relaxed px-2 py-1 rounded`}
+                              style={{ backgroundColor: h.color + "30", borderRight: `3px solid ${h.color}` }}
+                            >
+                              {h.text.slice(0, 120)}{h.text.length > 120 ? "..." : ""}
+                            </p>
+                          </div>
+                          <button onClick={() => onRemoveHighlight(h.id)} className="p-1 rounded text-red-400/60 hover:text-red-400 hover:bg-red-400/10 transition-colors flex-shrink-0">
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
                     ))
                   )}
@@ -149,7 +181,6 @@ const SmartSidebar = ({
               {/* Notes Tab */}
               {activeTab === "notes" && (
                 <div className="space-y-3">
-                  {/* Add note */}
                   <div className="flex gap-1.5">
                     <input
                       type="text"
@@ -167,12 +198,8 @@ const SmartSidebar = ({
                       <Send className="w-3.5 h-3.5" />
                     </button>
                   </div>
-
                   {notes.length === 0 ? (
-                    <div className="text-center py-6">
-                      <StickyNote className={`w-8 h-8 mx-auto mb-2 ${isDarkTheme ? "text-gray-600" : "text-gray-300"}`} />
-                      <p className={`text-xs ${textSub}`}>لا توجد ملاحظات</p>
-                    </div>
+                    <EmptyState icon={StickyNote} text="لا توجد ملاحظات" isDarkTheme={isDarkTheme} />
                   ) : (
                     notes.map((note) => (
                       <div key={note.id} className={`rounded-lg border ${cardBg} p-3`}>
@@ -186,10 +213,7 @@ const SmartSidebar = ({
                             </button>
                             <p className={`text-xs mt-1 ${textSub} leading-relaxed`}>{note.text}</p>
                           </div>
-                          <button
-                            onClick={() => onRemoveNote(note.id)}
-                            className="p-1 rounded text-red-400/60 hover:text-red-400 hover:bg-red-400/10 transition-colors flex-shrink-0"
-                          >
+                          <button onClick={() => onRemoveNote(note.id)} className="p-1 rounded text-red-400/60 hover:text-red-400 hover:bg-red-400/10 transition-colors flex-shrink-0">
                             <Trash2 className="w-3 h-3" />
                           </button>
                         </div>
@@ -207,42 +231,25 @@ const SmartSidebar = ({
                       <h4 className={`text-xs font-semibold ${textTitle} mb-2 flex items-center gap-1`}>
                         <FileText className="w-3.5 h-3.5" /> ملخص الكتاب
                       </h4>
-                      <p className={`text-xs ${textSub} leading-relaxed whitespace-pre-line`}>
-                        {bookDescription}
-                      </p>
+                      <p className={`text-xs ${textSub} leading-relaxed whitespace-pre-line`}>{bookDescription}</p>
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <FileText className={`w-8 h-8 mx-auto mb-2 ${isDarkTheme ? "text-gray-600" : "text-gray-300"}`} />
-                      <p className={`text-xs ${textSub}`}>لا يوجد ملخص متاح</p>
-                    </div>
+                    <EmptyState icon={FileText} text="لا يوجد ملخص متاح" isDarkTheme={isDarkTheme} />
                   )}
 
-                  {/* Stats */}
                   <div className={`mt-4 rounded-lg border ${cardBg} p-4 space-y-2`}>
                     <h4 className={`text-xs font-semibold ${textTitle} mb-2`}>📊 إحصائيات القراءة</h4>
-                    <div className="flex justify-between">
-                      <span className={`text-[11px] ${textSub}`}>عدد الصفحات</span>
-                      <span className={`text-[11px] font-medium ${textTitle}`}>{numPages}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className={`text-[11px] ${textSub}`}>الصفحة الحالية</span>
-                      <span className={`text-[11px] font-medium ${textTitle}`}>{currentPage}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className={`text-[11px] ${textSub}`}>التقدم</span>
-                      <span className={`text-[11px] font-medium ${isDarkTheme ? "text-emerald-400" : "text-primary"}`}>
-                        {numPages > 0 ? Math.round((currentPage / numPages) * 100) : 0}%
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className={`text-[11px] ${textSub}`}>العلامات</span>
-                      <span className={`text-[11px] font-medium ${textTitle}`}>{bookmarks.length}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className={`text-[11px] ${textSub}`}>الملاحظات</span>
-                      <span className={`text-[11px] font-medium ${textTitle}`}>{notes.length}</span>
-                    </div>
+                    <StatRow label="عدد الصفحات" value={String(numPages)} textSub={textSub} textTitle={textTitle} />
+                    <StatRow label="الصفحة الحالية" value={String(currentPage)} textSub={textSub} textTitle={textTitle} />
+                    <StatRow
+                      label="التقدم"
+                      value={`${numPages > 0 ? Math.round((currentPage / numPages) * 100) : 0}%`}
+                      textSub={textSub}
+                      textTitle={isDarkTheme ? "text-emerald-400" : "text-primary"}
+                    />
+                    <StatRow label="العلامات" value={String(bookmarks.length)} textSub={textSub} textTitle={textTitle} />
+                    <StatRow label="التمييزات" value={String(highlights.length)} textSub={textSub} textTitle={textTitle} />
+                    <StatRow label="الملاحظات" value={String(notes.length)} textSub={textSub} textTitle={textTitle} />
                   </div>
                 </div>
               )}
@@ -261,12 +268,11 @@ const SmartSidebar = ({
                       صفحة {page}
                       {bookmarks.some((b) => b.page === page) && <span className="mr-1">⭐</span>}
                       {notes.some((n) => n.page === page) && <span className="mr-1">📝</span>}
+                      {highlights.some((h) => h.page === page) && <span className="mr-1">🎨</span>}
                     </button>
                   ))}
                   {numPages > 200 && (
-                    <p className={`${textSub} text-xs text-center py-2`}>
-                      ... و {numPages - 200} صفحة أخرى
-                    </p>
+                    <p className={`${textSub} text-xs text-center py-2`}>... و {numPages - 200} صفحة أخرى</p>
                   )}
                 </div>
               )}
@@ -277,5 +283,21 @@ const SmartSidebar = ({
     </AnimatePresence>
   );
 };
+
+// Helper components
+const EmptyState = ({ icon: Icon, text, sub, isDarkTheme }: { icon: any; text: string; sub?: string; isDarkTheme: boolean }) => (
+  <div className="text-center py-8">
+    <Icon className={`w-8 h-8 mx-auto mb-2 ${isDarkTheme ? "text-gray-600" : "text-gray-300"}`} />
+    <p className={`text-xs ${isDarkTheme ? "text-gray-400" : "text-gray-600"}`}>{text}</p>
+    {sub && <p className={`text-[10px] ${isDarkTheme ? "text-gray-600" : "text-gray-400"} mt-1`}>{sub}</p>}
+  </div>
+);
+
+const StatRow = ({ label, value, textSub, textTitle }: { label: string; value: string; textSub: string; textTitle: string }) => (
+  <div className="flex justify-between">
+    <span className={`text-[11px] ${textSub}`}>{label}</span>
+    <span className={`text-[11px] font-medium ${textTitle}`}>{value}</span>
+  </div>
+);
 
 export default SmartSidebar;
