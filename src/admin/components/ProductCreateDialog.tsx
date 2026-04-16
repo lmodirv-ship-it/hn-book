@@ -79,8 +79,12 @@ export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: Pr
   };
 
   const handleManualSave = async () => {
-    if (!name.trim() || !price) {
-      toast.error("يرجى ملء الاسم والسعر");
+    if (!name.trim()) {
+      toast.error("يرجى إدخال اسم الكتاب");
+      return;
+    }
+    if (!price) {
+      toast.error("يرجى إدخال السعر");
       return;
     }
     setSaving(true);
@@ -98,8 +102,11 @@ export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: Pr
       features: featureList.length > 0 ? featureList : undefined,
     });
     setSaving(false);
-    if (result.error) { toast.error("فشل في إضافة المنتج"); return; }
-    toast.success("تم إضافة المنتج بنجاح");
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success("تم إضافة المنتج — يرجى رفع ملف PDF وصورة الغلاف من صفحة التعديل");
     onProductCreated(); reset(); onOpenChange(false);
   };
 
