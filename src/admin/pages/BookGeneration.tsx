@@ -517,6 +517,8 @@ const BookGeneration = () => {
     return acc;
   }, {} as Record<string, ProcessedItem[]>);
 
+  const currentTarget = TARGET_OPTIONS.find(t => t.value === targetType)!;
+
   return (
     <div className="space-y-6" dir="rtl">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
@@ -525,6 +527,31 @@ const BookGeneration = () => {
           ارفع أي ملف بأي حجم — يحلل ويصنف ويرقّم ويحفظ ويُنشئ روابط التحميل تلقائياً
         </p>
       </motion.div>
+
+      {/* Target type selector */}
+      <div className="grid grid-cols-3 gap-3 max-w-3xl">
+        {TARGET_OPTIONS.map(opt => {
+          const Icon = opt.icon;
+          const active = targetType === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => !processing && setTargetType(opt.value)}
+              className={`p-3 rounded-xl border-2 text-right transition-all ${
+                active
+                  ? "border-primary bg-primary/10"
+                  : "border-border bg-card hover:border-primary/40"
+              } ${processing ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <Icon className={`w-5 h-5 ${active ? "text-primary" : "text-muted-foreground"}`} />
+                <span className={`text-sm font-bold ${active ? "text-primary" : "text-foreground"}`}>{opt.label}</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground">{opt.description}</p>
+            </button>
+          );
+        })}
+      </div>
 
       {/* Category legend */}
       <div className="flex flex-wrap gap-2">
