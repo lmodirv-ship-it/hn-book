@@ -15,6 +15,7 @@ import ProductCard from "@/components/ProductCard";
 import Paywall from "@/components/Paywall";
 import { bookService } from "@/services";
 import { accessService } from "@/services/accessService";
+import { useCart } from "@/contexts/CartContext";
 import { supabase } from "@/integrations/supabase/client";
 import type { Product } from "@/lib/products";
 import { mapProductRowToProduct } from "@/lib/product-utils";
@@ -599,6 +600,11 @@ const ProductDetail = () => {
                       setAccessResult(access);
                     }}
                   />
+                )}
+
+                {/* Add to cart for paid books */}
+                {product.price > 0 && !accessResult?.canAccess && !accessLoading && (
+                  <AddToCartButton product={product} />
                 )}
 
                 {!hasPdf && product.price > 0 && (
