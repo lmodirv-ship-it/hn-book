@@ -86,6 +86,8 @@ export interface BookFilter {
   language?: string;
   limit?: number;
   offset?: number;
+  sortBy?: "created_at" | "price" | "page_count" | "name";
+  sortOrder?: "asc" | "desc";
 }
 
 // ─── Orders ──────────────────────────────────────────────────
