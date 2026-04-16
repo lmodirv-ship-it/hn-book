@@ -318,11 +318,21 @@ const BookGeneration = () => {
   };
 
   const processFile = async (file: File): Promise<ProcessedItem[]> => {
-    // Route to correct handler based on target type
-    if (targetType === "tablou") return processTablouFile(file);
-    if (targetType === "cards") return processCardFile(file);
+    const ext = file.name.split(".").pop()?.toLowerCase() || "";
+    const isImage = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "avif"].includes(ext);
+    const isZip = ["zip"].includes(ext);
 
-    // Default: books/products (existing logic)
+    // In auto mode: route images to tablou, design to cards, rest to edge function
+    if (targetType === "auto") {
+      // Let the edge function handle everything in auto mode (including ZIP extraction)
+      // It will auto-route each file to the correct target system
+    } else if (targetType === "tablou") {
+      return processTablouFile(file);
+    } else if (targetType === "cards") {
+      return processCardFile(file);
+    }
+
+    // Send to edge function (books mode or auto mode)
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData?.session?.access_token;
@@ -331,11 +341,13 @@ const BookGeneration = () => {
     let response: Response;
 
     if (file.size > EDGE_FUNCTION_LIMIT) {
-      // Very large file: process directly on client side
+      if (targetType === "auto" && isImage) {
+        // Auto mode + large image → tablou
+        return processTablouFile(file);
+      }
       setStatusMessage(`ملف كبير (${formatSize(file.size)}) — رفع مباشر ومعالجة محلية`);
       return processLargeFile(file);
     } else if (file.size > DIRECT_UPLOAD_LIMIT) {
-      // Medium file: upload to storage, then edge function processes
       setStatusMessage("جاري الرفع للتخزين...");
       const tempPath = `temp-uploads/${Date.now()}-${file.name}`;
 
@@ -344,7 +356,7 @@ const BookGeneration = () => {
         return [{ success: false, fileName: file.name, error: "فشل رفع الملف إلى التخزين" }];
       }
 
-      setStatusMessage("جاري التحليل بالذكاء الاصطناعي...");
+      setStatusMessage(targetType === "auto" ? "جاري الاكتشاف التلقائي والمعالجة..." : "جاري التحليل بالذكاء الاصطناعي...");
       response = await fetch(url, {
         method: "POST",
         headers: {
@@ -355,13 +367,14 @@ const BookGeneration = () => {
           storage_path: tempPath,
           file_name: file.name,
           bucket: "book-files",
+          target: targetType === "auto" ? "auto" : targetType,
         }),
       });
     } else {
-      // Small file: send directly
-      setStatusMessage("جاري التحليل والتصنيف...");
+      setStatusMessage(targetType === "auto" ? "🧠 جاري الاكتشاف التلقائي والتصنيف..." : "جاري التحليل والتصنيف...");
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("target", targetType === "auto" ? "auto" : targetType);
 
       response = await fetch(url, {
         method: "POST",
