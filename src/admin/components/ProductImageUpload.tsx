@@ -35,7 +35,7 @@ export const ProductImageUpload = ({ productId, currentImage, referenceCode, onI
     }
 
     setUploading(true);
-    const result = await storageService.uploadBookImage(productId, file, referenceCode);
+    const result = await storageService.uploadBookImageForProduct(productId, file, referenceCode);
     setUploading(false);
 
     if (result.error) {
