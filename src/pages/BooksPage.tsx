@@ -8,8 +8,7 @@ import type { Product } from "@/lib/products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, ChevronDown, Loader2, BookOpen } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { mapProductRowToProduct } from "@/lib/product-utils";
+import { bookService } from "@/services";
 
 const ITEMS_PER_PAGE = 60;
 
@@ -93,14 +92,25 @@ const BooksPage = () => {
     const fetchBooks = async () => {
       try {
         setLoading(true);
-        const { data } = await supabase
-          .from("products")
-          .select("*")
-          .eq("is_active", true)
-          .order("created_at", { ascending: false })
-          .limit(1000);
-
-        if (data) setAllProducts(data.map(mapProductRowToProduct));
+        const result = await bookService.getAll({ limit: 1000 });
+        if (result.data) {
+          setAllProducts(result.data.map(b => ({
+            id: b.id,
+            name: b.name,
+            description: b.description,
+            shortDescription: b.shortDescription,
+            price: b.price,
+            originalPrice: b.originalPrice,
+            category: b.category,
+            image: b.image,
+            features: b.features,
+            badge: b.badge,
+            isFlashDeal: b.isFlashDeal,
+            dealEndsIn: b.dealEndsIn,
+            referenceCode: b.referenceCode,
+            pdfUrl: b.pdfUrl,
+          })));
+        }
       } finally {
         setLoading(false);
       }
