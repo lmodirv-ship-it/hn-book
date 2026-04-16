@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Check, ShoppingCart, Star, Shield, Download, Clock, Zap, Gift, Award,
-  ChevronRight, ChevronLeft, Loader2, Lock, Eye, Heart, Share2, BookOpen, AlertCircle
+  ChevronRight, ChevronLeft, Loader2, Lock, Eye, Heart, Share2, BookOpen, AlertCircle, Crown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,9 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import BookCover from "@/components/BookCover";
 import ProductCard from "@/components/ProductCard";
+import Paywall from "@/components/Paywall";
 import { bookService } from "@/services";
+import { accessService } from "@/services/accessService";
 import { supabase } from "@/integrations/supabase/client";
 import type { Product } from "@/lib/products";
 import { mapProductRowToProduct } from "@/lib/product-utils";
