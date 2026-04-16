@@ -96,9 +96,8 @@ const BulkPdfUpload = () => {
     },
   });
 
-  // Phase 2: Backend worker polling
-  const { jobs: dbJobs, stats: dbStats, workerActive } = useJobProcessor({
-    pollInterval: 2500,
+  // Phase 2: Backend worker with realtime
+  const { jobs: dbJobs, stats: dbStats, workerActive, retryFailed, retryJob } = useJobProcessor({
     autoTrigger: true,
     onBatchComplete: ({ success, failed }) => {
       if (success) toast.success(`✅ تم إنشاء ${success} كتاب`);
