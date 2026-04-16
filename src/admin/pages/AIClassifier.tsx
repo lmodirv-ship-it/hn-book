@@ -181,6 +181,12 @@ const AIClassifier = () => {
       {/* Tabs */}
       <div className="flex gap-2 border-b border-border pb-2">
         <button
+          className={`px-4 py-2 text-sm rounded-t-lg transition-colors ${tab === "engine" ? "bg-primary/10 text-primary font-semibold border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
+          onClick={() => setTab("engine")}
+        >
+          <span className="flex items-center gap-1"><Activity className="w-3 h-3" /> محرك AI</span>
+        </button>
+        <button
           className={`px-4 py-2 text-sm rounded-t-lg transition-colors ${tab === "overview" ? "bg-primary/10 text-primary font-semibold border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
           onClick={() => setTab("overview")}
         >
@@ -193,6 +199,89 @@ const AIClassifier = () => {
           التصنيفات والتصحيحات ({records.length})
         </button>
       </div>
+
+      {/* Tab: AI Engine Status */}
+      {tab === "engine" && (
+        <div className="space-y-4">
+          <motion.div
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border border-border bg-card p-6"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                <Activity className="w-5 h-5 text-primary" />
+                حالة محرك الذكاء الاصطناعي
+              </h2>
+              <Button variant="outline" size="sm" onClick={checkHealth} disabled={checkingHealth}>
+                {checkingHealth ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                <span className="mr-1">فحص</span>
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Status */}
+              <div className="flex items-center gap-4 p-4 rounded-lg bg-background border border-border">
+                {engineStatus?.running ? (
+                  <Wifi className="w-8 h-8 text-green-500" />
+                ) : (
+                  <WifiOff className="w-8 h-8 text-red-500" />
+                )}
+                <div>
+                  <p className="text-sm text-muted-foreground">الحالة</p>
+                  <p className="text-lg font-bold">
+                    {engineStatus?.running ? (
+                      <Badge variant="default" className="bg-green-600">يعمل ✓</Badge>
+                    ) : (
+                      <Badge variant="destructive">متوقف ✗</Badge>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Accuracy */}
+              <div className="flex items-center gap-4 p-4 rounded-lg bg-background border border-border">
+                <TrendingUp className="w-8 h-8 text-primary" />
+                <div>
+                  <p className="text-sm text-muted-foreground">دقة النموذج</p>
+                  <p className="text-lg font-bold">{engineStatus?.overallAccuracy ?? 0}%</p>
+                </div>
+              </div>
+
+              {/* Total Samples */}
+              <div className="flex items-center gap-4 p-4 rounded-lg bg-background border border-border">
+                <Database className="w-8 h-8 text-primary" />
+                <div>
+                  <p className="text-sm text-muted-foreground">عينات التدريب</p>
+                  <p className="text-lg font-bold">{engineStatus?.totalSamples ?? 0}</p>
+                </div>
+              </div>
+
+              {/* Model Count */}
+              <div className="flex items-center gap-4 p-4 rounded-lg bg-background border border-border">
+                <Brain className="w-8 h-8 text-primary" />
+                <div>
+                  <p className="text-sm text-muted-foreground">أنواع مدربة</p>
+                  <p className="text-lg font-bold">{engineStatus?.modelCount ?? 0}</p>
+                </div>
+              </div>
+            </div>
+
+            {!engineStatus?.running && (
+              <div className="mt-4 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 flex items-start gap-2">
+                <AlertTriangle className="w-5 h-5 text-yellow-500 mt-0.5 shrink-0" />
+                <div className="text-sm">
+                  <p className="font-semibold text-yellow-500">المحرك غير متاح</p>
+                  <p className="text-muted-foreground">النظام يستخدم التصنيف المحلي (rule-based) كبديل تلقائي. جميع عمليات الرفع تعمل بشكل طبيعي.</p>
+                </div>
+              </div>
+            )}
+          </motion.div>
+
+          {/* Quick Test */}
+          <QuickTestPanel />
+        </div>
+      )}
 
       {/* Tab: Overview */}
       {tab === "overview" && stats && (
