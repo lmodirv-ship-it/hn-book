@@ -10,6 +10,7 @@ import { invalidateBookCache } from "@/services/bookService";
 import { detectCategory } from "@/lib/category-detection";
 import { generateCoverAsync, terminateCoverWorker } from "@/lib/cover-worker-client";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/api/client";
 
 // ── Types ──
 
