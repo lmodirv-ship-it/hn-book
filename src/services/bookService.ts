@@ -244,6 +244,10 @@ export const bookService = {
       url.searchParams.set("select", "*");
       if (filter?.category && filter.category !== "all") {
         url.searchParams.set("category", `eq.${filter.category}`);
+      } else if (filter?.language === "ar") {
+        url.searchParams.set("category", `in.(الطب,التاريخ,العلوم,الأدب العربي,الدين الإسلامي,كتب,تطوير الذات,أخرى)`);
+      } else if (filter?.language === "en") {
+        url.searchParams.set("category", `in.(Literature,Arabic literature,Philosophy,Biography & Autobiography)`);
       }
       if (filter?.search?.trim()) {
         const s = filter.search.trim().replace(/[,%]/g, " ");
