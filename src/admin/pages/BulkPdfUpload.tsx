@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { db } from "@/api/client";
 import { storageService } from "@/services/storageService";
+import { invalidateBookCache } from "@/services/bookService";
 import { detectCategory } from "@/lib/category-detection";
 
 type FileStatus = "queued" | "uploading" | "done" | "error";
@@ -99,8 +100,12 @@ const BulkPdfUpload = () => {
     }
 
     setProcessing(false);
-    if (success) toast.success(`تم إنشاء ${success} كتاب${failed ? ` · فشل ${failed}` : ""}`);
-    else if (failed) toast.error(`فشل رفع جميع الملفات (${failed})`);
+    if (success) {
+      invalidateBookCache();
+      toast.success(`تم إنشاء ${success} كتاب${failed ? ` · فشل ${failed}` : ""}`);
+    } else if (failed) {
+      toast.error(`فشل رفع جميع الملفات (${failed})`);
+    }
   };
 
   const stats = {
