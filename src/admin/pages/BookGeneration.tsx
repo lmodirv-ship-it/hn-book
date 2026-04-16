@@ -4,13 +4,17 @@ import {
   Upload, Loader2, CheckCircle2, XCircle, FileText,
   BookOpen, CreditCard, Layout, ImageIcon, FileCheck,
   MonitorPlay, HelpCircle, Download, ExternalLink,
-  Archive, RotateCcw, FolderSearch
+  Archive, RotateCcw, FolderSearch, Frame
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { tablouService } from "@/services/tablouService";
+import { printService } from "@/services/printService";
+
+type TargetType = "books" | "tablou" | "cards";
 
 interface ProcessedItem {
   success: boolean;
@@ -25,7 +29,14 @@ interface ProcessedItem {
   fileSizeKB?: number;
   fileExt?: string;
   error?: string;
+  targetType?: TargetType;
 }
+
+const TARGET_OPTIONS: { value: TargetType; label: string; icon: any; description: string; accept: string }[] = [
+  { value: "books", label: "كتب ومنتجات", icon: BookOpen, description: "PDF، وثائق، صور — يُحفظ في جدول المنتجات", accept: "*/*" },
+  { value: "tablou", label: "تابلوهات", icon: Frame, description: "صور فنية — يُحفظ في جدول التابلوهات مع 3 أحجام تلقائياً", accept: "image/*" },
+  { value: "cards", label: "قوالب بطاقات", icon: CreditCard, description: "تصاميم بطاقات أعمال — يُحفظ في جدول القوالب", accept: "image/*" },
+];
 
 const CATEGORY_ICONS: Record<string, any> = {
   "كتب": BookOpen,
@@ -34,6 +45,7 @@ const CATEGORY_ICONS: Record<string, any> = {
   "صور": ImageIcon,
   "وثائق": FileCheck,
   "عروض": MonitorPlay,
+  "تابلوهات": Frame,
   "أخرى": HelpCircle,
 };
 
@@ -61,6 +73,7 @@ const CATEGORY_PREFIXES: Record<string, string> = {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 const BookGeneration = () => {
+  const [targetType, setTargetType] = useState<TargetType>("books");
   const [processing, setProcessing] = useState(false);
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
