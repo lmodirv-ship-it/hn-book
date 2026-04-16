@@ -541,78 +541,69 @@ const ProductDetail = () => {
                 transition={{ delay: 0.55 }}
                 className="space-y-3 mt-5"
               >
-                {/* Primary action */}
-                {product.price > 0 ? (
-                  <Button
-                    size="lg"
-                    className="w-full gap-2.5 text-base font-semibold h-14 rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:scale-[1.01] active:scale-[0.99] transition-all"
-                  >
-                    <ShoppingCart className="h-5 w-5" />
-                    اشترِ الآن — {product.price} د.م
+                {/* Access-controlled actions */}
+                {accessLoading ? (
+                  <Button size="lg" disabled className="w-full h-14 rounded-xl">
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                    جارٍ التحقق...
                   </Button>
-                ) : hasPdf ? (
-                  <Button
-                    size="lg"
-                    className="w-full gap-2.5 text-base font-semibold h-14 rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:scale-[1.01] active:scale-[0.99] transition-all"
-                    asChild
-                  >
-                    <Link to={`/read/${product.id}`}>
-                      <BookOpen className="h-5 w-5" />
-                      اقرأ الآن مجاناً
-                    </Link>
-                  </Button>
+                ) : accessResult?.canAccess || product.price === 0 ? (
+                  <>
+                    {/* Full access: Read + Download */}
+                    {hasPdf && (
+                      <Button
+                        size="lg"
+                        className="w-full gap-2.5 text-base font-semibold h-14 rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:scale-[1.01] active:scale-[0.99] transition-all"
+                        asChild
+                      >
+                        <Link to={`/read/${product.id}`}>
+                          <BookOpen className="h-5 w-5" />
+                          {product.price === 0 ? "اقرأ الآن مجاناً" : "اقرأ الآن"}
+                        </Link>
+                      </Button>
+                    )}
+                    {hasPdf && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button variant="outline" size="lg" className="gap-2 text-sm font-semibold h-12 rounded-xl" asChild>
+                          <Link to={`/read/${product.id}`}>
+                            <Eye className="h-4 w-4" /> مطالعة
+                          </Link>
+                        </Button>
+                        <Button variant="outline" size="lg" className="gap-2 text-sm font-semibold h-12 rounded-xl" asChild>
+                          <a href={product.pdfUrl} target="_blank" rel="noopener noreferrer" download>
+                            <Download className="h-4 w-4" /> تحميل PDF
+                          </a>
+                        </Button>
+                      </div>
+                    )}
+                    {accessResult?.reason === "purchased" && (
+                      <p className="text-xs text-center text-primary flex items-center justify-center gap-1">
+                        <Check className="w-3 h-3" /> تم الشراء
+                      </p>
+                    )}
+                    {accessResult?.reason === "subscribed" && (
+                      <p className="text-xs text-center text-primary flex items-center justify-center gap-1">
+                        <Crown className="w-3 h-3" /> مشترك — وصول غير محدود
+                      </p>
+                    )}
+                  </>
                 ) : (
-                  <Button
-                    size="lg"
-                    disabled
-                    className="w-full gap-2.5 text-base font-semibold h-14 rounded-xl opacity-50 cursor-not-allowed"
-                  >
-                    <BookOpen className="h-5 w-5" />
-                    غير متوفر للقراءة حالياً
-                  </Button>
+                  /* Paywall */
+                  <Paywall
+                    bookId={product.id}
+                    bookName={product.name}
+                    price={product.price}
+                    isLoggedIn={accessResult?.isLoggedIn ?? false}
+                    onAccessGranted={async () => {
+                      const access = await accessService.canAccessBook(product.id, product.price);
+                      setAccessResult(access);
+                    }}
+                  />
                 )}
 
-                {/* Secondary actions row */}
-                {hasPdf && (
-                  <div className="grid grid-cols-2 gap-2">
-                    {/* Read / Preview */}
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="gap-2 text-sm font-semibold h-12 rounded-xl border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 transition-all"
-                      asChild
-                    >
-                      <Link to={`/read/${product.id}`}>
-                        <Eye className="h-4 w-4" />
-                        {product.price > 0 ? "مطالعة" : "قراءة"}
-                      </Link>
-                    </Button>
-
-                    {/* Download PDF */}
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="gap-2 text-sm font-semibold h-12 rounded-xl border-muted-foreground/30 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all"
-                      asChild
-                    >
-                      <a href={product.pdfUrl} target="_blank" rel="noopener noreferrer" download>
-                        <Download className="h-4 w-4" />
-                        تحميل PDF
-                      </a>
-                    </Button>
-                  </div>
-                )}
-
-                {/* Disabled state for no PDF */}
                 {!hasPdf && product.price > 0 && (
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    disabled
-                    className="w-full gap-2.5 text-sm font-semibold h-12 rounded-xl opacity-50 cursor-not-allowed"
-                  >
-                    <BookOpen className="h-5 w-5" />
-                    المطالعة غير متوفرة
+                  <Button variant="outline" size="lg" disabled className="w-full gap-2.5 text-sm font-semibold h-12 rounded-xl opacity-50 cursor-not-allowed">
+                    <BookOpen className="h-5 w-5" /> المطالعة غير متوفرة
                   </Button>
                 )}
               </motion.div>
