@@ -97,7 +97,9 @@ async function fetchProductsViaRest(filter?: BookFilter): Promise<ApiResult<Book
       count: Array.isArray(data) ? data.length : 0,
     });
 
-    return ok((Array.isArray(data) ? data : []).map(mapRow));
+    const result = ok((Array.isArray(data) ? data : []).map(mapRow));
+    cache.set(key, { data: result, ts: Date.now() });
+    return result;
   } catch (error) {
     console.error("[bookService.getAll] REST fallback unexpected error", error);
     return fail(error instanceof Error ? error.message : "Failed to fetch books");
