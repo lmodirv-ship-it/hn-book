@@ -145,6 +145,44 @@ export type Database = {
         }
         Relationships: []
       }
+      manual_recommendations: {
+        Row: {
+          book_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          priority: number
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          priority?: number
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          priority?: number
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_recommendations_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           book_id: string

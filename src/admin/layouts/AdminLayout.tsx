@@ -36,6 +36,7 @@ const navItems = [
   { path: "/admin/pricing", icon: DollarSign, label: "إدارة التسعير" },
   { path: "/admin/database", icon: Database, label: "مدير قاعدة البيانات" },
   { path: "/admin/sales", icon: Crown, label: "المبيعات والاشتراكات" },
+  { path: "/admin/recommendations", icon: BookOpen, label: "التوصيات" },
   { path: "/admin/settings", icon: Settings, label: "الإعدادات" },
 ];
 

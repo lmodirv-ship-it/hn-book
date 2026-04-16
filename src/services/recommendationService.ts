@@ -6,6 +6,32 @@ import { mapProductRowToProduct } from "@/lib/product-utils";
 import type { Product } from "@/lib/products";
 
 export const recommendationService = {
+  /** Admin-curated picks by type */
+  async getManual(type: string, limit = 8): Promise<ApiResult<Product[]>> {
+    const { data: recs, error: recErr } = await db
+      .from("manual_recommendations")
+      .select("book_id")
+      .eq("type", type)
+      .eq("is_active", true)
+      .order("priority", { ascending: true })
+      .limit(limit);
+
+    if (recErr || !recs || recs.length === 0) return ok([]);
+
+    const ids = recs.map((r: any) => r.book_id);
+    const { data, error } = await db
+      .from("products")
+      .select("*")
+      .eq("is_active", true)
+      .in("id", ids);
+
+    if (error) return fail(error.message);
+    // Preserve priority order
+    const map = new Map((data || []).map(d => [d.id, d]));
+    const ordered = ids.map(id => map.get(id)).filter(Boolean);
+    return ok(ordered.map(mapProductRowToProduct));
+  },
+
   /** Books in the same category */
   async getSimilar(bookId: string, category: string, limit = 4): Promise<ApiResult<Product[]>> {
     const { data, error } = await db

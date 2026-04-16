@@ -376,7 +376,10 @@ const BooksPage = () => {
         {/* Recommendations */}
         <section className="py-10">
           <div className="container mx-auto px-4 space-y-12">
-            <BookRecommendations type="popular" title="الأكثر شعبية 🔥" limit={4} />
+            <BookRecommendations type="featured" title="⭐ مختارات" limit={4} />
+            <BookRecommendations type="trending" title="🔥 الأكثر رواجاً" limit={4} />
+            <BookRecommendations type="recommended" title="📈 كتب مقترحة" limit={4} />
+            <BookRecommendations type="popular" title="الأكثر شعبية" limit={4} />
             <BookRecommendations type="newest" title="أحدث الإضافات ✨" limit={4} />
           </div>
         </section>

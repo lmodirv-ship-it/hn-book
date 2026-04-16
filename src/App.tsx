@@ -40,6 +40,7 @@ import CategoryManagement from "./admin/pages/CategoryManagement.tsx";
 import PricingManagement from "./admin/pages/PricingManagement.tsx";
 import DatabaseManager from "./admin/pages/DatabaseManager.tsx";
 import SalesManagement from "./admin/pages/SalesManagement.tsx";
+import RecommendationsManagement from "./admin/pages/RecommendationsManagement.tsx";
 
 const queryClient = new QueryClient();
 
@@ -90,6 +91,7 @@ const App = () => (
               <Route path="pricing" element={<PricingManagement />} />
               <Route path="database" element={<DatabaseManager />} />
               <Route path="sales" element={<SalesManagement />} />
+              <Route path="recommendations" element={<RecommendationsManagement />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />
