@@ -158,13 +158,13 @@ export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: Pr
         {mode === "manual" && (
           <div className="space-y-3 pt-2">
             <Field label="اسم الكتاب *">
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="مثال: فن الإدارة الحديثة" className="bg-card" />
+              <Input value={name} onChange={(e) => handleNameChange(e.target.value)} placeholder="مثال: فن الإدارة الحديثة" className="bg-card" />
             </Field>
             <Field label="وصف قصير">
               <Input value={shortDesc} onChange={(e) => setShortDesc(e.target.value)} placeholder="وصف مختصر سطر واحد" className="bg-card" />
             </Field>
             <Field label="الوصف المفصل">
-              <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="وصف تفصيلي للكتاب..." className="bg-card min-h-[60px]" />
+              <Textarea value={description} onChange={(e) => handleDescChange(e.target.value)} placeholder="وصف تفصيلي للكتاب..." className="bg-card min-h-[60px]" />
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="المؤلف">
