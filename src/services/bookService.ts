@@ -37,6 +37,10 @@ function buildProductsRestUrl(filter?: BookFilter, maxLimit = 100) {
   url.searchParams.set("limit", String(limit));
   url.searchParams.set("offset", String(offset));
 
+  // Only show books with valid PDF
+  url.searchParams.append("pdf_url", "not.is.null");
+  url.searchParams.append("pdf_url", "neq.");
+
   // Apply category filter
   if (filter?.category && filter.category !== "all") {
     url.searchParams.set("category", `eq.${filter.category}`);
@@ -255,6 +259,9 @@ export const bookService = {
     try {
       const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/products`);
       url.searchParams.set("select", "*");
+      // Only count books with valid PDF
+      url.searchParams.append("pdf_url", "not.is.null");
+      url.searchParams.append("pdf_url", "neq.");
       if (filter?.category && filter.category !== "all") {
         url.searchParams.set("category", `eq.${filter.category}`);
       } else if (filter?.language === "ar") {

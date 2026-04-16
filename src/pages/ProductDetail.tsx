@@ -548,18 +548,26 @@ const ProductDetail = () => {
               </motion.div>
 
               {/* Read / Preview button - only for PDFs */}
-              {hasPdf && (
+              {hasPdf && product.price > 0 && (
                 <Button
                   variant="outline"
                   size="lg"
                   className="mt-3 w-full gap-2.5 text-base font-semibold h-12 rounded-xl border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 transition-all"
                   asChild
                 >
-                  <Link to={`/read/${id}`}>
+                  <Link to={`/read/${product.id}`}>
                     <BookOpen className="h-5 w-5" />
                     مطالعة الكتاب
                   </Link>
                 </Button>
+              )}
+
+              {/* No PDF warning */}
+              {!hasPdf && (
+                <div className="mt-3 flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  هذا الكتاب غير متوفر للقراءة حالياً
+                </div>
               )}
 
               {/* Sub-info */}
