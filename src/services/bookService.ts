@@ -41,6 +41,15 @@ function buildProductsRestUrl(filter?: BookFilter, maxLimit = 100) {
     url.searchParams.set("category", `eq.${filter.category}`);
   }
 
+  // Language filter: Arabic categories vs English categories
+  if (filter?.language === "ar") {
+    url.searchParams.set("category", `not.like.*[a-zA-Z]*`);
+  } else if (filter?.language === "en") {
+    url.searchParams.set("category", `like.*[a-zA-Z]*`);
+  } else if (filter?.language === "fr") {
+    url.searchParams.set("category", `ilike.*fran%`);
+  }
+
   if (filter?.search?.trim()) {
     const escapedSearch = filter.search.trim().replace(/[,%]/g, " ");
     url.searchParams.set("or", `(name.ilike.*${escapedSearch}*,category.ilike.*${escapedSearch}*)`);
