@@ -843,6 +843,83 @@ export type Database = {
         }
         Relationships: []
       }
+      tablou_sizes: {
+        Row: {
+          created_at: string
+          height_cm: number
+          id: string
+          is_available: boolean
+          price_multiplier: number
+          size: string
+          tablou_id: string
+          width_cm: number
+        }
+        Insert: {
+          created_at?: string
+          height_cm?: number
+          id?: string
+          is_available?: boolean
+          price_multiplier?: number
+          size?: string
+          tablou_id: string
+          width_cm?: number
+        }
+        Update: {
+          created_at?: string
+          height_cm?: number
+          id?: string
+          is_available?: boolean
+          price_multiplier?: number
+          size?: string
+          tablou_id?: string
+          width_cm?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tablou_sizes_tablou_id_fkey"
+            columns: ["tablou_id"]
+            isOneToOne: false
+            referencedRelation: "tablous"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tablous: {
+        Row: {
+          base_price: number
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string
+          is_active: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          base_price?: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url: string
+          is_active?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          base_price?: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       upload_jobs: {
         Row: {
           created_at: string
