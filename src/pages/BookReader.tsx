@@ -115,6 +115,7 @@ const BookReader = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const { bookmarks, addBookmark, removeBookmark, isBookmarked } = useBookmarks(id);
+  const { highlights, addHighlight, removeHighlight } = useHighlights(id);
   const { notes, addNote, removeNote } = useNotes(id);
   const { getSaved, save, restored, setRestored } = useReadingProgress(id);
 
