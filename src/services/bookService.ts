@@ -32,7 +32,7 @@ function buildProductsRestUrl(filter?: BookFilter, maxLimit = 100) {
   const offset = Math.max(filter?.offset ?? 0, 0);
   const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/products`);
 
-  url.searchParams.set("select", "*");
+  url.searchParams.set("select", "id,name,description,short_description,price,original_price,category,image,badge,is_flash_deal,deal_ends_in,reference_code,pdf_url");
   url.searchParams.set("order", "created_at.desc");
   url.searchParams.set("limit", String(limit));
   url.searchParams.set("offset", String(offset));
