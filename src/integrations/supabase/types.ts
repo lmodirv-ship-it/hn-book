@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       card_templates: {
         Row: {
+          category: string
           created_at: string
           id: string
           image_url: string
@@ -24,6 +25,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category?: string
           created_at?: string
           id?: string
           image_url: string
@@ -32,6 +34,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category?: string
           created_at?: string
           id?: string
           image_url?: string
@@ -424,10 +427,13 @@ export type Database = {
         Row: {
           address: string
           city: string
+          company: string
           country: string
           created_at: string
           customer_name: string
+          email: string
           id: string
+          job_title: string
           notes: string | null
           paper_type: string
           phone: string
@@ -442,10 +448,13 @@ export type Database = {
         Insert: {
           address: string
           city?: string
+          company?: string
           country?: string
           created_at?: string
           customer_name: string
+          email?: string
           id?: string
+          job_title?: string
           notes?: string | null
           paper_type?: string
           phone: string
@@ -460,10 +469,13 @@ export type Database = {
         Update: {
           address?: string
           city?: string
+          company?: string
           country?: string
           created_at?: string
           customer_name?: string
+          email?: string
           id?: string
+          job_title?: string
           notes?: string | null
           paper_type?: string
           phone?: string
