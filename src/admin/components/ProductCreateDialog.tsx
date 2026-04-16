@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { bookService } from "@/services";
+import { bookService, categoryService } from "@/services";
+import type { Category } from "@/services/categoryService";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Wand2, PenLine, Loader2, Plus, Sparkles } from "lucide-react";
@@ -14,23 +15,19 @@ interface ProductCreateDialogProps {
   onProductCreated: () => void;
 }
 
-const CATEGORIES = [
-  "كتب عامة",
-  "تطوير الذات",
-  "الصحة واللياقة",
-  "الأعمال والتسويق",
-  "المالية والاستثمار",
-  "التقنية والبرمجة",
-  "الطبخ والتغذية",
-  "الأدب والروايات",
-  "التعليم والدراسة",
-  "eBooks & PLR",
-  "Design Templates",
-  "Online Courses",
-  "AI Tools",
-];
-
 export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: ProductCreateDialogProps) {
+  const [dbCategories, setDbCategories] = useState<Category[]>([]);
+  
+  useEffect(() => {
+    if (open) {
+      categoryService.getAll().then((r) => {
+        if (r.data) setDbCategories(r.data);
+      });
+    }
+  }, [open]);
+
+  const categoryNames = dbCategories.map((c) => c.name);
+  
   const [mode, setMode] = useState<"choose" | "manual" | "auto">("choose");
   const [saving, setSaving] = useState(false);
 
