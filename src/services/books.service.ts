@@ -95,9 +95,10 @@ export const booksService = {
 
   /** Create a new book */
   async create(input: BookCreateInput): Promise<ServiceResult<Book>> {
+    const dbInput = toDbInput(input) as any;
     const { data, error } = await supabase
       .from("products")
-      .insert(toDbInput(input))
+      .insert(dbInput)
       .select()
       .single();
     if (error) return { data: null, error: error.message };
@@ -106,6 +107,7 @@ export const booksService = {
 
   /** Update an existing book */
   async update(id: string, input: BookUpdateInput): Promise<ServiceResult<Book>> {
+    const dbInput = toDbInput(input) as any;
     const { data, error } = await supabase
       .from("products")
       .update(toDbInput(input))
