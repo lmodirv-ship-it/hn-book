@@ -60,18 +60,27 @@ const BulkPdfUpload = () => {
       const pdfResult = await storageService.uploadBookPdf(current.file);
       if (pdfResult.error) throw new Error(pdfResult.error);
 
-      // 2. Create book with real data
+      const { publicUrl: pdfUrl, referenceCode } = pdfResult.data!;
+
+      // 2. Generate cover image from title
+      const coverBlob = await generateBookCover(current.title, referenceCode);
+      const coverFile = new File([coverBlob], `${referenceCode}.jpg`, { type: "image/jpeg" });
+
+      // 3. Upload cover image
+      const coverResult = await storageService.uploadBookImage(coverFile, referenceCode);
+      const coverUrl = coverResult.data?.publicUrl || pdfUrl;
+
+      // 4. Create book with real data
       const createResult = await bookService.create({
         name: current.title,
         category: current.category,
         price: 0,
-        pdfUrl: pdfResult.data!.publicUrl,
-        referenceCode: pdfResult.data!.referenceCode,
-        image: pdfResult.data!.publicUrl,
+        pdfUrl,
+        referenceCode,
+        image: coverUrl,
       });
 
       if (createResult.error) {
-        // Cleanup orphaned PDF
         await storageService.removePdfByPath(pdfResult.data!.storagePath);
         throw new Error(createResult.error);
       }
