@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { UploadQueue, type JobState, type QueueOptions } from "@/lib/upload-queue";
 
 /**
@@ -9,17 +9,18 @@ export function useUploadQueue<T>(
 ) {
   const [jobs, setJobs] = useState<JobState<T>[]>([]);
   const queueRef = useRef<UploadQueue<T> | null>(null);
+  const optsRef = useRef(opts);
+  optsRef.current = opts;
 
-  // Lazy-init queue with stable callbacks
   const getQueue = useCallback(() => {
     if (!queueRef.current) {
       queueRef.current = new UploadQueue<T>({
-        ...opts,
+        ...optsRef.current,
         onUpdate: (updated) => setJobs(updated),
       });
     }
     return queueRef.current;
-  }, []); // opts are stable by convention
+  }, []);
 
   const enqueue = useCallback((payloads: T[]) => getQueue().enqueue(payloads), [getQueue]);
   const start = useCallback(() => getQueue().start(), [getQueue]);
