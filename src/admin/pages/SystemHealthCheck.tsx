@@ -1,8 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   ShieldCheck, Play, Loader2, Clock, Wrench,
-  CheckCircle, AlertTriangle, XCircle, Heart, RotateCcw,
+  CheckCircle, AlertTriangle, XCircle, Heart, RotateCcw, History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -52,6 +52,18 @@ interface RepairResult {
   totalIssues: number;
   actions: RepairAction[];
   summary: { fixed: number; failed: number; skipped: number; total: number } | null;
+}
+
+interface SystemLog {
+  id: string;
+  action_type: string;
+  triggered_by: string;
+  details: any;
+  fixes_count: number;
+  errors_count: number;
+  skipped_count: number;
+  total_issues: number;
+  created_at: string;
 }
 
 // ── Health Checks ──
@@ -169,9 +181,26 @@ const SystemHealthCheck = () => {
   const [repairing, setRepairing] = useState(false);
   const [repairMode, setRepairMode] = useState<"idle" | "scanning" | "fixing">("idle");
 
+  // Logs state
+  const [logs, setLogs] = useState<SystemLog[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+
   const updateCheck = useCallback((id: string, update: Partial<CheckState>) => {
     setChecks(prev => prev.map(c => c.id === id ? { ...c, ...update } : c));
   }, []);
+
+  const fetchLogs = useCallback(async () => {
+    setLogsLoading(true);
+    const { data } = await supabase
+      .from("system_logs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(20);
+    if (data) setLogs(data as unknown as SystemLog[]);
+    setLogsLoading(false);
+  }, []);
+
+  useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
   const runAllChecks = async () => {
     setScanning(true);
@@ -219,6 +248,9 @@ const SystemHealthCheck = () => {
           toast.success(`✅ تم إصلاح ${s.fixed} · فشل ${s.failed} · تخطي ${s.skipped}`);
         }
       }
+
+      // Refresh logs after repair
+      fetchLogs();
     } catch (err: any) {
       toast.error("خطأ: " + (err.message || "غير معروف"));
     } finally {
@@ -233,6 +265,9 @@ const SystemHealthCheck = () => {
   const total = passCount + warnCount + failCount;
   const score = total > 0 ? Math.round((passCount / total) * 100) : 0;
 
+  const lastCronRun = logs.find(l => l.triggered_by === "cron");
+  const lastManualRun = logs.find(l => l.triggered_by === "manual");
+
   return (
     <div className="space-y-6" dir="rtl">
       {/* Header */}
@@ -243,7 +278,7 @@ const SystemHealthCheck = () => {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-foreground">فحص صحة النظام</h1>
-            <p className="text-sm text-muted-foreground">{healthChecks.length} فحص + إصلاح تلقائي</p>
+            <p className="text-sm text-muted-foreground">{healthChecks.length} فحص + إصلاح تلقائي كل 4 ساعات</p>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -315,24 +350,15 @@ const SystemHealthCheck = () => {
             </div>
             <div>
               <h2 className="text-lg font-bold text-foreground">🔧 الإصلاح التلقائي</h2>
-              <p className="text-xs text-muted-foreground">فحص البيانات وإصلاح المشاكل الشائعة تلقائياً</p>
+              <p className="text-xs text-muted-foreground">فحص البيانات وإصلاح المشاكل الشائعة تلقائياً · يعمل كل 4 ساعات</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => runRepair("scan")}
-              disabled={repairing}
-              className="gap-1.5 rounded-xl"
-            >
+            <Button variant="outline" onClick={() => runRepair("scan")} disabled={repairing} className="gap-1.5 rounded-xl">
               {repairMode === "scanning" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
               فحص المشاكل
             </Button>
-            <Button
-              onClick={() => runRepair("fix")}
-              disabled={repairing}
-              className="gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-black"
-            >
+            <Button onClick={() => runRepair("fix")} disabled={repairing} className="gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-black">
               {repairMode === "fixing" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wrench className="w-4 h-4" />}
               إصلاح النظام
             </Button>
@@ -342,20 +368,14 @@ const SystemHealthCheck = () => {
         {/* Repair results */}
         {repairResult && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-
-            {/* Issues found */}
             {repairResult.issues.length > 0 ? (
               <div className="rounded-2xl border border-border bg-card p-4">
-                <h3 className="text-sm font-bold text-foreground mb-3">
-                  ⚠️ المشاكل المكتشفة ({repairResult.totalIssues})
-                </h3>
+                <h3 className="text-sm font-bold text-foreground mb-3">⚠️ المشاكل المكتشفة ({repairResult.totalIssues})</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                   {repairResult.issues.map((issue) => (
                     <div key={issue.type} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/50 border border-border">
                       <span className="text-lg">{ISSUE_ICONS[issue.type] || "⚠️"}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-foreground">{issue.description}</p>
-                      </div>
+                      <div className="flex-1 min-w-0"><p className="text-xs font-medium text-foreground">{issue.description}</p></div>
                       <Badge variant="destructive" className="text-[10px] h-5">{issue.count}</Badge>
                     </div>
                   ))}
@@ -368,7 +388,6 @@ const SystemHealthCheck = () => {
               </div>
             )}
 
-            {/* Fix summary */}
             {repairResult.summary && (
               <div className="rounded-2xl border border-border bg-card p-4">
                 <h3 className="text-sm font-bold text-foreground mb-3">📊 ملخص الإصلاح</h3>
@@ -389,7 +408,6 @@ const SystemHealthCheck = () => {
               </div>
             )}
 
-            {/* Action log */}
             {repairResult.actions.length > 0 && (
               <div className="rounded-2xl border border-border bg-card overflow-hidden">
                 <div className="px-4 py-3 border-b border-border bg-secondary/30">
@@ -403,9 +421,7 @@ const SystemHealthCheck = () => {
                       </span>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium text-foreground">{action.action}</p>
-                        {action.bookName && (
-                          <p className="text-[11px] text-muted-foreground truncate">{action.bookName}</p>
-                        )}
+                        {action.bookName && <p className="text-[11px] text-muted-foreground truncate">{action.bookName}</p>}
                         <p className="text-[10px] text-muted-foreground mt-0.5">{action.detail}</p>
                       </div>
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground flex-shrink-0">
@@ -417,6 +433,63 @@ const SystemHealthCheck = () => {
               </div>
             )}
           </motion.div>
+        )}
+      </div>
+
+      {/* ═══════════ Logs History ═══════════ */}
+      <div className="border-t border-border pt-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+              <History className="w-5 h-5 text-blue-500" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-foreground">📋 سجل العمليات</h2>
+              <p className="text-xs text-muted-foreground">
+                {lastCronRun ? `آخر تشغيل تلقائي: ${new Date(lastCronRun.created_at).toLocaleString("ar-MA")}` : "لم يتم التشغيل التلقائي بعد"}
+              </p>
+            </div>
+          </div>
+          <Button variant="ghost" size="sm" onClick={fetchLogs} disabled={logsLoading} className="gap-1.5">
+            <RotateCcw className={`w-4 h-4 ${logsLoading ? "animate-spin" : ""}`} />
+            تحديث
+          </Button>
+        </div>
+
+        {logs.length === 0 ? (
+          <div className="rounded-2xl border border-border bg-card/50 p-8 text-center">
+            <History className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">لا توجد سجلات بعد</p>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-border bg-card overflow-hidden">
+            <div className="max-h-[400px] overflow-y-auto divide-y divide-border/50">
+              {logs.map((log) => (
+                <div key={log.id} className="flex items-center gap-4 px-4 py-3 hover:bg-secondary/20 transition-colors">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
+                    log.triggered_by === "cron" ? "bg-blue-500/10 text-blue-500" : "bg-amber-500/10 text-amber-500"
+                  }`}>
+                    {log.triggered_by === "cron" ? "⏰" : "👤"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-foreground">
+                      {log.triggered_by === "cron" ? "تشغيل تلقائي" : "تشغيل يدوي"}
+                      {" · "}
+                      <span className="text-muted-foreground">{(log.details as any)?.mode === "fix" ? "إصلاح" : "فحص"}</span>
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {new Date(log.created_at).toLocaleString("ar-MA")}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs">
+                    <span className="text-muted-foreground">{log.total_issues} مشكلة</span>
+                    {log.fixes_count > 0 && <Badge className="bg-emerald-500/20 text-emerald-500 text-[10px] h-5">✅ {log.fixes_count}</Badge>}
+                    {log.errors_count > 0 && <Badge variant="destructive" className="text-[10px] h-5">❌ {log.errors_count}</Badge>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </div>
     </div>

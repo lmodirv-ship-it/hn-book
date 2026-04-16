@@ -494,6 +494,42 @@ export type Database = {
         }
         Relationships: []
       }
+      system_logs: {
+        Row: {
+          action_type: string
+          created_at: string
+          details: Json
+          errors_count: number
+          fixes_count: number
+          id: string
+          skipped_count: number
+          total_issues: number
+          triggered_by: string
+        }
+        Insert: {
+          action_type?: string
+          created_at?: string
+          details?: Json
+          errors_count?: number
+          fixes_count?: number
+          id?: string
+          skipped_count?: number
+          total_issues?: number
+          triggered_by?: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          details?: Json
+          errors_count?: number
+          fixes_count?: number
+          id?: string
+          skipped_count?: number
+          total_issues?: number
+          triggered_by?: string
+        }
+        Relationships: []
+      }
       upload_jobs: {
         Row: {
           created_at: string
