@@ -282,7 +282,7 @@ const BulkPdfUpload = () => {
               .slice(0, 5)
               .map((j) => (
                 <div key={j.id} className="flex items-center gap-2 text-xs">
-                  <Check className="w-3 h-3 text-primary flex-shrink-0" />
+                  <span className="flex-shrink-0">✅</span>
                   <span className="text-foreground truncate">
                     {(j.result as any)?.title || j.file_name}
                   </span>
