@@ -49,6 +49,9 @@ import TablouPage from "./pages/TablouPage.tsx";
 import TablouDetail from "./pages/TablouDetail.tsx";
 import TablouAdmin from "./admin/pages/TablouAdmin.tsx";
 import AIClassifier from "./admin/pages/AIClassifier.tsx";
+import FeatureManager from "./admin/pages/FeatureManager.tsx";
+import SystemMonitoring from "./admin/pages/SystemMonitoring.tsx";
+import ApiIntegrationsAdmin from "./admin/pages/ApiIntegrationsAdmin.tsx";
 
 const queryClient = new QueryClient();
 
