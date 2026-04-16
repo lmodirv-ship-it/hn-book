@@ -35,6 +35,7 @@ const timeoutPromise = () =>
   });
 
 const Index = () => {
+  useVisitorTracking();
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
