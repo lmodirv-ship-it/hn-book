@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   Package, DollarSign, Users, TrendingUp, TrendingDown,
-  ShoppingCart, Star, ArrowUpRight, BookOpen, Eye
+  ShoppingCart, Star, ArrowUpRight, BookOpen, Eye,
+  Upload, CheckCircle, XCircle, Clock, Activity,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -154,14 +155,31 @@ const AdminDashboard = () => {
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // System monitoring
+  const [jobStats, setJobStats] = useState({ pending: 0, processing: 0, done: 0, error: 0, todayUploads: 0 });
+
   useEffect(() => {
     const fetchData = async () => {
-      const [productsRes, customersRes, ordersRes, topProdsRes] = await Promise.all([
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      const [productsRes, customersRes, ordersRes, topProdsRes, jobsRes] = await Promise.all([
         supabase.from("products").select("id, category, is_active", { count: "exact" }),
         supabase.from("customers").select("id", { count: "exact", head: true }),
         supabase.from("orders").select("id, order_number, amount, status, created_at, customers(name), products(name)").order("created_at", { ascending: false }),
         supabase.from("products").select("id, name, category, price, image, is_active").limit(5),
+        supabase.from("upload_jobs").select("id, status, created_at"),
       ]);
+
+      const jobs = jobsRes.data || [];
+      const todayUploads = jobs.filter(j => new Date(j.created_at) >= todayStart).length;
+      setJobStats({
+        pending: jobs.filter(j => j.status === "pending").length,
+        processing: jobs.filter(j => j.status === "processing").length,
+        done: jobs.filter(j => j.status === "done").length,
+        error: jobs.filter(j => j.status === "error").length,
+        todayUploads,
+      });
 
       const prods = productsRes.data || [];
       setTotalProducts(productsRes.count || 0);
@@ -256,6 +274,47 @@ const AdminDashboard = () => {
           <StatCard key={i} {...stat} index={i} />
         ))}
       </div>
+
+      {/* System Monitor */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+        className="rounded-2xl border border-border bg-card/50 p-5">
+        <div className="flex items-center justify-between mb-4">
+          <Badge variant="outline" className="text-primary border-primary/30 bg-primary/10 gap-1">
+            <Activity className="w-3 h-3" /> مراقبة حية
+          </Badge>
+          <h3 className="font-bold text-foreground flex items-center gap-2">
+            <Activity className="w-4 h-4 text-primary" />
+            مراقبة النظام
+          </h3>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className="rounded-xl bg-primary/5 border border-primary/10 p-4 text-center">
+            <BookOpen className="w-5 h-5 text-primary mx-auto mb-1" />
+            <p className="text-2xl font-black text-foreground">{totalProducts}</p>
+            <p className="text-[11px] text-muted-foreground">إجمالي الكتب</p>
+          </div>
+          <div className="rounded-xl bg-blue-500/5 border border-blue-500/10 p-4 text-center">
+            <Upload className="w-5 h-5 text-blue-500 mx-auto mb-1" />
+            <p className="text-2xl font-black text-foreground">{jobStats.todayUploads}</p>
+            <p className="text-[11px] text-muted-foreground">رفع اليوم</p>
+          </div>
+          <div className="rounded-xl bg-yellow-500/5 border border-yellow-500/10 p-4 text-center">
+            <Clock className="w-5 h-5 text-yellow-500 mx-auto mb-1" />
+            <p className="text-2xl font-black text-foreground">{jobStats.pending}</p>
+            <p className="text-[11px] text-muted-foreground">في الانتظار</p>
+          </div>
+          <div className="rounded-xl bg-red-500/5 border border-red-500/10 p-4 text-center">
+            <XCircle className="w-5 h-5 text-red-500 mx-auto mb-1" />
+            <p className="text-2xl font-black text-foreground">{jobStats.error}</p>
+            <p className="text-[11px] text-muted-foreground">فاشل</p>
+          </div>
+          <div className="rounded-xl bg-emerald-500/5 border border-emerald-500/10 p-4 text-center">
+            <CheckCircle className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
+            <p className="text-2xl font-black text-foreground">{jobStats.done}</p>
+            <p className="text-[11px] text-muted-foreground">مكتمل</p>
+          </div>
+        </div>
+      </motion.div>
 
       {/* Charts + Category */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
