@@ -569,6 +569,7 @@ const BookReader = () => {
             currentPage={currentPage}
             bookmarks={bookmarks}
             notes={notes}
+            highlights={highlights}
             bookDescription={book.description}
             isDarkTheme={isDarkTheme}
             isMobile={isMobile}
@@ -577,6 +578,7 @@ const BookReader = () => {
             onRemoveBookmark={removeBookmark}
             onAddNote={addNote}
             onRemoveNote={removeNote}
+            onRemoveHighlight={removeHighlight}
           />
         )}
 
