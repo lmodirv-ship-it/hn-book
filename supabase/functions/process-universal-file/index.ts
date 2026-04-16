@@ -733,6 +733,30 @@ serve(async (req) => {
 
         const result = await saveToTarget(supabase, item, cls, finalDesignType, categoryType, target, dims, designReason);
         results.push(result);
+
+        // Log to classification_data for ML learning
+        try {
+          const nameKeywords = item.fileName.toLowerCase()
+            .replace(/\.[^.]+$/, "")
+            .split(/[-_\s.]+/)
+            .filter((w: string) => w.length > 2);
+          
+          await supabase.from("classification_data").insert({
+            file_name: item.fileName,
+            width: dims?.width || null,
+            height: dims?.height || null,
+            aspect_ratio: dims ? Number((dims.width / dims.height).toFixed(3)) : null,
+            file_type: item.fileExt,
+            file_size_kb: item.fileSizeKB,
+            filename_keywords: nameKeywords,
+            predicted_type: finalDesignType,
+            actual_type: finalDesignType, // Default: assume prediction is correct
+            confidence: dimClassification.confidence,
+            product_id: result.success ? result.id : null,
+          });
+        } catch (logErr) {
+          console.warn("Failed to log classification:", logErr);
+        }
       } catch (e: any) {
         console.error(`❌ Failed ${item.fileName}:`, e);
         results.push({ success: false, fileName: item.fileName, error: e.message });

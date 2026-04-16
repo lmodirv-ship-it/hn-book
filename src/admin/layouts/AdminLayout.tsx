@@ -41,6 +41,7 @@ const navItems = [
   { path: "/admin/logos", icon: Image, label: "مكتبة الشعارات" },
   { path: "/admin/tablou", icon: Frame, label: "التابلوهات" },
   { path: "/admin/print-orders", icon: Printer, label: "طلبات الطباعة" },
+  { path: "/admin/ai-classifier", icon: Brain, label: "محرك الذكاء" },
   { path: "/admin/settings", icon: Settings, label: "الإعدادات" },
 ];
 

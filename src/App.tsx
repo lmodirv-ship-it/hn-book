@@ -48,6 +48,7 @@ import CarteVisite from "./pages/CarteVisite.tsx";
 import TablouPage from "./pages/TablouPage.tsx";
 import TablouDetail from "./pages/TablouDetail.tsx";
 import TablouAdmin from "./admin/pages/TablouAdmin.tsx";
+import AIClassifier from "./admin/pages/AIClassifier.tsx";
 
 const queryClient = new QueryClient();
 
@@ -106,6 +107,7 @@ const App = () => (
               <Route path="card-templates" element={<CardTemplatesAdmin />} />
               <Route path="logos" element={<LogosAdmin />} />
               <Route path="tablou" element={<TablouAdmin />} />
+              <Route path="ai-classifier" element={<AIClassifier />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />
