@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
 import {
-  CreditCard, Plus, Trash2, Loader2, Edit2, Eye, EyeOff, Upload,
+  CreditCard, Plus, Trash2, Loader2, Edit2, EyeOff, Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { printService, type CardTemplate } from "@/services/printService";
+import { printService, TEMPLATE_CATEGORIES, type CardTemplate } from "@/services/printService";
 import { toast } from "@/hooks/use-toast";
 
 const CardTemplatesAdmin = () => {
@@ -18,16 +20,20 @@ const CardTemplatesAdmin = () => {
   const [editId, setEditId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [category, setCategory] = useState("business");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [filterCat, setFilterCat] = useState("all");
 
-  const fetch = async () => {
+  const fetchData = async () => {
     const data = await printService.getAllTemplates();
     setTemplates(data);
     setLoading(false);
   };
 
-  useEffect(() => { fetch(); }, []);
+  useEffect(() => { fetchData(); }, []);
+
+  const filtered = filterCat === "all" ? templates : templates.filter(t => t.category === filterCat);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -53,17 +59,18 @@ const CardTemplatesAdmin = () => {
     setSaving(true);
     try {
       if (editId) {
-        await printService.updateTemplate(editId, { name, image_url: imageUrl });
+        await printService.updateTemplate(editId, { name, image_url: imageUrl, category });
         toast({ title: "تم التحديث ✅" });
       } else {
-        await printService.createTemplate(name, imageUrl);
+        await printService.createTemplate(name, imageUrl, category);
         toast({ title: "تمت الإضافة ✅" });
       }
       setShowDialog(false);
       setEditId(null);
       setName("");
       setImageUrl("");
-      fetch();
+      setCategory("business");
+      fetchData();
     } catch (err: any) {
       toast({ title: err.message, variant: "destructive" });
     }
@@ -72,19 +79,20 @@ const CardTemplatesAdmin = () => {
 
   const toggleActive = async (id: string, active: boolean) => {
     await printService.updateTemplate(id, { is_active: active });
-    fetch();
+    fetchData();
   };
 
   const deleteTemplate = async (id: string) => {
     await printService.deleteTemplate(id);
     toast({ title: "تم الحذف" });
-    fetch();
+    fetchData();
   };
 
   const openEdit = (t: CardTemplate) => {
     setEditId(t.id);
     setName(t.name);
     setImageUrl(t.image_url);
+    setCategory(t.category);
     setShowDialog(true);
   };
 
@@ -92,6 +100,7 @@ const CardTemplatesAdmin = () => {
     setEditId(null);
     setName("");
     setImageUrl("");
+    setCategory("business");
     setShowDialog(true);
   };
 
@@ -104,9 +113,22 @@ const CardTemplatesAdmin = () => {
         <Button onClick={openCreate} className="gap-1.5"><Plus className="w-4 h-4" /> تصميم جديد</Button>
       </div>
 
+      {/* Category filter */}
+      <div className="flex flex-wrap gap-2">
+        <button onClick={() => setFilterCat("all")} className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${filterCat === "all" ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground"}`}>الكل ({templates.length})</button>
+        {TEMPLATE_CATEGORIES.map(c => {
+          const count = templates.filter(t => t.category === c.value).length;
+          return (
+            <button key={c.value} onClick={() => setFilterCat(c.value)} className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${filterCat === c.value ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground"}`}>
+              {c.label} ({count})
+            </button>
+          );
+        })}
+      </div>
+
       {loading ? (
         <div className="flex justify-center py-10"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
-      ) : templates.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
           <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-30" />
           <p className="text-lg font-semibold">لا توجد تصاميم</p>
@@ -114,7 +136,7 @@ const CardTemplatesAdmin = () => {
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {templates.map(t => (
+          {filtered.map(t => (
             <div key={t.id} className={`rounded-xl border border-border overflow-hidden bg-card ${!t.is_active ? "opacity-50" : ""}`}>
               <div className="aspect-[1.8/1] bg-muted/10 relative">
                 <img src={t.image_url} alt={t.name} className="w-full h-full object-cover" />
@@ -124,8 +146,13 @@ const CardTemplatesAdmin = () => {
                   </div>
                 )}
               </div>
-              <div className="p-3 flex items-center justify-between">
-                <p className="text-sm font-medium text-foreground truncate flex-1">{t.name}</p>
+              <div className="p-3">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-sm font-medium text-foreground truncate flex-1">{t.name}</p>
+                  <Badge variant="secondary" className="text-[9px] px-1.5 shrink-0">
+                    {TEMPLATE_CATEGORIES.find(c => c.value === t.category)?.label || t.category}
+                  </Badge>
+                </div>
                 <div className="flex items-center gap-1">
                   <Switch checked={t.is_active} onCheckedChange={v => toggleActive(t.id, v)} />
                   <Button variant="ghost" size="icon" onClick={() => openEdit(t)} className="h-8 w-8">
@@ -150,6 +177,17 @@ const CardTemplatesAdmin = () => {
             <div>
               <Label>اسم التصميم</Label>
               <Input value={name} onChange={e => setName(e.target.value)} placeholder="تصميم كلاسيكي" />
+            </div>
+            <div>
+              <Label>الفئة</Label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {TEMPLATE_CATEGORIES.map(c => (
+                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>صورة التصميم</Label>
