@@ -197,6 +197,7 @@ const BookReader = () => {
         const result = slugOrId.includes('-') && slugOrId.length > 30
           ? await bookService.getById(slugOrId)
           : await bookService.getBySlug(slugOrId).then(r => r.data ? r : bookService.getById(slugOrId));
+        if (!result.data) return;
         const bookData = result.data;
         setBook({
           id: bookData.id,
