@@ -206,6 +206,15 @@ const BookReader = () => {
         });
         if (!bookData.pdfUrl) return;
 
+        // Check access for paid books
+        if (bookData.price > 0) {
+          const access = await accessService.canAccessBook(bookData.id, bookData.price);
+          if (!access.canAccess) {
+            setAccessBlocked(true);
+            setLoading(false);
+            return;
+          }
+        }
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
         const isInternal = bookData.pdfUrl.includes(supabaseUrl) || bookData.pdfUrl.includes("supabase.co");
         const inferredType = getResourceTypeFromUrl(bookData.pdfUrl);
