@@ -132,7 +132,11 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
               <p className="mt-1 text-sm text-white/60 line-clamp-1">
                 {product.shortDescription}
               </p>
-
+              {product.pageCount && (
+                <p className="mt-1 text-[10px] text-muted-foreground flex items-center gap-1">
+                  <BookOpen className="w-3 h-3" /> {product.pageCount} صفحة
+                </p>
+              )}
               <div className="mt-3 flex items-center justify-between pt-3 border-t border-primary/10">
                 <div className="flex items-baseline gap-2">
                   {product.price > 0 ? (
