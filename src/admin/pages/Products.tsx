@@ -205,40 +205,36 @@ const AdminProducts = () => {
                     <span className="text-xs px-2 py-1 rounded-full bg-secondary text-muted-foreground">{p.category}</span>
                   </td>
                   <td className="py-3 px-4">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-foreground">${p.price}</span>
-                      {p.original_price && (
-                        <span className="text-xs text-muted-foreground line-through">${p.original_price}</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">
-                    {p.badge ? (
-                      <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">{p.badge}</span>
+                    {p.page_count ? (
+                      <span className="text-xs font-medium text-foreground flex items-center gap-1">
+                        <BookOpen className="w-3 h-3 text-primary" /> {p.page_count}
+                      </span>
                     ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
+                      <span className="text-xs text-muted-foreground/50">—</span>
                     )}
                   </td>
                   <td className="py-3 px-4">
-                    <div className="flex items-center gap-1">
-                      <a
-                        href={productLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-primary hover:underline truncate max-w-[120px]"
-                        title={fullLink}
-                      >
-                        {productLink}
-                      </a>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(fullLink);
-                          toast.success("تم نسخ الرابط");
-                        }}
-                        className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        <Copy className="w-3 h-3" />
-                      </button>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-foreground">{p.price} د.م</span>
+                      {(() => {
+                        const suggestion = calculateSuggestedPrice(p.page_count, p.category);
+                        if (suggestion && p.price === 0 && suggestion.suggestedPrice > 0) {
+                          return (
+                            <button
+                              onClick={async () => {
+                                await supabase.from("products").update({ price: suggestion.suggestedPrice } as any).eq("id", p.id);
+                                setProducts(prev => prev.map(x => x.id === p.id ? { ...x, price: suggestion.suggestedPrice } : x));
+                                toast.success(`تم تطبيق السعر المقترح: ${suggestion.suggestedPrice} د.م`);
+                              }}
+                              className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors flex items-center gap-0.5"
+                              title={`مقترح: ${suggestion.suggestedPrice} د.م`}
+                            >
+                              <Sparkles className="w-2.5 h-2.5" /> {suggestion.suggestedPrice}
+                            </button>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                   </td>
                   <td className="py-3 px-4 text-center">
@@ -250,9 +246,6 @@ const AdminProducts = () => {
                     ) : (
                       <span className="text-xs text-muted-foreground/50">—</span>
                     )}
-                  </td>
-                  <td className="py-3 px-4 hidden md:table-cell">
-                    <p className="text-xs text-muted-foreground truncate max-w-[250px]">{p.short_description}</p>
                   </td>
                   <td className="py-3 px-4">
                     <span className={`text-[10px] font-medium px-2 py-1 rounded-full ${
