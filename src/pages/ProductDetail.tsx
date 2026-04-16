@@ -37,12 +37,17 @@ const ProductDetail = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       if (!id) return;
-      const { data } = await supabase
+
+      // Try slug first, then UUID
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+      const query = supabase
         .from("products")
         .select("*")
-        .eq("id", id)
+        .eq(isUuid ? "id" : "slug", id)
         .eq("is_active", true)
         .single();
+
+      const { data } = await query;
 
       if (data) {
         const mapped = mapProductRowToProduct(data);

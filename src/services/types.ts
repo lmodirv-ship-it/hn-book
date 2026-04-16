@@ -54,6 +54,7 @@ export interface Book {
   dealEndsIn?: number;
   referenceCode?: string;
   pdfUrl?: string;
+  slug?: string;
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;

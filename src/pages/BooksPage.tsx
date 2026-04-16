@@ -29,6 +29,7 @@ const mapBook = (b: any): Product => ({
   dealEndsIn: b.dealEndsIn,
   referenceCode: b.referenceCode,
   pdfUrl: b.pdfUrl,
+  slug: b.slug,
 });
 
 const SkeletonCard = () => (

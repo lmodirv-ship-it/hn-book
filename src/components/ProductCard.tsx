@@ -33,7 +33,7 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
       transition={{ duration: 0.25, delay: Math.min(index * 0.02, 0.15) }}
       viewport={{ once: true, margin: "-20px" }}
     >
-      <Link to={`/product/${product.id}`}>
+      <Link to={`/book/${product.slug || product.id}`}>
         {/* Outer box - black glossy */}
         <div className="group relative rounded-2xl p-3 bg-black/95 border border-black/80 shadow-[0_4px_30px_-5px_rgba(0,0,0,0.9),inset_0_0_25px_-3px_hsl(199,89%,68%,0.25),inset_0_0_50px_-8px_hsl(199,89%,68%,0.1)]">
           {/* Inner box */}
