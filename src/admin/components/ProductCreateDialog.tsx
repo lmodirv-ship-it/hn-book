@@ -60,6 +60,7 @@ export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: Pr
     setMode("choose");
     setName(""); setShortDesc(""); setDescription(""); setAuthor(""); setPages("");
     setPrice(""); setOriginalPrice(""); setCategory(categoryNames[0] || "كتب عامة"); setBadge(""); setFeatures("");
+    setPdfFile(null); setCoverFile(null); setCoverPreview(null);
     setGeneratedBooks([]); setAutoCount("5"); setGenerating(false);
   };
 
