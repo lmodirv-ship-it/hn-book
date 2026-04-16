@@ -204,6 +204,9 @@ const AdminDashboard = () => {
       prods.forEach((p: any) => { catMap[p.category] = (catMap[p.category] || 0) + 1; });
       setCategoryStats(Object.entries(catMap).sort((a, b) => b[1] - a[1]));
       setLoading(false);
+      setTotalVisits(visitorsRes.count || 0);
+      setTodayVisits(todayVisitorsRes.count || 0);
+      setTotalUsers(profilesRes.count || 0);
     };
     fetchData();
   }, []);
@@ -245,9 +248,9 @@ const AdminDashboard = () => {
     { icon: Package, label: "إجمالي المنتجات", value: totalProducts.toLocaleString(), color: "text-primary", trend: 12 },
     { icon: ShoppingCart, label: "إجمالي الطلبات", value: String(totalOrders), color: "text-blue-400", trend: 8 },
     { icon: DollarSign, label: "إجمالي الأرباح", value: totalRevenue.toFixed(2), color: "text-yellow-400", isCurrency: true, trend: 23 },
-    { icon: Users, label: "العملاء", value: String(totalCustomers), color: "text-purple-400", trend: 5 },
-    { icon: BookOpen, label: "منتجات نشطة", value: String(activeProducts), color: "text-green-400" },
-    { icon: Star, label: "التقييم العام", value: "4.8", color: "text-amber-400", trend: 2 },
+    { icon: Users, label: "المستخدمون", value: String(totalUsers), color: "text-purple-400", trend: 5 },
+    { icon: Eye, label: "إجمالي الزيارات", value: String(totalVisits), color: "text-green-400" },
+    { icon: Eye, label: "زيارات اليوم", value: String(todayVisits), color: "text-amber-400" },
   ];
 
   if (loading) {
