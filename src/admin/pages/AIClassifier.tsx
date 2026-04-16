@@ -88,9 +88,19 @@ const AIClassifier = () => {
     if (data) setRecords(data as unknown as ClassificationRecord[]);
   }, []);
 
+  const checkHealth = useCallback(async () => {
+    setCheckingHealth(true);
+    try {
+      const status = await aiService.checkAIHealth();
+      setEngineStatus(status);
+    } finally {
+      setCheckingHealth(false);
+    }
+  }, []);
+
   useEffect(() => {
-    Promise.all([fetchStats(), fetchRecords()]).finally(() => setLoading(false));
-  }, [fetchStats, fetchRecords]);
+    Promise.all([fetchStats(), fetchRecords(), checkHealth()]).finally(() => setLoading(false));
+  }, [fetchStats, fetchRecords, checkHealth]);
 
   const handleTrain = async () => {
     setTraining(true);
