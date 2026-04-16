@@ -15,6 +15,7 @@ export interface Product {
   referenceCode?: string;
   pdfUrl?: string;
   slug?: string;
+  pageCount?: number;
 }
 
 function seededRandom(seed: number) {

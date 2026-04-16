@@ -21,4 +21,5 @@ export const mapProductRowToProduct = (product: ProductRow): Product => ({
   dealEndsIn: product.deal_ends_in || undefined,
   referenceCode: product.reference_code || undefined,
   pdfUrl: hasPdfUrl(product.pdf_url) ? product.pdf_url : undefined,
+  pageCount: product.page_count ?? undefined,
 });

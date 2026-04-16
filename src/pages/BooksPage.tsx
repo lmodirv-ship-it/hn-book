@@ -38,6 +38,7 @@ const mapBook = (b: any): Product => ({
   referenceCode: b.referenceCode,
   pdfUrl: b.pdfUrl,
   slug: b.slug,
+  pageCount: b.pageCount,
 });
 
 const SkeletonCard = () => (

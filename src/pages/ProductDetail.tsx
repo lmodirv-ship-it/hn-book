@@ -71,6 +71,7 @@ const ProductDetail = () => {
           referenceCode: book.referenceCode,
           pdfUrl: book.pdfUrl,
           slug: book.slug,
+          pageCount: book.pageCount,
         };
         setProduct(mapped);
         setHasPdf(!!book.pdfUrl);
