@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { storageService } from "@/services/storageService";
 import { bookService, invalidateBookCache } from "@/services/bookService";
 import { detectCategory } from "@/lib/category-detection";
+import { generateBookCover } from "@/lib/cover-generator";
 
 type FileStatus = "queued" | "uploading" | "done" | "error";
 
