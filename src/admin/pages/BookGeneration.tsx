@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { tablouService } from "@/services/tablouService";
 import { printService } from "@/services/printService";
 
-type TargetType = "books" | "tablou" | "cards";
+type TargetType = "auto" | "books" | "tablou" | "cards";
 
 interface ProcessedItem {
   success: boolean;
@@ -33,6 +33,7 @@ interface ProcessedItem {
 }
 
 const TARGET_OPTIONS: { value: TargetType; label: string; icon: any; description: string; accept: string }[] = [
+  { value: "auto", label: "🧠 ذكي (تلقائي)", icon: FileCheck, description: "النظام يكتشف النوع تلقائياً — PDF→كتب، صور→تابلو، ZIP→استخراج ومعالجة", accept: "*/*" },
   { value: "books", label: "كتب ومنتجات", icon: BookOpen, description: "PDF، وثائق، صور — يُحفظ في جدول المنتجات", accept: "*/*" },
   { value: "tablou", label: "تابلوهات", icon: Frame, description: "صور فنية — يُحفظ في جدول التابلوهات مع 3 أحجام تلقائياً", accept: "image/*" },
   { value: "cards", label: "قوالب بطاقات", icon: CreditCard, description: "تصاميم بطاقات أعمال — يُحفظ في جدول القوالب", accept: "image/*" },
