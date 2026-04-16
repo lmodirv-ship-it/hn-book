@@ -74,7 +74,7 @@ const CATEGORY_PREFIXES: Record<string, string> = {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 const BookGeneration = () => {
-  const [targetType, setTargetType] = useState<TargetType>("books");
+  const [targetType, setTargetType] = useState<TargetType>("auto");
   const [processing, setProcessing] = useState(false);
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
