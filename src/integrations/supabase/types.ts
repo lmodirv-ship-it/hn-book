@@ -145,6 +145,45 @@ export type Database = {
         }
         Relationships: []
       }
+      order_items: {
+        Row: {
+          book_id: string
+          created_at: string
+          id: string
+          order_id: string
+          price: number
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          id?: string
+          order_id: string
+          price?: number
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          id?: string
+          order_id?: string
+          price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           amount: number
@@ -152,9 +191,17 @@ export type Database = {
           customer_id: string | null
           id: string
           order_number: string
+          payment_method: string | null
           product_id: string | null
+          shipping_address: string | null
+          shipping_country: string | null
+          shipping_email: string | null
+          shipping_name: string | null
+          shipping_phone: string | null
           status: Database["public"]["Enums"]["order_status"]
+          total_amount: number
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           amount?: number
@@ -162,9 +209,17 @@ export type Database = {
           customer_id?: string | null
           id?: string
           order_number: string
+          payment_method?: string | null
           product_id?: string | null
+          shipping_address?: string | null
+          shipping_country?: string | null
+          shipping_email?: string | null
+          shipping_name?: string | null
+          shipping_phone?: string | null
           status?: Database["public"]["Enums"]["order_status"]
+          total_amount?: number
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           amount?: number
@@ -172,9 +227,17 @@ export type Database = {
           customer_id?: string | null
           id?: string
           order_number?: string
+          payment_method?: string | null
           product_id?: string | null
+          shipping_address?: string | null
+          shipping_country?: string | null
+          shipping_email?: string | null
+          shipping_name?: string | null
+          shipping_phone?: string | null
           status?: Database["public"]["Enums"]["order_status"]
+          total_amount?: number
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
