@@ -361,7 +361,7 @@ const CheckoutPage = () => {
                     {submitting ? (
                       <><Loader2 className="w-4 h-4 animate-spin" /> جارٍ إنشاء الطلب...</>
                     ) : (
-                      <><ArrowLeft className="w-4 h-4" /> تأكيد الطلب — {totalPrice} د.م</>
+                      <><ArrowLeft className="w-4 h-4" /> تأكيد الطلب — {finalTotal} د.م</>
                     )}
                   </Button>
                   <p className="text-[10px] text-center text-muted-foreground flex items-center justify-center gap-1">

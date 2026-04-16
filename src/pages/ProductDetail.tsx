@@ -12,6 +12,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import BookCover from "@/components/BookCover";
 import ProductCard from "@/components/ProductCard";
+import BookRecommendations from "@/components/BookRecommendations";
 import Paywall from "@/components/Paywall";
 import { bookService } from "@/services";
 import { accessService } from "@/services/accessService";
