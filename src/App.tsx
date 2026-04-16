@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, useParams } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -55,6 +55,11 @@ import ApiIntegrationsAdmin from "./admin/pages/ApiIntegrationsAdmin.tsx";
 
 const queryClient = new QueryClient();
 
+const ProductRedirect = () => {
+  const { id } = useParams();
+  return <Navigate to={`/book/${id}`} replace />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <I18nProvider>
@@ -71,7 +76,7 @@ const App = () => (
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/order-confirmation/:id" element={<OrderConfirmation />} />
             <Route path="/category/:category" element={<CategoryPage />} />
-            <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/product/:id" element={<ProductRedirect />} />
             <Route path="/book/:id" element={<ProductDetail />} />
             <Route path="/carte-visite" element={<CarteVisite />} />
             <Route path="/tablou" element={<TablouPage />} />

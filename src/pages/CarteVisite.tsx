@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { authService } from "@/services/authService";
 import {
   printService, calculatePrice, QUANTITIES, PAPER_TYPES, PRINT_TYPES, TEMPLATE_CATEGORIES,
   type CardTemplate, type Logo,
@@ -62,15 +62,15 @@ const CarteVisite = () => {
       setLogos(l);
       setLoading(false);
     });
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        supabase.from("profiles").select("*").eq("user_id", user.id).single().then(({ data }: any) => {
-          if (data) {
-            setForm(f => ({ ...f, name: data.display_name || "", phone: data.phone || "", email: user.email || "" }));
-          }
-        });
+    (async () => {
+      const sessionResult = await authService.getSession();
+      if (sessionResult.data) {
+        const profileResult = await authService.getProfile(sessionResult.data.user.id);
+        if (profileResult.data) {
+          setForm(f => ({ ...f, name: profileResult.data!.displayName || "", phone: profileResult.data!.phone || "", email: sessionResult.data!.user.email || "" }));
+        }
       }
-    });
+    })();
   }, []);
 
   const filteredTemplates = useMemo(() => {
@@ -114,13 +114,13 @@ const CarteVisite = () => {
     if (!file) return;
     const ext = file.name.split(".").pop();
     const path = `logos/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("book-images").upload(path, file);
+    const { data: uploadData, error } = await (await import("@/api/client")).db.storage.from("book-images").upload(path, file);
     if (error) {
       toast({ title: "فشل رفع الشعار", variant: "destructive" });
       return;
     }
-    const { data } = supabase.storage.from("book-images").getPublicUrl(path);
-    setCustomLogoUrl(data.publicUrl);
+    const { data: urlData } = (await import("@/api/client")).db.storage.from("book-images").getPublicUrl(path);
+    setCustomLogoUrl(urlData.publicUrl);
     setSelectedLogo(null);
     toast({ title: "تم رفع الشعار ✅" });
   };
@@ -128,12 +128,13 @@ const CarteVisite = () => {
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      const sessionResult = await authService.getSession();
+      if (!sessionResult.data) {
         toast({ title: "يرجى تسجيل الدخول أولاً", variant: "destructive" });
         setSubmitting(false);
         return;
       }
+      const user = sessionResult.data.user;
       await printService.createOrder({
         user_id: user.id,
         template_id: selectedTemplate!,
