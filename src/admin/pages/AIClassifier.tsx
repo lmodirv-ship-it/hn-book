@@ -440,4 +440,94 @@ function StatCard({ icon: Icon, label, value, color }: { icon: any; label: strin
   );
 }
 
+function QuickTestPanel() {
+  const [filename, setFilename] = useState("carte-visite.jpg");
+  const [width, setWidth] = useState("1050");
+  const [height, setHeight] = useState("600");
+  const [testing, setTesting] = useState(false);
+  const [result, setResult] = useState<any>(null);
+
+  const handleTest = async () => {
+    setTesting(true);
+    setResult(null);
+    try {
+      const res = await aiService.classifyFile({
+        filename,
+        width: Number(width) || null,
+        height: Number(height) || null,
+        file_type: filename.split(".").pop() || null,
+      });
+      setResult(res);
+    } catch (e) {
+      toast.error("فشل الاختبار");
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 5 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-xl border border-border bg-card p-6"
+    >
+      <h3 className="text-md font-bold mb-4 flex items-center gap-2">
+        <Brain className="w-4 h-4 text-primary" />
+        اختبار سريع
+      </h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+        <input
+          className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+          placeholder="اسم الملف"
+          value={filename}
+          onChange={(e) => setFilename(e.target.value)}
+        />
+        <input
+          className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+          placeholder="العرض"
+          type="number"
+          value={width}
+          onChange={(e) => setWidth(e.target.value)}
+        />
+        <input
+          className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+          placeholder="الارتفاع"
+          type="number"
+          value={height}
+          onChange={(e) => setHeight(e.target.value)}
+        />
+      </div>
+      <Button size="sm" onClick={handleTest} disabled={testing}>
+        {testing ? <Loader2 className="w-4 h-4 animate-spin ml-1" /> : <Brain className="w-4 h-4 ml-1" />}
+        تصنيف
+      </Button>
+
+      {result && (
+        <div className="mt-4 p-4 rounded-lg bg-background border border-border">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+            <div>
+              <span className="text-muted-foreground">النوع:</span>
+              <p className="font-bold text-primary">{result.type}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">الثقة:</span>
+              <p className="font-bold">{(result.confidence * 100).toFixed(0)}%</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">المصدر:</span>
+              <Badge variant={result.source === "ml" ? "default" : "secondary"}>
+                {result.source === "ml" ? "ML Model" : result.source === "rules" ? "Rules" : "Fallback"}
+              </Badge>
+            </div>
+            <div>
+              <span className="text-muted-foreground">النسبة:</span>
+              <p className="font-mono">{result.ratio ?? "—"}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
 export default AIClassifier;
