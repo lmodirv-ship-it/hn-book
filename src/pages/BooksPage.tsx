@@ -1,5 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useCallback } from "react";
 import ParticleCanvas from "@/components/ParticleCanvas";
 import Navbar from "@/components/Navbar";
 import ProductCard from "@/components/ProductCard";
@@ -8,81 +7,18 @@ import type { Product } from "@/lib/products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, ChevronDown, BookOpen, Loader2 } from "lucide-react";
+import { Search, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
 import { bookService } from "@/services";
 
-const ITEMS_PER_PAGE = 10;
-const FETCH_TIMEOUT_MS = 8000;
+const PAGE_SIZE = 50;
 
-type LangCode = "all" | "ar" | "fr" | "en";
-
-const LANGUAGES = [
-  { code: "all" as LangCode, label: "الكل", flag: "🌍" },
-  { code: "ar" as LangCode, label: "العربية", flag: "🇸🇦" },
-  { code: "fr" as LangCode, label: "Français", flag: "🇫🇷" },
-  { code: "en" as LangCode, label: "English", flag: "🇬🇧" },
-];
-
-const CATEGORY_LANG_MAP: Record<string, LangCode> = {
-  "التاريخ": "ar",
-  "العلوم": "ar",
-  "الطب": "ar",
-  "الأدب العربي": "ar",
-  "الدين الإسلامي": "ar",
-  "تطوير الذات": "ar",
-  "الفلسفة والفكر": "ar",
-  "اللغة العربية": "ar",
-  "الاقتصاد والمال": "ar",
-  "التكنولوجيا": "ar",
-  "كتب": "ar",
-  "مطبخ الدار": "ar",
-  "Arabic literature": "ar",
-  "Literature": "en",
-  "Philosophy": "en",
-  "Biography & Autobiography": "en",
-  "Photography": "en",
-};
-
-const CATEGORY_DISPLAY: Record<string, { label: string; icon: string }> = {
-  "التاريخ": { label: "التاريخ", icon: "🏛️" },
-  "العلوم": { label: "العلوم", icon: "🔬" },
-  "الطب": { label: "الطب", icon: "🏥" },
-  "الأدب العربي": { label: "الأدب", icon: "📜" },
-  "الدين الإسلامي": { label: "الدين", icon: "🕌" },
-  "تطوير الذات": { label: "تطوير الذات", icon: "🧠" },
-  "الفلسفة والفكر": { label: "الفلسفة", icon: "💭" },
-  "اللغة العربية": { label: "اللغة العربية", icon: "✍️" },
-  "الاقتصاد والمال": { label: "الاقتصاد", icon: "💰" },
-  "التكنولوجيا": { label: "التكنولوجيا", icon: "💻" },
-  "كتب": { label: "كتب عامة", icon: "📚" },
-  "مطبخ الدار": { label: "مطبخ الدار", icon: "🍳" },
-  "Arabic literature": { label: "أدب عربي كلاسيكي", icon: "📖" },
-  Literature: { label: "Literature", icon: "📕" },
-  Philosophy: { label: "Philosophy", icon: "🤔" },
-  "Biography & Autobiography": { label: "Biography", icon: "👤" },
-  Photography: { label: "Photography", icon: "📷" },
-};
-
-function detectLanguage(): LangCode {
-  const navLang = navigator.language?.toLowerCase() || "";
-  if (navLang.startsWith("ar")) return "ar";
-  if (navLang.startsWith("fr")) return "fr";
-  if (navLang.startsWith("en")) return "en";
-  return "ar";
-}
-
-const getFilterButtonClass = (active: boolean) =>
-  `rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white border transition-all duration-200 hover:scale-105 ${
-    active
-      ? "border-emerald-500/50 bg-emerald-500/20 shadow-[0_0_18px_-5px_rgba(16,185,129,0.4)]"
-      : "border-primary/50 bg-primary/20 shadow-[0_0_16px_-6px_hsl(199,89%,48%,0.25)] hover:border-primary/80"
-  }`;
+// ─── helpers ─────────────────────────────────────────────────
 
 const mapBook = (b: any): Product => ({
   id: b.id,
   name: b.name,
   description: b.description,
-  shortDescription: b.shortDescription,
+  shortDescription: b.shortDescription ?? "",
   price: b.price,
   originalPrice: b.originalPrice,
   category: b.category,
@@ -108,133 +44,87 @@ const SkeletonCard = () => (
   </div>
 );
 
-const createTimeoutPromise = () =>
-  new Promise<never>((_, reject) => {
-    setTimeout(() => reject(new Error("Books fetch timeout")), FETCH_TIMEOUT_MS);
-  });
+/** Build visible page numbers: show max 7 with ellipsis */
+function getPageNumbers(current: number, total: number): (number | "...")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | "...")[] = [];
+  pages.push(1);
+  if (current > 3) pages.push("...");
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (current < total - 2) pages.push("...");
+  pages.push(total);
+  return pages;
+}
+
+// ─── component ───────────────────────────────────────────────
 
 const BooksPage = () => {
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(true);
-  const [offset, setOffset] = useState(0);
-  const [selectedLang, setSelectedLang] = useState<LangCode>("all");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchDebounced, setSearchDebounced] = useState("");
 
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  // debounce search 400ms
   useEffect(() => {
-    setSelectedLang(detectLanguage());
-  }, []);
+    const t = setTimeout(() => {
+      setSearchDebounced(searchQuery);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
-  const fetchBooks = useCallback(async (nextOffset = 0, append = false) => {
-    if (append) {
-      setLoadingMore(true);
-    } else {
-      setInitialLoading(true);
-      setError(null);
-    }
+  // fetch page data
+  const fetchPage = useCallback(async (page: number, search: string) => {
+    setLoading(true);
+    setError(null);
+
+    const offset = (page - 1) * PAGE_SIZE;
+    const filter = {
+      limit: PAGE_SIZE,
+      offset,
+      ...(search.trim() ? { search: search.trim() } : {}),
+    };
 
     try {
-      console.log("[BooksPage] fetching books", { limit: ITEMS_PER_PAGE, offset: nextOffset, append });
-      const result = await Promise.race([
-        bookService.getAll({ limit: ITEMS_PER_PAGE, offset: nextOffset }),
-        createTimeoutPromise(),
+      const [booksResult, countResult] = await Promise.all([
+        bookService.getAll(filter),
+        bookService.getCount(filter),
       ]);
 
-      console.log("[BooksPage] fetch result", {
-        dataLength: result.data?.length ?? 0,
-        error: result.error,
-        offset: nextOffset,
-      });
+      if (booksResult.error) throw new Error(booksResult.error);
 
-      if (result.error) {
-        throw new Error(result.error);
-      }
-
-      const books = (result.data ?? []).map(mapBook);
-      console.log("[BooksPage] mapped books", {
-        count: books.length,
-        firstBook: books[0]?.name ?? null,
-        offset: nextOffset,
-      });
-
-      setAllProducts((prev) => {
-        if (!append) return books;
-        const existingIds = new Set(prev.map((product) => product.id));
-        const uniqueBooks = books.filter((book) => !existingIds.has(book.id));
-        return [...prev, ...uniqueBooks];
-      });
-
-      setOffset(nextOffset + books.length);
-      setHasMore(books.length === ITEMS_PER_PAGE);
+      setProducts((booksResult.data ?? []).map(mapBook));
+      setTotalCount(countResult.data ?? 0);
     } catch (err) {
-      console.error("[BooksPage] fetch error", {
-        error: err,
-        offset: nextOffset,
-        append,
-      });
-      if (!append) {
-        setAllProducts([]);
-        setError("تعذر تحميل الكتب حالياً. حاول مرة أخرى.");
-      }
-      setHasMore(false);
+      console.error("[BooksPage] fetch error", err);
+      setProducts([]);
+      setError("تعذر تحميل الكتب حالياً. حاول مرة أخرى.");
     } finally {
-      if (append) {
-        setLoadingMore(false);
-      } else {
-        setInitialLoading(false);
-      }
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void fetchBooks(0, false);
-  }, [fetchBooks]);
+    void fetchPage(currentPage, searchDebounced);
+  }, [currentPage, searchDebounced, fetchPage]);
 
-  const availableCategories = useMemo(() => {
-    const cats = new Set<string>();
-    allProducts.forEach((p) => {
-      const lang = CATEGORY_LANG_MAP[p.category] || "en";
-      if (selectedLang === "all" || lang === selectedLang) cats.add(p.category);
-    });
-    return Array.from(cats).sort();
-  }, [allProducts, selectedLang]);
+  const goToPage = (page: number) => {
+    if (page < 1 || page > totalPages || page === currentPage) return;
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    allProducts.forEach((p) => {
-      const lang = CATEGORY_LANG_MAP[p.category] || "en";
-      if (selectedLang === "all" || lang === selectedLang) {
-        counts[p.category] = (counts[p.category] || 0) + 1;
-      }
-    });
-    return counts;
-  }, [allProducts, selectedLang]);
+  const pageNumbers = getPageNumbers(currentPage, totalPages);
 
-  const filteredProducts = useMemo(() => {
-    let result = allProducts;
-    if (selectedLang !== "all") {
-      result = result.filter((p) => (CATEGORY_LANG_MAP[p.category] || "en") === selectedLang);
-    }
-    if (selectedCategory !== "all") {
-      result = result.filter((p) => p.category === selectedCategory);
-    }
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(
-        (p) => p.name.toLowerCase().includes(q) || p.shortDescription.toLowerCase().includes(q)
-      );
-    }
-    return result;
-  }, [allProducts, selectedLang, selectedCategory, searchQuery]);
-
-  const handleLoadMore = useCallback(() => {
-    if (!loadingMore && hasMore) {
-      void fetchBooks(offset, true);
-    }
-  }, [fetchBooks, hasMore, loadingMore, offset]);
+  // ─── render ──────────────────────────────────────────────────
 
   return (
     <div className="relative min-h-screen noise-bg" dir="rtl">
@@ -244,66 +134,8 @@ const BooksPage = () => {
 
         <section className="relative py-8 sm:py-12">
           <div className="container mx-auto px-4">
+            {/* header */}
             <div className="space-y-3 mb-8">
-              <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/10 border border-primary/30 shadow-[0_0_25px_-3px_hsl(199,89%,48%,0.2),inset_0_0_15px_-3px_hsl(199,89%,48%,0.1)] w-fit">
-                {LANGUAGES.map((lang) => {
-                  const isActive = selectedLang === lang.code;
-                  const count = lang.code === "all"
-                    ? allProducts.length
-                    : allProducts.filter((p) => (CATEGORY_LANG_MAP[p.category] || "en") === lang.code).length;
-
-                  return (
-                    <button
-                      key={lang.code}
-                      onClick={() => {
-                        setSelectedLang(lang.code);
-                        setSelectedCategory("all");
-                      }}
-                      className={getFilterButtonClass(isActive)}
-                    >
-                      <span className="text-sm">{lang.flag}</span> {lang.label}
-                      <span className="text-[10px] opacity-60 ml-1">({count})</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <AnimatePresence>
-                {selectedLang !== "all" && availableCategories.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.25 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="flex flex-wrap items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/10 border border-primary/30 shadow-[0_0_25px_-3px_hsl(199,89%,48%,0.2),inset_0_0_15px_-3px_hsl(199,89%,48%,0.1)] w-fit mr-6 border-r-2 border-r-emerald-500/30">
-                      <button
-                        onClick={() => setSelectedCategory("all")}
-                        className={getFilterButtonClass(selectedCategory === "all")}
-                      >
-                        الكل ({filteredProducts.length})
-                      </button>
-
-                      {availableCategories.map((cat) => {
-                        const display = CATEGORY_DISPLAY[cat] || { label: cat, icon: "📄" };
-                        const isActive = selectedCategory === cat;
-                        return (
-                          <button
-                            key={cat}
-                            onClick={() => setSelectedCategory(cat)}
-                            className={getFilterButtonClass(isActive)}
-                          >
-                            <span className="text-sm">{display.icon}</span> {display.label}
-                            <span className="text-[10px] opacity-60 ml-1">({categoryCounts[cat] || 0})</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
               <div className="relative max-w-md">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
                 <Input
@@ -314,10 +146,15 @@ const BooksPage = () => {
                 />
               </div>
 
-              <p className="text-xs text-muted-foreground">{filteredProducts.length} كتاب</p>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <span>{totalCount.toLocaleString()} كتاب</span>
+                <span>•</span>
+                <span>صفحة {currentPage} من {totalPages}</span>
+              </div>
             </div>
 
-            {initialLoading ? (
+            {/* content */}
+            {loading ? (
               <div className="grid gap-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 bg-black/90 rounded-2xl p-2 border border-white/5 shadow-[inset_0_0_30px_-10px_rgba(0,0,0,0.8)]">
                 {Array.from({ length: 12 }).map((_, i) => (
                   <SkeletonCard key={i} />
@@ -327,11 +164,11 @@ const BooksPage = () => {
               <div className="mt-20 text-center space-y-4">
                 <BookOpen className="w-12 h-12 text-muted-foreground/30 mx-auto" />
                 <p className="text-muted-foreground">{error}</p>
-                <Button variant="outline" onClick={() => void fetchBooks(0, false)}>
+                <Button variant="outline" onClick={() => void fetchPage(currentPage, searchDebounced)}>
                   إعادة المحاولة
                 </Button>
               </div>
-            ) : filteredProducts.length === 0 ? (
+            ) : products.length === 0 ? (
               <div className="mt-20 text-center">
                 <BookOpen className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
                 <p className="text-muted-foreground">لا توجد كتب مطابقة</p>
@@ -339,20 +176,52 @@ const BooksPage = () => {
             ) : (
               <>
                 <div className="grid gap-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 bg-black/90 rounded-2xl p-2 border border-white/5 shadow-[inset_0_0_30px_-10px_rgba(0,0,0,0.8)]">
-                  {filteredProducts.map((product, i) => (
-                    <ProductCard key={product.id} product={product} index={i % ITEMS_PER_PAGE} />
+                  {products.map((product, i) => (
+                    <ProductCard key={product.id} product={product} index={i} />
                   ))}
                 </div>
-                {hasMore && (
-                  <div className="mt-12 text-center">
+
+                {/* pagination */}
+                {totalPages > 1 && (
+                  <div className="mt-10 flex items-center justify-center gap-1 flex-wrap">
                     <Button
-                      variant="outline"
-                      onClick={handleLoadMore}
-                      disabled={loadingMore}
-                      className="gap-2 rounded-full px-8 py-5 border-border/20 hover:border-primary/20 hover:bg-card/40 transition-all"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => goToPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="h-9 w-9 rounded-lg text-muted-foreground hover:text-foreground"
                     >
-                      {loadingMore ? <Loader2 className="h-4 w-4 animate-spin" /> : <ChevronDown className="h-4 w-4" />}
-                      {loadingMore ? "جاري التحميل..." : "تحميل المزيد"}
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+
+                    {pageNumbers.map((p, idx) =>
+                      p === "..." ? (
+                        <span key={`ellipsis-${idx}`} className="px-2 text-muted-foreground/50 text-sm select-none">…</span>
+                      ) : (
+                        <Button
+                          key={p}
+                          variant={p === currentPage ? "default" : "ghost"}
+                          size="sm"
+                          onClick={() => goToPage(p)}
+                          className={`h-9 w-9 rounded-lg text-sm font-semibold ${
+                            p === currentPage
+                              ? "bg-primary text-primary-foreground shadow-[0_0_15px_-3px_hsl(var(--primary)/0.5)]"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {p}
+                        </Button>
+                      )
+                    )}
+
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => goToPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="h-9 w-9 rounded-lg text-muted-foreground hover:text-foreground"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
                     </Button>
                   </div>
                 )}
