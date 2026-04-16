@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { BookOpen, ChevronLeft, ChevronRight, Search, Bookmark, BookmarkCheck, Sun, Moon, Eye, EyeOff, Settings, Maximize2, Minimize2, List, Highlighter as HighlighterIcon } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { bookService } from "@/services";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -190,37 +190,41 @@ const BookReader = () => {
     const fetchBook = async () => {
       if (!id) { setLoading(false); return; }
       try {
-        const { data } = await supabase
-          .from("products")
-          .select("id, name, description, category, image, pdf_url, reference_code")
-          .eq("is_active", true)
-          .eq("id", id)
-          .maybeSingle();
-        if (!data) return;
-        setBook(data);
-        if (!data.pdf_url) return;
+        const result = await bookService.getById(id);
+        if (!result.data) return;
+        const bookData = result.data;
+        setBook({
+          id: bookData.id,
+          name: bookData.name,
+          description: bookData.description || null,
+          category: bookData.category,
+          image: bookData.image || null,
+          pdf_url: bookData.pdfUrl || null,
+          reference_code: bookData.referenceCode || null,
+        });
+        if (!bookData.pdfUrl) return;
 
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
-        const isInternal = data.pdf_url.includes(supabaseUrl) || data.pdf_url.includes("supabase.co");
-        const inferredType = getResourceTypeFromUrl(data.pdf_url);
+        const isInternal = bookData.pdfUrl.includes(supabaseUrl) || bookData.pdfUrl.includes("supabase.co");
+        const inferredType = getResourceTypeFromUrl(bookData.pdfUrl);
 
         if (isInternal && (inferredType === "pdf" || inferredType === "image")) {
-          setResourceUrl(data.pdf_url);
+          setResourceUrl(bookData.pdfUrl);
           setResourceType(inferredType);
           return;
         }
 
         const response = await fetch(
-          isInternal ? data.pdf_url : `${supabaseUrl}/functions/v1/proxy-pdf`,
+          isInternal ? bookData.pdfUrl : `${supabaseUrl}/functions/v1/proxy-pdf`,
           isInternal ? undefined : {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ url: data.pdf_url }),
+            body: JSON.stringify({ url: bookData.pdfUrl }),
           }
         );
 
         if (!response.ok) {
-          setResourceUrl(data.pdf_url);
+          setResourceUrl(bookData.pdfUrl);
           setResourceType(inferredType || "embed");
           return;
         }
@@ -232,7 +236,7 @@ const BookReader = () => {
           return;
         }
         if ((detectedType === "pdf" || detectedType === "image") && isInternal) {
-          setResourceUrl(data.pdf_url);
+          setResourceUrl(bookData.pdfUrl);
           setResourceType(detectedType);
           return;
         }

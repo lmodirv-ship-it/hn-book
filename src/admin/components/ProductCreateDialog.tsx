@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { bookService } from "@/services";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Wand2, PenLine, Loader2, Plus, Sparkles } from "lucide-react";
@@ -67,19 +68,18 @@ export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: Pr
     const desc = [description, author && `المؤلف: ${author}`, pages && `عدد الصفحات: ${pages}`].filter(Boolean).join("\n");
     const featureList = features.split("\n").map(f => f.trim()).filter(Boolean);
 
-    const { error } = await supabase.from("products").insert({
+    const result = await bookService.create({
       name: name.trim(),
-      short_description: shortDesc.trim() || null,
-      description: desc || null,
+      shortDescription: shortDesc.trim() || undefined,
+      description: desc || undefined,
       price: Number(price),
-      original_price: originalPrice ? Number(originalPrice) : null,
+      originalPrice: originalPrice ? Number(originalPrice) : undefined,
       category,
-      badge: badge.trim() || null,
-      features: featureList.length > 0 ? featureList : null,
-      is_active: true,
+      badge: badge.trim() || undefined,
+      features: featureList.length > 0 ? featureList : undefined,
     });
     setSaving(false);
-    if (error) { toast.error("فشل في إضافة المنتج"); return; }
+    if (result.error) { toast.error("فشل في إضافة المنتج"); return; }
     toast.success("تم إضافة المنتج بنجاح");
     onProductCreated(); reset(); onOpenChange(false);
   };
