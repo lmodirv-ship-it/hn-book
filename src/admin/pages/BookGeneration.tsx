@@ -33,6 +33,9 @@ interface ProcessedItem {
   designType?: string;
   designReason?: string;
   dimensions?: string | null;
+  confidence?: number;
+  needsConfirmation?: boolean;
+  mlSource?: string;
 }
 
 const TARGET_OPTIONS: { value: TargetType; label: string; icon: any; description: string; accept: string }[] = [

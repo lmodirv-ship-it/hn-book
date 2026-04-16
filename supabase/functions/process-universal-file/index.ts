@@ -676,17 +676,46 @@ serve(async (req) => {
           : null;
         if (dims) console.log(`📐 Dimensions: ${dims.width}×${dims.height}px`);
 
-        // Step 2: Dimension-based classification
+        // Step 2: Call ML Classifier for prediction
+        let mlPrediction: any = null;
+        try {
+          const nameKeywords = item.fileName.toLowerCase()
+            .replace(/\.[^.]+$/, "")
+            .split(/[-_\s.]+/)
+            .filter((w: string) => w.length > 2);
+
+          const mlRes = await fetch(`${SUPABASE_URL}/functions/v1/ml-classifier`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            },
+            body: JSON.stringify({
+              action: "predict",
+              width: dims?.width || null,
+              height: dims?.height || null,
+              file_type: item.fileExt,
+              file_size_kb: item.fileSizeKB,
+              filename: item.fileName,
+            }),
+          });
+          if (mlRes.ok) {
+            mlPrediction = await mlRes.json();
+            console.log(`🧠 ML prediction: ${mlPrediction.predicted_type} (${(mlPrediction.confidence * 100).toFixed(0)}%) [${mlPrediction.source}]`);
+          }
+        } catch (mlErr) {
+          console.warn("ML classifier unavailable, falling back to local rules:", mlErr);
+        }
+
+        // Step 3: Local dimension-based classification (fallback)
         const dimClassification = item.mimeCategory === "image"
           ? classifyByDimensions(dims, item.fileName, item.fileSizeKB)
           : classifyNonImageByName(item.fileName, item.fileExt, item.fileSizeKB);
 
-        console.log(`📊 Dimension classification: ${dimClassification.designType} (${(dimClassification.confidence * 100).toFixed(0)}%) — ${dimClassification.reason}`);
-
-        // Step 3: Folder-based hint (from ZIP)
+        // Step 4: Folder-based hint (from ZIP)
         const folderHint = item.folderPath ? getCategoryFromFolderPath(item.folderPath) : null;
 
-        // Step 4: AI Classification (enhanced with dimension info)
+        // Step 5: AI Classification (visual analysis)
         const cls = await classifyAI(item.fileBytes, item.fileName, item.mimeType, item.mimeCategory, dims) || {
           type: "أخرى", design_type: dimClassification.designType,
           name_ar: item.fileName.replace(/\.[^.]+$/, "").replace(/[-_]/g, " "),
@@ -694,22 +723,37 @@ serve(async (req) => {
           description_ar: `ملف ${item.fileName}`, author: "", tags: [], suggested_price: 0,
         };
 
-        // Step 5: Merge classifications — prefer AI if confident, else use dimension-based
-        let finalDesignType = cls.design_type || dimClassification.designType;
-        let designReason = dimClassification.reason;
+        // Step 6: Merge classifications — ML > AI > Dimensions
+        let finalDesignType: string;
+        let designReason: string;
+        let finalConfidence: number;
+        let needsConfirmation = false;
 
-        // If AI returned a valid design_type, prefer it (AI sees content)
-        if (cls.design_type && cls.design_type !== "other") {
+        if (mlPrediction && mlPrediction.confidence >= 0.5 && mlPrediction.predicted_type !== "other") {
+          // ML classifier is confident — use it
+          finalDesignType = mlPrediction.predicted_type;
+          finalConfidence = mlPrediction.confidence;
+          designReason = `🧠 ML: ${mlPrediction.reason || mlPrediction.predicted_type} (${(mlPrediction.confidence * 100).toFixed(0)}%)`;
+          needsConfirmation = mlPrediction.needs_confirmation || false;
+        } else if (cls.design_type && cls.design_type !== "other") {
+          // AI visual analysis found something
           finalDesignType = cls.design_type;
+          finalConfidence = 0.7;
           designReason = `AI: ${cls.design_type} + ${dimClassification.reason}`;
-        } else if (dimClassification.confidence >= 0.6) {
+        } else if (dimClassification.confidence >= 0.5) {
           finalDesignType = dimClassification.designType;
-          designReason = dimClassification.reason;
+          finalConfidence = dimClassification.confidence;
+          designReason = `📐 ${dimClassification.reason}`;
+        } else {
+          // All weak — pick ML if available
+          finalDesignType = mlPrediction?.predicted_type || dimClassification.designType;
+          finalConfidence = mlPrediction?.confidence || dimClassification.confidence;
+          designReason = mlPrediction?.reason || dimClassification.reason;
+          needsConfirmation = true;
         }
 
-        // Folder hint can override for ZIP files
+        // Folder hint overrides for ZIP files
         if (folderHint) {
-          // Map folder hint category back to design type
           const folderDesignMap: Record<string, string> = {
             "بطاقات": "card", "شعارات": "logo", "تابلوهات": "tablou",
             "فلاير": "flyer", "ملصقات": "poster", "قوائم": "menu",
@@ -718,7 +762,9 @@ serve(async (req) => {
           const folderDesign = folderDesignMap[folderHint];
           if (folderDesign) {
             finalDesignType = folderDesign;
-            designReason = `مجلد: ${item.folderPath} → ${folderHint}`;
+            finalConfidence = 0.9;
+            designReason = `📁 مجلد: ${item.folderPath} → ${folderHint}`;
+            needsConfirmation = false;
           }
         }
 
@@ -729,9 +775,12 @@ serve(async (req) => {
           target = DESIGN_TARGET[finalDesignType] || "books";
         }
 
-        console.log(`🎯 ${item.fileName} → design:${finalDesignType} → cat:${categoryType} → target:${target} (${designReason})`);
+        console.log(`🎯 ${item.fileName} → design:${finalDesignType} → cat:${categoryType} → target:${target} (conf:${(finalConfidence*100).toFixed(0)}%) ${needsConfirmation ? "⚠️ NEEDS CONFIRMATION" : ""}`);
 
         const result = await saveToTarget(supabase, item, cls, finalDesignType, categoryType, target, dims, designReason);
+        result.confidence = finalConfidence;
+        result.needsConfirmation = needsConfirmation;
+        result.mlSource = mlPrediction?.source || "local";
         results.push(result);
 
         // Log to classification_data for ML learning
@@ -750,8 +799,8 @@ serve(async (req) => {
             file_size_kb: item.fileSizeKB,
             filename_keywords: nameKeywords,
             predicted_type: finalDesignType,
-            actual_type: finalDesignType, // Default: assume prediction is correct
-            confidence: dimClassification.confidence,
+            actual_type: needsConfirmation ? null : finalDesignType,
+            confidence: finalConfidence,
             product_id: result.success ? result.id : null,
           });
         } catch (logErr) {
