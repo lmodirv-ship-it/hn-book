@@ -229,6 +229,69 @@ export type Database = {
         }
         Relationships: []
       }
+      pricing_rules: {
+        Row: {
+          country: string
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          max_pages: number
+          min_pages: number
+          paper_type: string
+          price_per_page: number
+          priority: number
+          updated_at: string
+        }
+        Insert: {
+          country?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          max_pages?: number
+          min_pages?: number
+          paper_type?: string
+          price_per_page?: number
+          priority?: number
+          updated_at?: string
+        }
+        Update: {
+          country?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          max_pages?: number
+          min_pages?: number
+          paper_type?: string
+          price_per_page?: number
+          priority?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pricing_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       processed_documents: {
         Row: {
           confidence: number | null
