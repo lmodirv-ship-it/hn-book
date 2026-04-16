@@ -17,6 +17,7 @@ import OrderConfirmation from "./pages/OrderConfirmation.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import CustomerAuth from "./pages/CustomerAuth.tsx";
 import Profile from "./pages/Profile.tsx";
+import MyOrders from "./pages/MyOrders.tsx";
 import AdminLayout from "./admin/layouts/AdminLayout.tsx";
 import AdminDashboard from "./admin/pages/Dashboard.tsx";
 import AdminProducts from "./admin/pages/Products.tsx";
@@ -64,6 +65,7 @@ const App = () => (
             <Route path="/document-processing" element={<DocumentProcessing />} />
             <Route path="/auth" element={<CustomerAuth />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/my-orders" element={<MyOrders />} />
             
             {/* Admin Login */}
             <Route path="/admin/login" element={<AdminLogin />} />
