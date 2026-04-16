@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Wand2, PenLine, Loader2, Plus, Sparkles } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { detectCategory } from "@/lib/category-detection";
 
 interface ProductCreateDialogProps {
   open: boolean;
@@ -40,6 +41,7 @@ export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: Pr
   const [price, setPrice] = useState("");
   const [originalPrice, setOriginalPrice] = useState("");
   const [category, setCategory] = useState(categoryNames[0] || "كتب عامة");
+  const [categorySuggested, setCategorySuggested] = useState(false);
   const [badge, setBadge] = useState("");
   const [features, setFeatures] = useState("");
 
