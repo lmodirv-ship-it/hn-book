@@ -72,6 +72,7 @@ export interface BookCreateInput {
   badge?: string;
   isFlashDeal?: boolean;
   pdfUrl?: string;
+  referenceCode?: string;
 }
 
 export interface BookUpdateInput extends Partial<BookCreateInput> {
