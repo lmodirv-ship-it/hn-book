@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Package, Search, Plus, Edit, Trash2, Eye, X, Upload, ExternalLink, Copy, FileText } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { bookService } from "@/services";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -35,11 +35,22 @@ const AdminProducts = () => {
   
 
   const fetchProducts = async () => {
-    const { data } = await supabase
-      .from("products")
-      .select("id, name, reference_code, short_description, price, original_price, category, image, is_active, badge, pdf_url")
-      .order("created_at", { ascending: false });
-    setProducts(data || []);
+    const result = await bookService.getAll();
+    if (result.data) {
+      setProducts(result.data.map(b => ({
+        id: b.id,
+        name: b.name,
+        reference_code: b.referenceCode || null,
+        short_description: b.shortDescription || null,
+        price: b.price,
+        original_price: b.originalPrice || null,
+        category: b.category,
+        image: b.image || null,
+        is_active: b.isActive,
+        badge: b.badge || null,
+        pdf_url: b.pdfUrl || null,
+      })));
+    }
     setLoading(false);
   };
 
@@ -62,7 +73,8 @@ const AdminProducts = () => {
   }, [products, search, selectedCategory]);
 
   const handleDelete = async (id: string) => {
-    await supabase.from("products").delete().eq("id", id);
+    const result = await bookService.delete(id);
+    if (result.error) { toast.error("فشل في حذف المنتج"); return; }
     setProducts((prev) => prev.filter((p) => p.id !== id));
     toast.success("تم حذف المنتج");
   };
