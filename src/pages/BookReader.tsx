@@ -123,10 +123,11 @@ const BookReader = () => {
   const touchStartY = useRef(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  const { bookmarks, addBookmark, removeBookmark, isBookmarked } = useBookmarks(id);
-  const { highlights, addHighlight, removeHighlight } = useHighlights(id);
-  const { notes, addNote, removeNote } = useNotes(id);
-  const { getSaved, save, restored, setRestored } = useReadingProgress(id);
+  const bookKey = book?.id || slugOrId;
+  const { bookmarks, addBookmark, removeBookmark, isBookmarked } = useBookmarks(bookKey);
+  const { highlights, addHighlight, removeHighlight } = useHighlights(bookKey);
+  const { notes, addNote, removeNote } = useNotes(bookKey);
+  const { getSaved, save, restored, setRestored } = useReadingProgress(bookKey);
 
   // Responsive
   useEffect(() => {
