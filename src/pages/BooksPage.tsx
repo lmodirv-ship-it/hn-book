@@ -7,8 +7,33 @@ import type { Product } from "@/lib/products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, BookOpen, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { bookService } from "@/services";
+
+const LANGUAGES = [
+  { value: "all", label: "كل اللغات" },
+  { value: "ar", label: "العربية" },
+  { value: "en", label: "English" },
+] as const;
+
+const CATEGORIES_AR = [
+  { value: "all", label: "كل التصنيفات" },
+  { value: "الطب", label: "الطب" },
+  { value: "التاريخ", label: "التاريخ" },
+  { value: "العلوم", label: "العلوم" },
+  { value: "الأدب العربي", label: "الأدب العربي" },
+  { value: "الدين الإسلامي", label: "الدين الإسلامي" },
+  { value: "تطوير الذات", label: "تطوير الذات" },
+  { value: "كتب", label: "كتب" },
+] as const;
+
+const CATEGORIES_EN = [
+  { value: "all", label: "All Categories" },
+  { value: "Literature", label: "Literature" },
+  { value: "Philosophy", label: "Philosophy" },
+  { value: "Biography & Autobiography", label: "Biography" },
+] as const;
 
 const PAGE_SIZE = 50;
 
@@ -82,6 +107,10 @@ const BooksPage = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchDebounced, setSearchDebounced] = useState("");
+  const [selectedLanguage, setSelectedLanguage] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+
+  const categories = selectedLanguage === "en" ? CATEGORIES_EN : CATEGORIES_AR;
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
@@ -105,6 +134,8 @@ const BooksPage = () => {
       limit: PAGE_SIZE,
       offset,
       ...(search.trim() ? { search: search.trim() } : {}),
+      ...(selectedLanguage !== "all" ? { language: selectedLanguage } : {}),
+      ...(selectedCategory !== "all" ? { category: selectedCategory } : {}),
     };
 
     try {
@@ -126,7 +157,7 @@ const BooksPage = () => {
       setPageTransitioning(false);
       setHasLoadedOnce(true);
     }
-  }, [hasLoadedOnce]);
+  }, [hasLoadedOnce, selectedLanguage, selectedCategory]);
 
   // Prefetch next page in background
   const prefetchNextPage = useCallback((page: number, search: string) => {
@@ -170,17 +201,44 @@ const BooksPage = () => {
         <section className="relative py-8 sm:py-12">
           <div className="container mx-auto px-4">
             {/* header */}
-            <div className="space-y-3 mb-8">
-              <div className="relative max-w-md">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
-                <Input
-                  placeholder="ابحث عن كتاب..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 rounded-xl bg-card/30 border-border/20 focus:border-primary/30 transition-colors"
-                />
+            <div className="space-y-4 mb-8">
+              {/* Search + Filters row */}
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="relative flex-1 min-w-[200px] max-w-md">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
+                  <Input
+                    placeholder="ابحث عن كتاب..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 rounded-xl bg-card/30 border-border/20 focus:border-primary/30 transition-colors"
+                  />
+                </div>
+
+                <Select value={selectedLanguage} onValueChange={(v) => { setSelectedLanguage(v); setSelectedCategory("all"); setCurrentPage(1); }}>
+                  <SelectTrigger className="w-[140px] rounded-xl bg-card/30 border-border/20">
+                    <Filter className="h-3.5 w-3.5 ml-2 text-muted-foreground/50" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LANGUAGES.map((l) => (
+                      <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={selectedCategory} onValueChange={(v) => { setSelectedCategory(v); setCurrentPage(1); }}>
+                  <SelectTrigger className="w-[160px] rounded-xl bg-card/30 border-border/20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
+              {/* Stats */}
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 <span>{totalCount.toLocaleString()} كتاب</span>
                 <span>•</span>
