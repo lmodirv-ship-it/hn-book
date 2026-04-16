@@ -44,6 +44,7 @@ function buildProductsRestUrl(filter?: BookFilter, maxLimit = 100) {
   url.searchParams.append("pdf_url", "neq.");
   url.searchParams.append("image", "not.is.null");
   url.searchParams.append("image", "neq.");
+  url.searchParams.set("is_active", "eq.true");
 
   // Apply category filter
   if (filter?.category && filter.category !== "all") {
@@ -276,6 +277,7 @@ export const bookService = {
       url.searchParams.append("pdf_url", "neq.");
       url.searchParams.append("image", "not.is.null");
       url.searchParams.append("image", "neq.");
+      url.searchParams.set("is_active", "eq.true");
       if (filter?.category && filter.category !== "all") {
         url.searchParams.set("category", `eq.${filter.category}`);
       } else if (filter?.language === "ar") {
