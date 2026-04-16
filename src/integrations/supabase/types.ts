@@ -91,6 +91,120 @@ export type Database = {
           },
         ]
       }
+      classification_data: {
+        Row: {
+          actual_type: string | null
+          aspect_ratio: number | null
+          confidence: number | null
+          corrected_by: string | null
+          created_at: string
+          file_name: string
+          file_size_kb: number | null
+          file_type: string | null
+          filename_keywords: string[] | null
+          height: number | null
+          id: string
+          predicted_type: string
+          product_id: string | null
+          updated_at: string
+          was_corrected: boolean | null
+          width: number | null
+        }
+        Insert: {
+          actual_type?: string | null
+          aspect_ratio?: number | null
+          confidence?: number | null
+          corrected_by?: string | null
+          created_at?: string
+          file_name: string
+          file_size_kb?: number | null
+          file_type?: string | null
+          filename_keywords?: string[] | null
+          height?: number | null
+          id?: string
+          predicted_type: string
+          product_id?: string | null
+          updated_at?: string
+          was_corrected?: boolean | null
+          width?: number | null
+        }
+        Update: {
+          actual_type?: string | null
+          aspect_ratio?: number | null
+          confidence?: number | null
+          corrected_by?: string | null
+          created_at?: string
+          file_name?: string
+          file_size_kb?: number | null
+          file_type?: string | null
+          filename_keywords?: string[] | null
+          height?: number | null
+          id?: string
+          predicted_type?: string
+          product_id?: string | null
+          updated_at?: string
+          was_corrected?: boolean | null
+          width?: number | null
+        }
+        Relationships: []
+      }
+      classification_model: {
+        Row: {
+          accuracy: number | null
+          avg_aspect_ratio: number | null
+          avg_file_size_kb: number | null
+          avg_height: number | null
+          avg_width: number | null
+          common_keywords: string[] | null
+          correct_predictions: number | null
+          created_at: string
+          design_type: string
+          id: string
+          max_height: number | null
+          max_width: number | null
+          min_height: number | null
+          min_width: number | null
+          sample_count: number | null
+          updated_at: string
+        }
+        Insert: {
+          accuracy?: number | null
+          avg_aspect_ratio?: number | null
+          avg_file_size_kb?: number | null
+          avg_height?: number | null
+          avg_width?: number | null
+          common_keywords?: string[] | null
+          correct_predictions?: number | null
+          created_at?: string
+          design_type: string
+          id?: string
+          max_height?: number | null
+          max_width?: number | null
+          min_height?: number | null
+          min_width?: number | null
+          sample_count?: number | null
+          updated_at?: string
+        }
+        Update: {
+          accuracy?: number | null
+          avg_aspect_ratio?: number | null
+          avg_file_size_kb?: number | null
+          avg_height?: number | null
+          avg_width?: number | null
+          common_keywords?: string[] | null
+          correct_predictions?: number | null
+          created_at?: string
+          design_type?: string
+          id?: string
+          max_height?: number | null
+          max_width?: number | null
+          min_height?: number | null
+          min_width?: number | null
+          sample_count?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       coupons: {
         Row: {
           applies_to: string
