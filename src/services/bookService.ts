@@ -63,10 +63,15 @@ function buildProductsRestUrl(filter?: BookFilter, maxLimit = 100) {
 // ─── Cache ───────────────────────────────────────────────────
 
 const cache = new Map<string, { data: ApiResult<Book[]>; ts: number }>();
-const CACHE_TTL_MS = 60_000; // 1 minute
+const CACHE_TTL_MS = 30_000; // 30 seconds
 
 function cacheKey(filter?: BookFilter): string {
-  return `${filter?.limit ?? 50}:${filter?.offset ?? 0}:${filter?.search ?? ""}:${filter?.category ?? ""}`;
+  return `${filter?.limit ?? 50}:${filter?.offset ?? 0}:${filter?.search ?? ""}:${filter?.category ?? ""}:${filter?.language ?? ""}`;
+}
+
+/** Clear all cached book queries — call after creating/updating books */
+export function invalidateBookCache() {
+  cache.clear();
 }
 
 async function fetchProductsViaRest(filter?: BookFilter): Promise<ApiResult<Book[]>> {
