@@ -858,8 +858,34 @@ const BookGeneration = () => {
                         </p>
                         {r.designReason && (
                           <p className="text-[10px] text-muted-foreground/70 mt-0.5 truncate" title={r.designReason}>
-                            🧠 {r.designReason}
+                            {r.designReason}
                           </p>
+                        )}
+                        {/* Confidence indicator */}
+                        {r.confidence !== undefined && (
+                          <div className="flex items-center gap-2 mt-1">
+                            <div className="w-16 h-1.5 rounded-full bg-secondary overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all ${
+                                  r.confidence >= 0.7 ? "bg-green-500" : r.confidence >= 0.4 ? "bg-yellow-500" : "bg-red-500"
+                                }`}
+                                style={{ width: `${Math.round(r.confidence * 100)}%` }}
+                              />
+                            </div>
+                            <span className={`text-[10px] font-mono ${
+                              r.confidence >= 0.7 ? "text-green-400" : r.confidence >= 0.4 ? "text-yellow-400" : "text-red-400"
+                            }`}>
+                              {Math.round(r.confidence * 100)}%
+                            </span>
+                            {r.mlSource && r.mlSource !== "local" && (
+                              <span className="text-[9px] px-1 py-0.5 rounded bg-primary/10 text-primary">ML</span>
+                            )}
+                            {r.needsConfirmation && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
+                                ⚠️ يحتاج تأكيد
+                              </span>
+                            )}
+                          </div>
                         )}
                       </div>
                       {r.code && (
