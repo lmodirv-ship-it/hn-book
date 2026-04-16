@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { printService, TEMPLATE_CATEGORIES, type CardTemplate } from "@/services/printService";
 import { toast } from "@/hooks/use-toast";
+import { optimizeImage } from "@/lib/image-optimizer";
 
 const CardTemplatesAdmin = () => {
   const [templates, setTemplates] = useState<CardTemplate[]>([]);
@@ -39,9 +40,10 @@ const CardTemplatesAdmin = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    const ext = file.name.split(".").pop();
+    const optimized = await optimizeImage(file);
+    const ext = optimized.name.split(".").pop() || "webp";
     const path = `card-templates/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("book-images").upload(path, file);
+    const { error } = await supabase.storage.from("book-images").upload(path, optimized);
     if (error) {
       toast({ title: "فشل الرفع", variant: "destructive" });
     } else {
