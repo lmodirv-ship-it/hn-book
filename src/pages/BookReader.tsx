@@ -699,6 +699,14 @@ const BookReader = () => {
             )}
           </Document>
 
+          {/* Text Selection Popup */}
+          <TextSelectionPopup
+            currentPage={currentPage}
+            isDarkTheme={isDarkTheme}
+            onHighlight={addHighlight}
+            onAddNote={addNote}
+          />
+
           {/* Focus mode indicator */}
           {isFocusMode && (
             <motion.div
