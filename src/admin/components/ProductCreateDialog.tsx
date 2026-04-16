@@ -39,12 +39,12 @@ export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: Pr
   const [pages, setPages] = useState("");
   const [price, setPrice] = useState("");
   const [originalPrice, setOriginalPrice] = useState("");
-  const [category, setCategory] = useState(CATEGORIES[0]);
+  const [category, setCategory] = useState(categoryNames[0] || "كتب عامة");
   const [badge, setBadge] = useState("");
   const [features, setFeatures] = useState("");
 
   // Auto state
-  const [autoCategory, setAutoCategory] = useState(CATEGORIES[0]);
+  const [autoCategory, setAutoCategory] = useState(categoryNames[0] || "كتب عامة");
   const [autoCount, setAutoCount] = useState("5");
   const [generating, setGenerating] = useState(false);
   const [generatedBooks, setGeneratedBooks] = useState<any[]>([]);
@@ -52,7 +52,7 @@ export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: Pr
   const reset = () => {
     setMode("choose");
     setName(""); setShortDesc(""); setDescription(""); setAuthor(""); setPages("");
-    setPrice(""); setOriginalPrice(""); setCategory(CATEGORIES[0]); setBadge(""); setFeatures("");
+    setPrice(""); setOriginalPrice(""); setCategory(categoryNames[0] || "كتب عامة"); setBadge(""); setFeatures("");
     setGeneratedBooks([]); setAutoCount("5"); setGenerating(false);
   };
 
@@ -163,7 +163,7 @@ export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: Pr
             <Field label="التصنيف">
               <select value={category} onChange={(e) => setCategory(e.target.value)}
                 className="w-full h-10 rounded-md border border-input bg-card px-3 text-sm text-foreground">
-                {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                {categoryNames.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </Field>
             <Field label="المميزات (سطر لكل ميزة)">
@@ -191,7 +191,7 @@ export function ProductCreateDialog({ open, onOpenChange, onProductCreated }: Pr
             <Field label="التصنيف">
               <select value={autoCategory} onChange={(e) => { setAutoCategory(e.target.value); setGeneratedBooks([]); }}
                 className="w-full h-10 rounded-md border border-input bg-card px-3 text-sm text-foreground">
-                {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                {categoryNames.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </Field>
             <Field label="عدد الكتب (1-20)">
