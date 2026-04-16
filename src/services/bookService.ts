@@ -49,7 +49,21 @@ function buildProductsRestUrl(filter?: BookFilter, maxLimit = 100) {
   return { url: url.toString(), limit, offset };
 }
 
+// ─── Cache ───────────────────────────────────────────────────
+
+const cache = new Map<string, { data: ApiResult<Book[]>; ts: number }>();
+const CACHE_TTL_MS = 60_000; // 1 minute
+
+function cacheKey(filter?: BookFilter): string {
+  return `${filter?.limit ?? 50}:${filter?.offset ?? 0}:${filter?.search ?? ""}:${filter?.category ?? ""}`;
+}
+
 async function fetchProductsViaRest(filter?: BookFilter): Promise<ApiResult<Book[]>> {
+  const key = cacheKey(filter);
+  const cached = cache.get(key);
+  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+    return cached.data;
+  }
   const { url, limit, offset } = buildProductsRestUrl(filter, 100);
   const { controller, clear } = createAbortController();
 
