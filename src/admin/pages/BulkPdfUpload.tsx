@@ -55,26 +55,23 @@ const BulkPdfUpload = () => {
     try {
       updateFile(i, { status: "uploading" });
 
-      // 1. Create product record (placeholder image to pass NOT NULL)
-      const { data: product, error: createErr } = await db
-        .from("products")
-        .insert({
-          name: current.title,
-          category: current.category,
-          price: 0,
-          pdf_url: "pending",
-          image: "/placeholder.svg",
-        })
-        .select("id, reference_code")
-        .single();
+      // 1. Create product record via bookService
+      const createResult = await bookService.create({
+        name: current.title,
+        category: current.category,
+        price: 0,
+        pdfUrl: "pending",
+        image: "/placeholder.svg",
+      });
 
-      if (createErr) throw new Error(createErr.message);
+      if (createResult.error) throw new Error(createResult.error);
+      const product = createResult.data!;
 
       // 2. Upload PDF via storageService (updates pdf_url + reference_code)
       const pdfResult = await storageService.uploadBookPdf(
         product.id,
         current.file,
-        product.reference_code
+        product.referenceCode
       );
       if (pdfResult.error) throw new Error(pdfResult.error);
 
