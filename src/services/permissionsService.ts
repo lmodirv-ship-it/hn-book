@@ -27,6 +27,17 @@ export interface UserWithRoles {
   roles: AppRole[];
 }
 
+export type PermissionEffect = "grant" | "deny";
+
+export interface UserPermissionOverride {
+  id: string;
+  user_id: string;
+  permission_key: string;
+  effect: PermissionEffect;
+  note: string;
+  created_at: string;
+}
+
 export const permissionsService = {
   async listPermissions(): Promise<Permission[]> {
     const { data, error } = await supabase
