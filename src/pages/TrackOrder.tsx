@@ -7,15 +7,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { db } from "@/api/client";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Printer, FileText } from "lucide-react";
 
-const STATUS_FLOW = ["pending", "processing", "completed"] as const;
+const STATUS_FLOW = ["pending", "processing", "printing", "completed"] as const;
 
 const STATUS_INFO: Record<string, { label: string; color: string; icon: any; progress: number }> = {
-  pending: { label: "قيد الانتظار", color: "text-yellow-500", icon: Clock, progress: 25 },
-  processing: { label: "قيد المعالجة", color: "text-blue-500", icon: Truck, progress: 65 },
-  completed: { label: "تم التوصيل", color: "text-emerald-500", icon: CheckCircle2, progress: 100 },
-  cancelled: { label: "ملغي", color: "text-red-500", icon: XCircle, progress: 0 },
+  pending:    { label: "قيد الانتظار", color: "text-yellow-500",  icon: Clock,        progress: 20 },
+  processing: { label: "قيد المعالجة", color: "text-blue-500",    icon: Truck,        progress: 50 },
+  printing:   { label: "جاري الطباعة", color: "text-purple-500",  icon: Printer,      progress: 80 },
+  completed:  { label: "مكتمل",         color: "text-emerald-500", icon: CheckCircle2, progress: 100 },
+  cancelled:  { label: "ملغي",          color: "text-red-500",     icon: XCircle,      progress: 0 },
 };
 
 export default function TrackOrder() {
@@ -33,17 +36,32 @@ export default function TrackOrder() {
     setLoading(true);
     setNotFound(false);
     setOrder(null);
+
+    // Try print orders first (ORD-xxxxxx codes)
+    const code = orderCode.trim();
+    const { data: printOrder } = await supabase
+      .from("print_orders")
+      .select("*")
+      .eq("order_code", code)
+      .maybeSingle();
+    if (printOrder) {
+      setLoading(false);
+      setOrder({ ...printOrder, _kind: "print" });
+      return;
+    }
+
+    // Fallback: book/product orders by order_number
     const { data, error } = await db
       .from("orders")
       .select("*")
-      .eq("order_number", orderCode.trim())
+      .eq("order_number", code)
       .maybeSingle();
     setLoading(false);
     if (error || !data) {
       setNotFound(true);
       return;
     }
-    setOrder(data);
+    setOrder({ ...data, _kind: "book" });
   };
 
   useEffect(() => {
@@ -105,7 +123,14 @@ export default function TrackOrder() {
               </div>
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground">رقم الطلب</p>
-                <p className="font-bold text-foreground text-lg">{order.order_number}</p>
+                <p className="font-bold text-foreground text-lg font-mono">
+                  {order._kind === "print" ? order.order_code : order.order_number}
+                </p>
+                {order._kind === "print" && (
+                  <p className="text-[11px] text-muted-foreground inline-flex items-center gap-1 mt-0.5">
+                    <Printer className="w-3 h-3" /> طلب طباعة
+                  </p>
+                )}
               </div>
               <div className="text-left">
                 <p className="text-xs text-muted-foreground">الحالة</p>
@@ -134,38 +159,77 @@ export default function TrackOrder() {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3 text-sm pt-2 border-t border-border">
-              <div>
-                <p className="text-muted-foreground">المبلغ الإجمالي</p>
-                <p className="font-bold text-primary text-lg">
-                  {Number(order.total_amount || order.amount)} د.م
-                </p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">طريقة الدفع</p>
-                <p className="font-medium text-foreground">
-                  {order.payment_method === "cod" ? "الدفع عند الاستلام" : order.payment_method}
-                </p>
-              </div>
-              {order.shipping_name && (
-                <div className="col-span-2">
-                  <p className="text-muted-foreground">المستلم</p>
-                  <p className="font-medium text-foreground">{order.shipping_name}</p>
+            {order._kind === "print" ? (
+              <div className="grid grid-cols-2 gap-3 text-sm pt-2 border-t border-border">
+                <div>
+                  <p className="text-muted-foreground">العميل</p>
+                  <p className="font-medium text-foreground">{order.customer_name}</p>
                 </div>
-              )}
-              {order.shipping_address && (
-                <div className="col-span-2">
-                  <p className="text-muted-foreground">العنوان</p>
-                  <p className="font-medium text-foreground">{order.shipping_address}</p>
+                <div>
+                  <p className="text-muted-foreground">الهاتف</p>
+                  <p className="font-medium text-foreground">{order.phone}</p>
                 </div>
-              )}
-              <div className="col-span-2">
-                <p className="text-muted-foreground">تاريخ الطلب</p>
-                <p className="font-medium text-foreground">
-                  {new Date(order.created_at).toLocaleString("ar")}
-                </p>
+                <div>
+                  <p className="text-muted-foreground">الكمية</p>
+                  <p className="font-medium text-foreground">{order.quantity} بطاقة</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">المقاس</p>
+                  <p className="font-medium text-foreground">{order.paper_size}</p>
+                </div>
+                {order.pdf_url && (
+                  <div className="col-span-2">
+                    <a
+                      href={order.pdf_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-primary hover:underline text-sm"
+                    >
+                      <FileText className="w-4 h-4" /> تحميل ملف PDF الجاهز للطباعة
+                    </a>
+                  </div>
+                )}
+                <div className="col-span-2">
+                  <p className="text-muted-foreground">تاريخ الطلب</p>
+                  <p className="font-medium text-foreground">
+                    {new Date(order.created_at).toLocaleString("ar")}
+                  </p>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 text-sm pt-2 border-t border-border">
+                <div>
+                  <p className="text-muted-foreground">المبلغ الإجمالي</p>
+                  <p className="font-bold text-primary text-lg">
+                    {Number(order.total_amount || order.amount)} د.م
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">طريقة الدفع</p>
+                  <p className="font-medium text-foreground">
+                    {order.payment_method === "cod" ? "الدفع عند الاستلام" : order.payment_method}
+                  </p>
+                </div>
+                {order.shipping_name && (
+                  <div className="col-span-2">
+                    <p className="text-muted-foreground">المستلم</p>
+                    <p className="font-medium text-foreground">{order.shipping_name}</p>
+                  </div>
+                )}
+                {order.shipping_address && (
+                  <div className="col-span-2">
+                    <p className="text-muted-foreground">العنوان</p>
+                    <p className="font-medium text-foreground">{order.shipping_address}</p>
+                  </div>
+                )}
+                <div className="col-span-2">
+                  <p className="text-muted-foreground">تاريخ الطلب</p>
+                  <p className="font-medium text-foreground">
+                    {new Date(order.created_at).toLocaleString("ar")}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>

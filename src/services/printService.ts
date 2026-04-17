@@ -23,11 +23,13 @@ export interface Logo {
 
 export interface PrintOrder {
   id: string;
+  order_code: string;
   user_id: string | null;
   template_id: string;
   logo_id: string | null;
   quantity: number;
   paper_type: string;
+  paper_size: string;        // A4 / A3
   print_type: string;
   total_price: number;
   customer_name: string;
@@ -40,6 +42,8 @@ export interface PrintOrder {
   country: string;
   notes: string;
   status: string;
+  pdf_url: string | null;
+  template_design: Record<string, any> | null;
   created_at: string;
   template?: CardTemplate;
 }
@@ -63,14 +67,30 @@ const PRINT_MULTIPLIER: Record<string, number> = {
   double_side: 1.5,
 };
 
-export const calculatePrice = (quantity: number, paperType: string, printType: string): number => {
+const SIZE_MULTIPLIER: Record<string, number> = {
+  A4: 1,
+  A3: 1.6,
+};
+
+export const calculatePrice = (
+  quantity: number,
+  paperType: string,
+  printType: string,
+  paperSize: string = "A4",
+): number => {
   const base = BASE_PRICES[quantity] || Math.round(quantity * 0.45);
   const paper = PAPER_MULTIPLIER[paperType] || 1;
   const print = PRINT_MULTIPLIER[printType] || 1;
-  return Math.round(base * paper * print);
+  const size = SIZE_MULTIPLIER[paperSize] || 1;
+  return Math.round(base * paper * print * size);
 };
 
 export const QUANTITIES = [100, 250, 500, 1000];
+
+export const PAPER_SIZES = [
+  { value: "A4", label: "A4 — 210×297mm" },
+  { value: "A3", label: "A3 — 297×420mm" },
+];
 
 export const PAPER_TYPES = [
   { value: "standard", label: "عادي", description: "ورق أبيض 300g" },
@@ -81,6 +101,13 @@ export const PAPER_TYPES = [
 export const PRINT_TYPES = [
   { value: "one_side", label: "وجه واحد" },
   { value: "double_side", label: "وجهين" },
+];
+
+export const ORDER_STATUSES = [
+  { value: "pending", label: "قيد الانتظار" },
+  { value: "processing", label: "قيد المعالجة" },
+  { value: "printing", label: "جاري الطباعة" },
+  { value: "completed", label: "مكتمل" },
 ];
 
 export const TEMPLATE_CATEGORIES = [
@@ -175,14 +202,26 @@ export const printService = {
   },
 
   // Orders
-  async createOrder(order: Omit<PrintOrder, "id" | "created_at" | "status" | "template">): Promise<{ id: string } | null> {
+  async createOrder(order: Partial<PrintOrder>): Promise<{ id: string; order_code: string } | null> {
     const { data, error } = await supabase
       .from("print_orders")
       .insert(order as any)
-      .select("id")
+      .select("id, order_code")
       .single();
     if (error) throw new Error(error.message);
     return data as any;
+  },
+
+  /** Upload a generated print PDF blob to public storage and return its URL. */
+  async uploadPrintPdf(blob: Blob, fileName: string): Promise<string> {
+    const safe = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`;
+    const { error } = await supabase.storage
+      .from("print-pdfs")
+      .upload(path, blob, { contentType: "application/pdf", upsert: false });
+    if (error) throw new Error(error.message);
+    const { data } = supabase.storage.from("print-pdfs").getPublicUrl(path);
+    return data.publicUrl;
   },
 
   async getMyOrders(userId: string): Promise<PrintOrder[]> {
@@ -209,6 +248,21 @@ export const printService = {
 
     const tMap = new Map((templates || []).map((t: any) => [t.id, t]));
     return orders.map((o: any) => ({ ...o, template: tMap.get(o.template_id) }));
+  },
+
+  async getOrderByCode(code: string): Promise<PrintOrder | null> {
+    const { data } = await supabase
+      .from("print_orders")
+      .select("*")
+      .eq("order_code", code.trim())
+      .maybeSingle() as any;
+    if (!data) return null;
+    const { data: tpl } = await supabase
+      .from("card_templates")
+      .select("*")
+      .eq("id", data.template_id)
+      .maybeSingle() as any;
+    return { ...data, template: tpl } as PrintOrder;
   },
 
   async getPopularTemplates(): Promise<string[]> {

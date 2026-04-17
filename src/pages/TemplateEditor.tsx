@@ -610,6 +610,8 @@ const TemplateEditor = () => {
         frontNode={frontRef.current}
         backNode={hasBack ? backRef.current : null}
         cardName={template.name}
+        templateId={template.id}
+        designData={{ values, styles }}
       />
     </div>
   );
