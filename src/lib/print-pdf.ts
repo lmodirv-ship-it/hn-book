@@ -138,13 +138,36 @@ function buildExportableSvg(svg: SVGSVGElement): SVGSVGElement {
   return clone;
 }
 
-/** High-res PNG fallback (~600 DPI) for nodes without an inline SVG.
- *  Optionally simulates CMYK gamut by clamping out-of-gamut sRGB values. */
+/** Wrap a bare <svg> in an HTML container so html-to-image can rasterize it. */
+function ensureHtmlWrapper(node: HTMLElement): { target: HTMLElement; cleanup: () => void } {
+  const tag = node.tagName?.toLowerCase();
+  if (tag !== "svg") return { target: node, cleanup: () => {} };
+  const svg = node as unknown as SVGSVGElement;
+  const rect = svg.getBoundingClientRect();
+  const vb = svg.viewBox?.baseVal;
+  const w = rect.width || vb?.width || 850;
+  const h = rect.height || vb?.height || 550;
+  const wrapper = document.createElement("div");
+  wrapper.style.cssText = `position:fixed;left:-99999px;top:0;width:${w}px;height:${h}px;background:#fff;`;
+  const clone = svg.cloneNode(true) as SVGSVGElement;
+  clone.setAttribute("width", String(w));
+  clone.setAttribute("height", String(h));
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+  return { target: wrapper, cleanup: () => wrapper.remove() };
+}
+
+/** High-res PNG fallback (~600 DPI). Optionally clamps to CMYK-ish gamut. */
 async function nodeToHiResPng(node: HTMLElement, colorMode: ColorMode): Promise<string> {
-  const dataUrl = await toPng(node, { pixelRatio: 6, cacheBust: true, backgroundColor: "#ffffff" });
-  if (!dataUrl?.startsWith("data:image")) throw new Error("Raster export returned empty data URL");
-  if (colorMode !== "CMYK_SIM") return dataUrl;
-  return simulateCmykOnPng(dataUrl);
+  const { target, cleanup } = ensureHtmlWrapper(node);
+  try {
+    const dataUrl = await toPng(target, { pixelRatio: 6, cacheBust: true, backgroundColor: "#ffffff" });
+    if (!dataUrl?.startsWith("data:image")) throw new Error("Raster export returned empty data URL");
+    if (colorMode !== "CMYK_SIM") return dataUrl;
+    return await simulateCmykOnPng(dataUrl);
+  } finally {
+    cleanup();
+  }
 }
 
 /** Approximate CMYK gamut by reducing saturation ~12% and clamping pure RGB primaries. */
@@ -191,8 +214,14 @@ async function drawCard(
 ): Promise<void> {
   const svg = findSvg(node);
   if (svg && colorMode !== "CMYK_SIM") {
+    let holder: HTMLDivElement | null = null;
     try {
       const clone = buildExportableSvg(svg);
+      // svg2pdf needs the element attached to the DOM to read computed layout.
+      holder = document.createElement("div");
+      holder.style.cssText = "position:fixed;left:-99999px;top:0;opacity:0;pointer-events:none;";
+      holder.appendChild(clone);
+      document.body.appendChild(holder);
       await svg2pdf(clone, pdf, {
         x: x + layout.bleed,
         y: y + layout.bleed,
@@ -202,6 +231,8 @@ async function drawCard(
       return;
     } catch (err) {
       console.warn("[print-pdf] vector export failed at", { x, y }, err);
+    } finally {
+      holder?.remove();
     }
   }
   // Hybrid fallback — high-res raster from the live DOM node.
@@ -402,9 +433,14 @@ export async function exportCardAsPng(
 ): Promise<{ blob: Blob; url: string; fileName: string }> {
   if (!node) throw new Error("لا يوجد عنصر تصميم للتصدير");
   await waitForFonts();
-  const dataUrl = await toPng(node, { pixelRatio: 6, cacheBust: true, backgroundColor: "#ffffff" });
-  const res = await fetch(dataUrl);
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  return { blob, url, fileName };
+  const { target, cleanup } = ensureHtmlWrapper(node);
+  try {
+    const dataUrl = await toPng(target, { pixelRatio: 6, cacheBust: true, backgroundColor: "#ffffff" });
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    return { blob, url, fileName };
+  } finally {
+    cleanup();
+  }
 }
