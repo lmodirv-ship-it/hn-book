@@ -1,1 +1,4 @@
 project_id = "wgkckhtqnqvkbqihtnmq"
+
+[functions.process-asset-package]
+verify_jwt = false

@@ -92,6 +92,62 @@ export type Database = {
         }
         Relationships: []
       }
+      asset_files: {
+        Row: {
+          asset_id: string
+          created_at: string
+          file_extension: string | null
+          file_kind: string
+          file_name: string
+          file_size: number | null
+          folder_path: string | null
+          id: string
+          is_primary: boolean
+          mime_type: string | null
+          public_url: string
+          sort_order: number
+          storage_path: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          file_extension?: string | null
+          file_kind?: string
+          file_name: string
+          file_size?: number | null
+          folder_path?: string | null
+          id?: string
+          is_primary?: boolean
+          mime_type?: string | null
+          public_url: string
+          sort_order?: number
+          storage_path: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          file_extension?: string | null
+          file_kind?: string
+          file_name?: string
+          file_size?: number | null
+          folder_path?: string | null
+          id?: string
+          is_primary?: boolean
+          mime_type?: string | null
+          public_url?: string
+          sort_order?: number
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_files_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assets: {
         Row: {
           asset_type: string

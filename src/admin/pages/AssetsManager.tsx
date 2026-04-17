@@ -20,6 +20,8 @@ import {
   type AssetCategory,
 } from "@/services/assetService";
 import { supabase } from "@/integrations/supabase/client";
+import { AssetPackageUpload } from "@/admin/components/AssetPackageUpload";
+import { AssetDetailDialog } from "@/admin/components/AssetDetailDialog";
 
 const ALL_TYPES = Object.keys(ASSET_TYPE_META) as AssetType[];
 
@@ -32,6 +34,7 @@ export default function AssetsManager() {
   const [filterType, setFilterType] = useState<AssetType | "all">("all");
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [detailAsset, setDetailAsset] = useState<Asset | null>(null);
 
   const [form, setForm] = useState({
     title: "",
@@ -145,13 +148,15 @@ export default function AssetsManager() {
             نظام موحّد للبطاقات، القوالب، الشعارات، الفلاير، الصور، الوثائق وغيرها — مع كود مرجعي تلقائي
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 me-2" />
-              إضافة أصل
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <AssetPackageUpload onUploaded={load} />
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 me-2" />
+                إضافة أصل
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>إنشاء أصل جديد</DialogTitle>
@@ -202,6 +207,7 @@ export default function AssetsManager() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -266,8 +272,8 @@ export default function AssetsManager() {
             </TableHeader>
             <TableBody>
               {assets.map((a) => (
-                <TableRow key={a.id}>
-                  <TableCell>
+                <TableRow key={a.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setDetailAsset(a)}>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <img src={a.image_url} alt={a.title} className="w-12 h-12 rounded object-cover" />
                   </TableCell>
                   <TableCell className="font-mono text-xs">{a.code}</TableCell>
@@ -282,7 +288,7 @@ export default function AssetsManager() {
                       {a.is_active ? "نشط" : "معطّل"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-end">
+                  <TableCell className="text-end" onClick={(e) => e.stopPropagation()}>
                     <div className="flex justify-end gap-1">
                       {a.asset_type === "CRD" && templateMap[a.id] && (
                         <Link to={`/editor/${templateMap[a.id]}`}>
@@ -305,6 +311,8 @@ export default function AssetsManager() {
           </Table>
         )}
       </Card>
+
+      <AssetDetailDialog asset={detailAsset} open={!!detailAsset} onOpenChange={(o) => !o && setDetailAsset(null)} />
     </div>
   );
 }
