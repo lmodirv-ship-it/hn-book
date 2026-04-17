@@ -45,6 +45,9 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
   const [orderPdfUrl, setOrderPdfUrl] = useState<string | null>(null);
 
   const shippingFee = getShippingFee(deliveryOption);
+  const printType = backNode ? "double_side" : "one_side";
+  const printSubtotal = calculatePrice(quantity, "standard", printType, pageSize);
+  const grandTotal = printSubtotal + shippingFee;
 
   const generate = async () => {
     if (!frontNode) {
