@@ -10,10 +10,14 @@ import { toast } from "@/hooks/use-toast";
 import {
   svgTemplateService,
   buildFieldsFromSvg,
+  suggestTemplateType,
+  SVG_TEMPLATE_TYPES,
   type SvgTemplate,
+  type SvgTemplateType,
   type SvgField,
 } from "@/services/svgTemplateService";
 import SvgRenderer from "@/components/editor/SvgRenderer";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "react-router-dom";
 
 const SvgTemplatesAdmin = () => {
