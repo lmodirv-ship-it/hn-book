@@ -44,9 +44,26 @@ export interface PrintOrder {
   status: string;
   pdf_url: string | null;
   template_design: Record<string, any> | null;
+  // Shipping
+  delivery_option: "standard" | "express";
+  shipping_fee: number;
+  tracking_carrier: string | null;
+  tracking_number: string | null;
+  tracking_note: string | null;
+  shipped_at: string | null;
+  delivered_at: string | null;
   created_at: string;
   template?: CardTemplate;
 }
+
+// Shipping options (flat fees in MAD)
+export const DELIVERY_OPTIONS = [
+  { value: "standard", label: "توصيل عادي (3-5 أيام)", fee: 30 },
+  { value: "express",  label: "توصيل سريع (24-48 ساعة)", fee: 60 },
+] as const;
+
+export const getShippingFee = (option: string): number =>
+  DELIVERY_OPTIONS.find((o) => o.value === option)?.fee ?? 30;
 
 // Pricing logic
 const BASE_PRICES: Record<number, number> = {
@@ -104,10 +121,12 @@ export const PRINT_TYPES = [
 ];
 
 export const ORDER_STATUSES = [
-  { value: "pending", label: "قيد الانتظار" },
+  { value: "pending",    label: "قيد الانتظار" },
   { value: "processing", label: "قيد المعالجة" },
-  { value: "printing", label: "جاري الطباعة" },
-  { value: "completed", label: "مكتمل" },
+  { value: "printing",   label: "جاري الطباعة" },
+  { value: "shipped",    label: "تم الشحن" },
+  { value: "delivered",  label: "تم التسليم" },
+  { value: "completed",  label: "مكتمل" },
 ];
 
 export const TEMPLATE_CATEGORIES = [
@@ -280,5 +299,14 @@ export const printService = {
 
   async updateOrderStatus(id: string, status: string): Promise<void> {
     await supabase.from("print_orders").update({ status } as any).eq("id", id);
+  },
+
+  /** Update shipping/tracking info on an order. */
+  async updateShipping(
+    id: string,
+    data: { tracking_carrier?: string; tracking_number?: string; tracking_note?: string },
+  ): Promise<void> {
+    const { error } = await supabase.from("print_orders").update(data as any).eq("id", id);
+    if (error) throw new Error(error.message);
   },
 };

@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Loader2, Download, MessageCircle, Printer, FileText, Eye, Copy, CheckCircle2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { buildPrintReadyPdf, type PageSize, type BuildPrintPdfResult } from "@/lib/print-pdf";
-import { printService } from "@/services/printService";
+import { printService, DELIVERY_OPTIONS, getShippingFee } from "@/services/printService";
 
 interface PrintReadyDialogProps {
   open: boolean;
@@ -37,9 +37,14 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [quantity, setQuantity] = useState(100);
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [deliveryOption, setDeliveryOption] = useState<"standard" | "express">("standard");
   const [submittingOrder, setSubmittingOrder] = useState(false);
   const [orderCode, setOrderCode] = useState<string | null>(null);
   const [orderPdfUrl, setOrderPdfUrl] = useState<string | null>(null);
+
+  const shippingFee = getShippingFee(deliveryOption);
 
   const generate = async () => {
     if (!frontNode) {
@@ -89,6 +94,14 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
       toast({ title: "رقم هاتف غير صالح", variant: "destructive" });
       return;
     }
+    if (address.trim().length < 5) {
+      toast({ title: "أدخل العنوان الكامل", variant: "destructive" });
+      return;
+    }
+    if (city.trim().length < 2) {
+      toast({ title: "أدخل المدينة", variant: "destructive" });
+      return;
+    }
     setSubmittingOrder(true);
     try {
       const pdfUrl = await printService.uploadPrintPdf(result.blob, result.fileName);
@@ -100,7 +113,10 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
         paper_size: pageSize,
         paper_type: "standard",
         print_type: backNode ? "double_side" : "one_side",
-        address: "—",
+        address: address.trim(),
+        city: city.trim(),
+        delivery_option: deliveryOption,
+        shipping_fee: shippingFee,
         pdf_url: pdfUrl,
         template_design: designData ?? {},
         notes: note,
@@ -157,6 +173,9 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
       setOrderPdfUrl(null);
       setCustomerName("");
       setCustomerPhone("");
+      setAddress("");
+      setCity("");
+      setDeliveryOption("standard");
       setNote("");
     }
     onOpenChange(next);
@@ -292,6 +311,34 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
               <div>
                 <Label className="text-sm">حجم الورق</Label>
                 <Input value={pageSize} disabled className="mt-1" />
+              </div>
+              <div className="sm:col-span-2">
+                <Label className="text-sm">العنوان الكامل *</Label>
+                <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="الشارع، الحي، الرقم..." maxLength={200} className="mt-1" />
+              </div>
+              <div>
+                <Label className="text-sm">المدينة *</Label>
+                <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="الدار البيضاء" maxLength={80} className="mt-1" />
+              </div>
+              <div>
+                <Label className="text-sm">طريقة التوصيل</Label>
+                <RadioGroup
+                  value={deliveryOption}
+                  onValueChange={(v) => setDeliveryOption(v as "standard" | "express")}
+                  className="mt-1 grid grid-cols-1 gap-1.5"
+                >
+                  {DELIVERY_OPTIONS.map((o) => (
+                    <label
+                      key={o.value}
+                      htmlFor={`do-${o.value}`}
+                      className={`flex items-center gap-2 rounded-md border p-2 cursor-pointer text-xs transition ${deliveryOption === o.value ? "border-primary bg-primary/5" : "border-border"}`}
+                    >
+                      <RadioGroupItem id={`do-${o.value}`} value={o.value} />
+                      <span className="flex-1">{o.label}</span>
+                      <span className="font-bold text-primary">+{o.fee} د.م</span>
+                    </label>
+                  ))}
+                </RadioGroup>
               </div>
               <div className="sm:col-span-2">
                 <Label className="text-sm">ملاحظات (اختياري)</Label>

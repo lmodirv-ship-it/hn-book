@@ -758,6 +758,8 @@ export type Database = {
           country: string
           created_at: string
           customer_name: string
+          delivered_at: string | null
+          delivery_option: string
           email: string
           id: string
           job_title: string
@@ -770,10 +772,15 @@ export type Database = {
           phone: string
           print_type: string
           quantity: number
+          shipped_at: string | null
+          shipping_fee: number
           status: string
           template_design: Json
           template_id: string
           total_price: number
+          tracking_carrier: string | null
+          tracking_note: string | null
+          tracking_number: string | null
           updated_at: string
           user_id: string | null
         }
@@ -784,6 +791,8 @@ export type Database = {
           country?: string
           created_at?: string
           customer_name: string
+          delivered_at?: string | null
+          delivery_option?: string
           email?: string
           id?: string
           job_title?: string
@@ -796,10 +805,15 @@ export type Database = {
           phone: string
           print_type?: string
           quantity?: number
+          shipped_at?: string | null
+          shipping_fee?: number
           status?: string
           template_design?: Json
           template_id: string
           total_price?: number
+          tracking_carrier?: string | null
+          tracking_note?: string | null
+          tracking_number?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -810,6 +824,8 @@ export type Database = {
           country?: string
           created_at?: string
           customer_name?: string
+          delivered_at?: string | null
+          delivery_option?: string
           email?: string
           id?: string
           job_title?: string
@@ -822,10 +838,15 @@ export type Database = {
           phone?: string
           print_type?: string
           quantity?: number
+          shipped_at?: string | null
+          shipping_fee?: number
           status?: string
           template_design?: Json
           template_id?: string
           total_price?: number
+          tracking_carrier?: string | null
+          tracking_note?: string | null
+          tracking_number?: string | null
           updated_at?: string
           user_id?: string | null
         }

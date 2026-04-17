@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   Printer, Eye, Loader2, Search, Filter, Clock, CheckCircle2, FileText,
-  Download, MessageCircle, Cog,
+  Download, MessageCircle, Cog, Truck, PackageCheck, MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,17 +9,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { printService, PAPER_TYPES, PRINT_TYPES, ORDER_STATUSES, type PrintOrder } from "@/services/printService";
+import { Label } from "@/components/ui/label";
+import {
+  printService, PAPER_TYPES, PRINT_TYPES, ORDER_STATUSES, DELIVERY_OPTIONS,
+  type PrintOrder,
+} from "@/services/printService";
 import { toast } from "@/hooks/use-toast";
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = {
-  pending:    { label: "قيد الانتظار", color: "bg-yellow-500/15 text-yellow-500", icon: Clock },
-  processing: { label: "قيد المعالجة", color: "bg-blue-500/15 text-blue-500",     icon: Cog },
-  printing:   { label: "جاري الطباعة", color: "bg-purple-500/15 text-purple-500", icon: Printer },
-  completed:  { label: "مكتمل",         color: "bg-emerald-500/15 text-emerald-500", icon: CheckCircle2 },
+  pending:    { label: "قيد الانتظار", color: "bg-yellow-500/15 text-yellow-500",   icon: Clock },
+  processing: { label: "قيد المعالجة", color: "bg-blue-500/15 text-blue-500",       icon: Cog },
+  printing:   { label: "جاري الطباعة", color: "bg-purple-500/15 text-purple-500",   icon: Printer },
+  shipped:    { label: "تم الشحن",      color: "bg-cyan-500/15 text-cyan-500",       icon: Truck },
+  delivered:  { label: "تم التسليم",    color: "bg-emerald-500/15 text-emerald-500", icon: PackageCheck },
+  completed:  { label: "مكتمل",          color: "bg-emerald-500/15 text-emerald-500", icon: CheckCircle2 },
 };
 
-const STATUSES = ["pending", "processing", "printing", "completed"];
+const STATUSES = ["pending", "processing", "printing", "shipped", "delivered"];
 
 const PrintOrdersAdmin = () => {
   const [orders, setOrders] = useState<PrintOrder[]>([]);
@@ -27,6 +33,43 @@ const PrintOrdersAdmin = () => {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [detail, setDetail] = useState<PrintOrder | null>(null);
+
+  // Tracking form state (lives inside detail dialog)
+  const [trackCarrier, setTrackCarrier] = useState("");
+  const [trackNumber, setTrackNumber] = useState("");
+  const [trackNote, setTrackNote] = useState("");
+  const [savingTrack, setSavingTrack] = useState(false);
+
+  const openDetail = (o: PrintOrder) => {
+    setDetail(o);
+    setTrackCarrier(o.tracking_carrier || "");
+    setTrackNumber(o.tracking_number || "");
+    setTrackNote(o.tracking_note || "");
+  };
+
+  const saveTracking = async () => {
+    if (!detail) return;
+    setSavingTrack(true);
+    try {
+      await printService.updateShipping(detail.id, {
+        tracking_carrier: trackCarrier.trim(),
+        tracking_number: trackNumber.trim(),
+        tracking_note: trackNote.trim(),
+      });
+      toast({ title: "تم حفظ معلومات الشحن ✅" });
+      await fetchOrders();
+    } catch (e: any) {
+      toast({ title: "فشل الحفظ", description: e.message, variant: "destructive" });
+    } finally {
+      setSavingTrack(false);
+    }
+  };
+
+  const markShipped = async (o: PrintOrder) => {
+    await printService.updateOrderStatus(o.id, "shipped");
+    toast({ title: "تم تحديد الطلب كمشحون 🚚" });
+    fetchOrders();
+  };
 
   const fetchOrders = async () => {
     const data = await printService.getAllOrders();
@@ -177,9 +220,14 @@ const PrintOrdersAdmin = () => {
                     </TableCell>
                     <TableCell className="text-center">
                       <div className="flex items-center justify-center gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDetail(o)} title="تفاصيل">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDetail(o)} title="تفاصيل">
                           <Eye className="w-4 h-4" />
                         </Button>
+                        {o.status !== "shipped" && o.status !== "delivered" && o.status !== "completed" && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-cyan-500" onClick={() => markShipped(o)} title="تحديد كمشحون">
+                            <Truck className="w-4 h-4" />
+                          </Button>
+                        )}
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-[#25D366]" onClick={() => sendToPrintShop(o)} title="إرسال للمطبعة">
                           <MessageCircle className="w-4 h-4" />
                         </Button>
@@ -215,18 +263,76 @@ const PrintOrdersAdmin = () => {
                 {detail.total_price > 0 && (<><span className="text-muted-foreground">السعر</span><span className="font-bold text-primary">{detail.total_price} د.م</span></>)}
               </div>
               <hr className="border-border" />
-              <div className="grid grid-cols-2 gap-2">
-                <span className="text-muted-foreground">الاسم</span><span className="font-medium">{detail.customer_name}</span>
-                <span className="text-muted-foreground">الهاتف</span><span className="font-medium">{detail.phone}</span>
-                {detail.address && detail.address !== "—" && (
-                  <><span className="text-muted-foreground">العنوان</span><span className="font-medium">{detail.address}{detail.city ? `, ${detail.city}` : ""}</span></>
-                )}
+
+              {/* Shipping address */}
+              <div>
+                <p className="text-muted-foreground flex items-center gap-1.5 mb-1.5">
+                  <MapPin className="w-3.5 h-3.5" /> عنوان التوصيل
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <span className="text-muted-foreground">الاسم</span><span className="font-medium">{detail.customer_name}</span>
+                  <span className="text-muted-foreground">الهاتف</span><span className="font-medium" dir="ltr">{detail.phone}</span>
+                  {detail.address && detail.address !== "—" && (
+                    <><span className="text-muted-foreground">العنوان</span><span className="font-medium">{detail.address}</span></>
+                  )}
+                  {detail.city && (
+                    <><span className="text-muted-foreground">المدينة</span><span className="font-medium">{detail.city}</span></>
+                  )}
+                  <span className="text-muted-foreground">طريقة التوصيل</span>
+                  <span className="font-medium">
+                    {DELIVERY_OPTIONS.find(d => d.value === detail.delivery_option)?.label || detail.delivery_option || "—"}
+                  </span>
+                  {Number(detail.shipping_fee) > 0 && (
+                    <><span className="text-muted-foreground">رسوم الشحن</span><span className="font-medium">{detail.shipping_fee} د.م</span></>
+                  )}
+                  {detail.shipped_at && (
+                    <><span className="text-muted-foreground">تاريخ الشحن</span><span className="font-medium">{new Date(detail.shipped_at).toLocaleString("ar")}</span></>
+                  )}
+                  {detail.delivered_at && (
+                    <><span className="text-muted-foreground">تاريخ التسليم</span><span className="font-medium">{new Date(detail.delivered_at).toLocaleString("ar")}</span></>
+                  )}
+                </div>
               </div>
+
+              <hr className="border-border" />
+
+              {/* Tracking form */}
+              <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
+                <p className="font-semibold text-foreground flex items-center gap-1.5">
+                  <Truck className="w-4 h-4 text-cyan-500" /> معلومات الشحن والتتبع
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs">شركة الشحن</Label>
+                    <Input value={trackCarrier} onChange={(e) => setTrackCarrier(e.target.value)} placeholder="Amana, CTM..." maxLength={80} className="mt-1 h-8 text-xs" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">رقم التتبع</Label>
+                    <Input value={trackNumber} onChange={(e) => setTrackNumber(e.target.value)} placeholder="TRK123456" maxLength={80} className="mt-1 h-8 text-xs" dir="ltr" />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">ملاحظة للعميل</Label>
+                  <Input value={trackNote} onChange={(e) => setTrackNote(e.target.value)} placeholder="سيتم التسليم غدا..." maxLength={200} className="mt-1 h-8 text-xs" />
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Button size="sm" onClick={saveTracking} disabled={savingTrack} className="gap-1.5 h-8 text-xs">
+                    {savingTrack ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+                    حفظ معلومات الشحن
+                  </Button>
+                  {detail.status !== "shipped" && detail.status !== "delivered" && detail.status !== "completed" && (
+                    <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs text-cyan-600 border-cyan-500/30" onClick={() => markShipped(detail)}>
+                      <Truck className="w-3 h-3" /> تحديد كمشحون
+                    </Button>
+                  )}
+                </div>
+              </div>
+
               {detail.notes && (
                 <>
                   <hr className="border-border" />
                   <div>
-                    <span className="text-muted-foreground block mb-1">ملاحظات</span>
+                    <span className="text-muted-foreground block mb-1">ملاحظات الطلب</span>
                     <p className="text-foreground">{detail.notes}</p>
                   </div>
                 </>
