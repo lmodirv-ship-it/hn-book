@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart3, Package, Users, TrendingUp, Settings,
   Menu, X, Shield, BookOpen, Tag, LayoutDashboard,
-  ShoppingCart, FileText, LogOut, Ticket, Activity, ShieldCheck, FolderUp, Globe, ScanText, DollarSign,
+  ShoppingCart, FileText, LogOut, Ticket, Activity, ShieldCheck, FolderUp, Globe, ScanText, DollarSign, KeyRound,
   Bell, AlertTriangle, XCircle, Database, Crown, CreditCard, Printer, Image, Frame, Brain,
   ToggleRight, MonitorDot,
 } from "lucide-react";
@@ -45,7 +45,8 @@ const navItems = [
   { path: "/admin/api-integrations", icon: Globe, label: "تكاملات API" },
   { path: "/admin/cms", icon: FileText, label: "إدارة المحتوى (CMS)" },
   { path: "/admin/users", icon: Users, label: "المستخدمون والأدوار" },
-  { path: "/admin/permissions", icon: Shield, label: "الصلاحيات" },
+  { path: "/admin/permissions", icon: Shield, label: "الصلاحيات (الأدوار)" },
+  { path: "/admin/user-permissions", icon: KeyRound, label: "صلاحيات المستخدمين" },
   { path: "/admin/settings", icon: Settings, label: "الإعدادات" },
 ];
 

@@ -27,6 +27,17 @@ export interface UserWithRoles {
   roles: AppRole[];
 }
 
+export type PermissionEffect = "grant" | "deny";
+
+export interface UserPermissionOverride {
+  id: string;
+  user_id: string;
+  permission_key: string;
+  effect: PermissionEffect;
+  note: string;
+  created_at: string;
+}
+
 export const permissionsService = {
   async listPermissions(): Promise<Permission[]> {
     const { data, error } = await supabase
@@ -108,15 +119,67 @@ export const permissionsService = {
       .select("role")
       .eq("user_id", userId);
     const roles = (myRoles ?? []).map((r: any) => r.role as AppRole);
-    if (roles.length === 0) return new Set();
+
+    // Per-user overrides
+    const { data: overrides } = await supabase
+      .from("user_permissions" as any)
+      .select("permission_key, effect")
+      .eq("user_id", userId);
+    const grants = new Set<string>();
+    const denies = new Set<string>();
+    (overrides ?? []).forEach((o: any) => {
+      if (o.effect === "deny") denies.add(o.permission_key);
+      else grants.add(o.permission_key);
+    });
+
+    // Admins get everything (minus nothing — admin bypass)
     if (roles.includes("admin")) {
       const all = await this.listPermissions();
       return new Set(all.map((p) => p.key));
     }
-    const { data: rp } = await supabase
-      .from("role_permissions")
-      .select("permission_key")
-      .in("role", roles as any);
-    return new Set((rp ?? []).map((r: any) => r.permission_key));
+
+    // Role-based base set
+    let base = new Set<string>();
+    if (roles.length > 0) {
+      const { data: rp } = await supabase
+        .from("role_permissions")
+        .select("permission_key")
+        .in("role", roles as any);
+      base = new Set((rp ?? []).map((r: any) => r.permission_key));
+    }
+
+    // Apply overrides
+    grants.forEach((g) => base.add(g));
+    denies.forEach((d) => base.delete(d));
+    return base;
+  },
+
+  async listUserPermissions(userId: string): Promise<UserPermissionOverride[]> {
+    const { data, error } = await supabase
+      .from("user_permissions" as any)
+      .select("*")
+      .eq("user_id", userId)
+      .order("permission_key");
+    if (error) throw error;
+    return (data ?? []) as unknown as UserPermissionOverride[];
+  },
+
+  async setUserPermission(userId: string, permissionKey: string, effect: PermissionEffect | null, note = "") {
+    if (effect === null) {
+      const { error } = await supabase
+        .from("user_permissions" as any)
+        .delete()
+        .eq("user_id", userId)
+        .eq("permission_key", permissionKey);
+      if (error) throw error;
+      return;
+    }
+    const { error } = await supabase
+      .from("user_permissions" as any)
+      .upsert(
+        { user_id: userId, permission_key: permissionKey, effect, note },
+        { onConflict: "user_id,permission_key" },
+      );
+    if (error) throw error;
   },
 };

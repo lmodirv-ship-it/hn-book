@@ -66,6 +66,7 @@ import SvgTemplatesAdmin from "./admin/pages/SvgTemplatesAdmin.tsx";
 import UsersAdmin from "./admin/pages/UsersAdmin.tsx";
 import PermissionsAdmin from "./admin/pages/PermissionsAdmin.tsx";
 import CmsAdmin from "./admin/pages/CmsAdmin.tsx";
+import UserPermissionsAdmin from "./admin/pages/UserPermissionsAdmin.tsx";
 import TrackOrder from "./pages/TrackOrder.tsx";
 import TemplatesGallery from "./pages/TemplatesGallery.tsx";
 
@@ -168,6 +169,7 @@ const App = () => (
               <Route path="users" element={<UsersAdmin />} />
               <Route path="permissions" element={<PermissionsAdmin />} />
               <Route path="cms" element={<CmsAdmin />} />
+              <Route path="user-permissions" element={<UserPermissionsAdmin />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />
