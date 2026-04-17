@@ -235,15 +235,27 @@ const TemplateEditor = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-background" dir="rtl">
         <Loader2 className="w-10 h-10 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">جارٍ تحميل القالب...</p>
       </div>
     );
   }
-  if (!template) {
+  if (notFound || !template) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-muted-foreground" dir="rtl">
-        القالب غير موجود
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-4 text-center" dir="rtl">
+        <div className="w-14 h-14 rounded-full bg-destructive/10 text-destructive flex items-center justify-center text-2xl">!</div>
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold text-foreground">القالب غير متاح</h2>
+          <p className="text-sm text-muted-foreground max-w-sm">
+            هذا التصميم لا يحتوي على ملف SVG قابل للتعديل بعد. اختر قالباً آخر من المعرض.
+          </p>
+        </div>
+        <Button asChild className="gap-1.5">
+          <Link to={backHref}>
+            <ArrowRight className="w-4 h-4" /> العودة إلى القوالب
+          </Link>
+        </Button>
       </div>
     );
   }
@@ -259,7 +271,7 @@ const TemplateEditor = () => {
       {/* TOP BAR */}
       <header className="border-b border-border bg-card/40 backdrop-blur shrink-0">
         <div className="px-4 py-2 flex items-center gap-3">
-          <Link to="/admin/svg-templates">
+          <Link to={backHref}>
             <Button variant="ghost" size="sm" className="gap-1">
               <ArrowRight className="w-4 h-4" /> عودة
             </Button>
