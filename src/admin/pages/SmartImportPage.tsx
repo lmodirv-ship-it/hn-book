@@ -241,8 +241,9 @@ const SmartImportPage = () => {
   const removePending = (id: string) => {
     setPending((prev) => {
       const item = prev.find((p) => p.id === id);
-      if (item && "previewUrl" in item && item.previewUrl) {
-        URL.revokeObjectURL(item.previewUrl);
+      if (item) {
+        if ("previewUrl" in item && item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+        if (item.kind === "folder" && item.backUrl) URL.revokeObjectURL(item.backUrl);
       }
       return prev.filter((p) => p.id !== id);
     });
