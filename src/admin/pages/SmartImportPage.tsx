@@ -185,6 +185,8 @@ function buildFolderItem(folderPath: string, files: File[]): PendingFolderItem |
     warning: warnings.length ? warnings.join(" • ") : null,
     uploading: false,
     progress: 0,
+    error: null,
+    status: "idle",
   };
 }
 
