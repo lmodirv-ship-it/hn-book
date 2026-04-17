@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Download, MessageCircle, Printer, FileText, Eye } from "lucide-react";
+import { Loader2, Download, MessageCircle, Printer, FileText, Eye, Copy, CheckCircle2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { buildPrintReadyPdf, type PageSize, type BuildPrintPdfResult } from "@/lib/print-pdf";
+import { printService } from "@/services/printService";
 
 interface PrintReadyDialogProps {
   open: boolean;
@@ -16,17 +17,29 @@ interface PrintReadyDialogProps {
   frontNode: HTMLElement | null;
   backNode: HTMLElement | null;
   cardName: string;
+  /** ID of the card_templates row this design is based on. Required to create an order. */
+  templateId?: string;
+  /** Snapshot of editor values + styles to persist with the order. */
+  designData?: Record<string, any>;
   /** Pre-filled phone (international format, no +) for print shop. */
   defaultPhone?: string;
 }
 
-const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, defaultPhone }: PrintReadyDialogProps) => {
+const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, templateId, designData, defaultPhone }: PrintReadyDialogProps) => {
   const [pageSize, setPageSize] = useState<PageSize>("A4");
   const [cutMarks, setCutMarks] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState<BuildPrintPdfResult | null>(null);
   const [phone, setPhone] = useState(defaultPhone ?? "212600000000");
   const [note, setNote] = useState("");
+
+  // Order details
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [quantity, setQuantity] = useState(100);
+  const [submittingOrder, setSubmittingOrder] = useState(false);
+  const [orderCode, setOrderCode] = useState<string | null>(null);
+  const [orderPdfUrl, setOrderPdfUrl] = useState<string | null>(null);
 
   const generate = async () => {
     if (!frontNode) {
@@ -59,6 +72,51 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, d
     a.click();
   };
 
+  /** Create the print order in the database (uploads the PDF to public storage). */
+  const submitOrder = async () => {
+    if (!result) return;
+    if (!templateId) {
+      toast({ title: "Template ID مفقود", description: "لا يمكن حفظ الطلب بدون قالب.", variant: "destructive" });
+      return;
+    }
+    const name = customerName.trim();
+    const cleanPhone = customerPhone.replace(/\D/g, "");
+    if (name.length < 2) {
+      toast({ title: "أدخل اسم العميل", variant: "destructive" });
+      return;
+    }
+    if (cleanPhone.length < 8) {
+      toast({ title: "رقم هاتف غير صالح", variant: "destructive" });
+      return;
+    }
+    setSubmittingOrder(true);
+    try {
+      const pdfUrl = await printService.uploadPrintPdf(result.blob, result.fileName);
+      const created = await printService.createOrder({
+        template_id: templateId,
+        customer_name: name,
+        phone: cleanPhone,
+        quantity,
+        paper_size: pageSize,
+        paper_type: "standard",
+        print_type: backNode ? "double_side" : "one_side",
+        address: "—",
+        pdf_url: pdfUrl,
+        template_design: designData ?? {},
+        notes: note,
+        status: "pending",
+      });
+      if (!created) throw new Error("No data returned");
+      setOrderCode(created.order_code);
+      setOrderPdfUrl(pdfUrl);
+      toast({ title: "تم إنشاء الطلب ✅", description: `رقم الطلب: ${created.order_code}` });
+    } catch (e: any) {
+      toast({ title: "فشل إنشاء الطلب", description: e.message, variant: "destructive" });
+    } finally {
+      setSubmittingOrder(false);
+    }
+  };
+
   const sendToWhatsApp = () => {
     if (!result) return;
     const cleanPhone = phone.replace(/\D/g, "");
@@ -68,27 +126,38 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, d
     }
     const lines = [
       `🖨️ *طلب طباعة بطاقات* - ${cardName}`,
+      orderCode ? `🆔 رقم الطلب: *${orderCode}*` : null,
       ``,
       `📐 المقاس: ${pageSize}`,
-      `🔢 العدد في الصفحة: ${result.totalCards} بطاقة`,
+      `🔢 الكمية: ${quantity} بطاقة`,
+      `🧮 العدد في الصفحة: ${result.totalCards} بطاقة`,
       `📏 مقاس البطاقة: ${result.layout.cardWidth}×${result.layout.cardHeight}mm`,
       `✂️ علامات القص: ${cutMarks ? "نعم" : "لا"}`,
       `📄 الوجهين: ${backNode ? "نعم (Front + Back)" : "وجه واحد"}`,
+      orderPdfUrl ? `📎 ملف PDF: ${orderPdfUrl}` : null,
       ``,
       note ? `📝 ملاحظات: ${note}` : null,
-      ``,
-      `⚠️ سأرفق ملف PDF الجاهز للطباعة في الرسالة التالية.`,
     ].filter(Boolean).join("\n");
     const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(lines)}`;
     window.open(url, "_blank", "noopener,noreferrer");
-    // also auto-download so they can attach it
-    download();
+    if (!orderPdfUrl) download();
+  };
+
+  const copyCode = () => {
+    if (!orderCode) return;
+    navigator.clipboard.writeText(orderCode);
+    toast({ title: "تم نسخ رقم الطلب" });
   };
 
   const handleClose = (next: boolean) => {
-    if (!next && result) {
-      URL.revokeObjectURL(result.url);
+    if (!next) {
+      if (result) URL.revokeObjectURL(result.url);
       setResult(null);
+      setOrderCode(null);
+      setOrderPdfUrl(null);
+      setCustomerName("");
+      setCustomerPhone("");
+      setNote("");
     }
     onOpenChange(next);
   };
@@ -99,10 +168,10 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, d
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Printer className="w-5 h-5 text-primary" />
-            توليد PDF جاهز للطباعة
+            توليد PDF و طلب طباعة
           </DialogTitle>
           <DialogDescription>
-            احصل على ملف PDF عالي الدقة بصفحة كاملة من البطاقات، جاهز لمطبعتك.
+            احصل على ملف PDF عالي الدقة وأنشئ طلب طباعة لتتبعه لاحقاً.
           </DialogDescription>
         </DialogHeader>
 
@@ -156,13 +225,23 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, d
               </Button>
             </DialogFooter>
           </div>
-        ) : (
+        ) : orderCode ? (
+          // Order confirmation view
           <div className="space-y-4">
-            <div className="rounded-lg border border-border overflow-hidden bg-muted/20">
-              <iframe src={result.url} title="PDF preview" className="w-full h-[420px] bg-white" />
-            </div>
-            <div className="text-xs text-muted-foreground text-center">
-              {result.totalCards} بطاقة في الصفحة • {result.layout.cols}×{result.layout.rows} • {result.layout.pageSize}
+            <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-6 text-center space-y-3">
+              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                <CheckCircle2 className="w-8 h-8 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">تم إنشاء طلبك بنجاح</p>
+                <div className="flex items-center justify-center gap-2 mt-2">
+                  <p className="text-2xl font-bold text-foreground tracking-wider">{orderCode}</p>
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={copyCode}>
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">احتفظ برقم الطلب لتتبع حالة الطباعة</p>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -175,22 +254,59 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, d
             </div>
 
             <div className="space-y-2 rounded-lg border border-border p-3">
+              <Label className="text-sm">رقم المطبعة (واتساب)</Label>
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="212600000000" />
+              <p className="text-[10px] text-muted-foreground">صيغة دولية بدون +</p>
+            </div>
+
+            <DialogFooter>
+              <Button variant="secondary" onClick={() => handleClose(false)}>إغلاق</Button>
+              <Button variant="ghost" asChild>
+                <a href={`/track-order?code=${encodeURIComponent(orderCode)}`}>تتبع الطلب</a>
+              </Button>
+            </DialogFooter>
+          </div>
+        ) : (
+          // PDF generated, awaiting order details
+          <div className="space-y-4">
+            <div className="rounded-lg border border-border overflow-hidden bg-muted/20">
+              <iframe src={result.url} title="PDF preview" className="w-full h-[260px] bg-white" />
+            </div>
+            <div className="text-xs text-muted-foreground text-center">
+              {result.totalCards} بطاقة في الصفحة • {result.layout.cols}×{result.layout.rows} • {result.layout.pageSize}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-lg border border-border p-3">
               <div>
-                <Label className="text-sm">رقم المطبعة (واتساب)</Label>
-                <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="212600000000" className="mt-1" />
-                <p className="text-[10px] text-muted-foreground mt-1">صيغة دولية بدون +</p>
+                <Label className="text-sm">اسم العميل *</Label>
+                <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="محمد أمين" maxLength={100} className="mt-1" />
               </div>
               <div>
-                <Label className="text-sm">ملاحظات إضافية للمطبعة</Label>
-                <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="نوع الورق، الكمية، تاريخ التسليم..." rows={2} className="mt-1" />
+                <Label className="text-sm">الهاتف *</Label>
+                <Input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="0612345678" maxLength={20} className="mt-1" />
+              </div>
+              <div>
+                <Label className="text-sm">الكمية</Label>
+                <Input type="number" value={quantity} onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 100))} min={1} max={10000} className="mt-1" />
+              </div>
+              <div>
+                <Label className="text-sm">حجم الورق</Label>
+                <Input value={pageSize} disabled className="mt-1" />
+              </div>
+              <div className="sm:col-span-2">
+                <Label className="text-sm">ملاحظات (اختياري)</Label>
+                <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="نوع الورق، تاريخ التسليم..." rows={2} maxLength={500} className="mt-1" />
               </div>
             </div>
 
             <DialogFooter>
-              <Button variant="ghost" onClick={() => { URL.revokeObjectURL(result.url); setResult(null); }}>
-                توليد جديد
+              <Button variant="ghost" onClick={download}>
+                تحميل PDF فقط
               </Button>
-              <Button variant="secondary" onClick={() => handleClose(false)}>إغلاق</Button>
+              <Button onClick={submitOrder} disabled={submittingOrder} className="gap-1.5">
+                {submittingOrder ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
+                إنشاء طلب طباعة
+              </Button>
             </DialogFooter>
           </div>
         )}
