@@ -211,8 +211,20 @@ const TemplateEditor = () => {
       toast({ title: "🔒 غير مسموح لك بتحميل الملفات", description: "تحتاج إذن export_png من المدير.", variant: "destructive" });
       return;
     }
+    if (!billing.canExport("png")) {
+      setPaywallOpen("png");
+      return;
+    }
     setExporting(true);
     try {
+      // Server-validated deduction first — only generate if allowed
+      const r = await billing.consume("png", id ?? null);
+      if (!r.allowed) {
+        setExporting(false);
+        if (r.reason === "insufficient_credits") setPaywallOpen("png");
+        else toast({ title: "تعذر التصدير", description: r.reason, variant: "destructive" });
+        return;
+      }
       const sides: Array<{ ref: HTMLDivElement | null; label: string }> = [
         { ref: frontRef.current, label: "front" },
       ];
