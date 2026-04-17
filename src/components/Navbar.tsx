@@ -101,6 +101,7 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
     { href: "/books", label: "📚 كتب" },
     { href: "/carte-visite", label: "🪪 بطاقات" },
     { href: "/tablou", label: "🖼️ لوحات" },
+    { href: "/studio", label: "✨ استوديو" },
   ];
 
   const allCategories = categories ? ["All", ...categories] : [];
