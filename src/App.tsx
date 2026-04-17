@@ -82,6 +82,7 @@ const App = () => (
             <Route path="/cart" element={<CartPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/order-confirmation/:id" element={<OrderConfirmation />} />
+            <Route path="/track-order" element={<TrackOrder />} />
             <Route path="/category/:category" element={<CategoryPage />} />
             <Route path="/product/:id" element={<ProductRedirect />} />
             <Route path="/book/:id" element={<ProductDetail />} />
