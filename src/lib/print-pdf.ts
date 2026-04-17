@@ -443,7 +443,12 @@ export async function exportCardAsPng(
   await waitForFonts();
   const { target, cleanup } = ensureHtmlWrapper(node);
   try {
-    const dataUrl = await toPng(target, { pixelRatio: 6, cacheBust: true, backgroundColor: "#ffffff" });
+    const dataUrl = await toPng(target, {
+      pixelRatio: 6,
+      cacheBust: true,
+      backgroundColor: "#ffffff",
+      skipFonts: true,
+    } as any);
     const res = await fetch(dataUrl);
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
