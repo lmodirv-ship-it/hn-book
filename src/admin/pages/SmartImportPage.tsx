@@ -507,11 +507,9 @@ const SmartImportPage = () => {
                             </span>
                           </div>
                           {(item as PendingFolderItem).warning && (
-                            <div className="flex items-center gap-1 text-warning text-[10px] mt-1">
-                              <AlertTriangle className="w-3 h-3 text-yellow-500" />
-                              <span className="text-yellow-600 dark:text-yellow-400">
-                                {(item as PendingFolderItem).warning}
-                              </span>
+                            <div className="flex items-center gap-1 text-[10px] mt-1 text-destructive/80">
+                              <AlertTriangle className="w-3 h-3" />
+                              <span>{(item as PendingFolderItem).warning}</span>
                             </div>
                           )}
                         </div>
