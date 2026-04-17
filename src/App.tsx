@@ -55,6 +55,7 @@ import FeatureManager from "./admin/pages/FeatureManager.tsx";
 import SystemMonitoring from "./admin/pages/SystemMonitoring.tsx";
 import ApiIntegrationsAdmin from "./admin/pages/ApiIntegrationsAdmin.tsx";
 import AssetsManager from "./admin/pages/AssetsManager.tsx";
+import SmartImportPage from "./admin/pages/SmartImportPage.tsx";
 
 const queryClient = new QueryClient();
 
