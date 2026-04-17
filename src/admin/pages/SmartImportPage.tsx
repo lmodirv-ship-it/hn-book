@@ -80,11 +80,13 @@ interface PendingFolderItem {
   id: string;
   folderName: string;
   title: string;
-  previewFile: File | null;
+  previewFile: File | null;        // front (or only) preview image
+  backFile: File | null;           // back image when detected
   sourceFile: File | null;
   extraFiles: File[];
-  previewUrl: string;
-  warning: string | null; // missing source warning
+  previewUrl: string;              // front preview blob url
+  backUrl: string;                 // back preview blob url
+  warning: string | null;
   uploading: boolean;
   progress: number;
 }
@@ -99,7 +101,6 @@ function groupFilesByFolder(files: File[]): Map<string, File[]> {
     const rel: string = f.webkitRelativePath || "";
     if (!rel.includes("/")) continue;
     const parts = rel.split("/");
-    // Use the deepest folder (parent of file) as the asset group
     const folderKey = parts.slice(0, -1).join("/");
     if (!groups.has(folderKey)) groups.set(folderKey, []);
     groups.get(folderKey)!.push(f);
@@ -107,17 +108,36 @@ function groupFilesByFolder(files: File[]): Map<string, File[]> {
   return groups;
 }
 
+const FRONT_RE = /(^|[^a-z])(front|recto|amam|amami|أمام|واجهة)([^a-z]|$)/i;
+const BACK_RE = /(^|[^a-z])(back|verso|khalf|khalfi|خلف|خلفية|ظهر)([^a-z]|$)/i;
+
 function buildFolderItem(folderPath: string, files: File[]): PendingFolderItem | null {
   const folderName = folderPath.split("/").pop() || folderPath;
-  const previewFile =
-    files.find((f) => IMAGE_EXTS.includes(fileExt(f.name))) || null;
-  const sourceFile =
-    files.find((f) => SOURCE_EXTS.includes(fileExt(f.name))) || null;
+  const images = files.filter((f) => IMAGE_EXTS.includes(fileExt(f.name)));
+  const sourceFile = files.find((f) => SOURCE_EXTS.includes(fileExt(f.name))) || null;
+
+  // Detect front/back by filename
+  const frontByName = images.find((f) => FRONT_RE.test(f.name)) || null;
+  const backByName = images.find((f) => BACK_RE.test(f.name)) || null;
+
+  let previewFile: File | null = frontByName;
+  let backFile: File | null = backByName;
+
+  // Fallbacks
+  if (!previewFile) {
+    // pick first image that isn't the back
+    previewFile = images.find((f) => f !== backFile) || null;
+  }
+  if (!previewFile) return null; // skip folders without any preview
+
+  const usedImages = new Set([previewFile, backFile].filter(Boolean) as File[]);
   const extraFiles = files.filter(
-    (f) => f !== previewFile && f !== sourceFile,
+    (f) => !usedImages.has(f) && f !== sourceFile,
   );
 
-  if (!previewFile) return null; // skip folders without preview
+  const warnings: string[] = [];
+  if (!sourceFile) warnings.push("ملف المصدر (EPS/AI) غير موجود");
+  if (!backFile && images.length >= 2) warnings.push("لم يتم تحديد الوجه الخلفي تلقائياً");
 
   return {
     kind: "folder",
@@ -125,10 +145,12 @@ function buildFolderItem(folderPath: string, files: File[]): PendingFolderItem |
     folderName,
     title: folderName.replace(/[-_]+/g, " ").trim(),
     previewFile,
+    backFile,
     sourceFile,
     extraFiles,
     previewUrl: URL.createObjectURL(previewFile),
-    warning: sourceFile ? null : "ملف المصدر (EPS/AI) غير موجود",
+    backUrl: backFile ? URL.createObjectURL(backFile) : "",
+    warning: warnings.length ? warnings.join(" • ") : null,
     uploading: false,
     progress: 0,
   };
