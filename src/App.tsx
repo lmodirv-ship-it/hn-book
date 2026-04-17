@@ -126,6 +126,7 @@ const App = () => (
               <Route path="monitoring" element={<SystemMonitoring />} />
               <Route path="api-integrations" element={<ApiIntegrationsAdmin />} />
               <Route path="assets" element={<AssetsManager />} />
+              <Route path="smart-import" element={<SmartImportPage />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />
