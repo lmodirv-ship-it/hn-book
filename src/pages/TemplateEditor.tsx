@@ -3,9 +3,10 @@ import { useParams, Link, useSearchParams } from "react-router-dom";
 import {
   Loader2, Download, FileImage, RotateCw, ArrowRight, Palette, Upload, X,
   Image as ImageIcon, Printer, Type, Bold, Italic, AlignLeft, AlignCenter,
-  AlignRight, Undo2, Redo2, ZoomIn, ZoomOut, Grid3x3, Minus, Plus, Layers,
+  AlignRight, Undo2, Redo2, ZoomIn, ZoomOut, Grid3x3, Minus, Plus, Layers, Lock,
 } from "lucide-react";
 import { toPng } from "html-to-image";
+import { usePermissions } from "@/hooks/usePermissions";
 import jsPDF from "jspdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
