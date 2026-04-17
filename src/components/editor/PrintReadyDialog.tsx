@@ -264,6 +264,7 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">احتفظ برقم الطلب لتتبع حالة الطباعة</p>
+                <p className="text-base font-bold text-primary mt-3">المبلغ الإجمالي: {grandTotal} د.م</p>
               </div>
             </div>
 
