@@ -249,8 +249,19 @@ const TemplateEditor = () => {
       toast({ title: "🔒 غير مسموح لك بتحميل الملفات", description: "تحتاج إذن export_pdf من المدير.", variant: "destructive" });
       return;
     }
+    if (!billing.canExport("pdf")) {
+      setPaywallOpen("pdf");
+      return;
+    }
     setExporting(true);
     try {
+      const r = await billing.consume("pdf", id ?? null);
+      if (!r.allowed) {
+        setExporting(false);
+        if (r.reason === "insufficient_credits") setPaywallOpen("pdf");
+        else toast({ title: "تعذر التصدير", description: r.reason, variant: "destructive" });
+        return;
+      }
       const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [90, 50] });
       const front = frontRef.current
         ? await toPng(frontRef.current, { pixelRatio: 3, cacheBust: true })
