@@ -140,6 +140,93 @@ export type Database = {
         }
         Relationships: []
       }
+      auto_heal_rules: {
+        Row: {
+          action: string
+          cooldown_seconds: number
+          created_at: string
+          description: string | null
+          enabled: boolean
+          id: string
+          key: string
+          label: string
+          last_triggered_at: string | null
+          threshold: number
+          trigger_metric: string
+          updated_at: string
+        }
+        Insert: {
+          action: string
+          cooldown_seconds?: number
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          key: string
+          label: string
+          last_triggered_at?: string | null
+          threshold?: number
+          trigger_metric: string
+          updated_at?: string
+        }
+        Update: {
+          action?: string
+          cooldown_seconds?: number
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          key?: string
+          label?: string
+          last_triggered_at?: string | null
+          threshold?: number
+          trigger_metric?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      auto_heal_runs: {
+        Row: {
+          action: string | null
+          created_at: string
+          details: Json
+          id: string
+          message: string | null
+          metric: string
+          metric_value: number
+          rule_key: string | null
+          success: boolean
+          threshold: number
+          triggered: boolean
+        }
+        Insert: {
+          action?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          message?: string | null
+          metric: string
+          metric_value?: number
+          rule_key?: string | null
+          success?: boolean
+          threshold?: number
+          triggered?: boolean
+        }
+        Update: {
+          action?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          message?: string | null
+          metric?: string
+          metric_value?: number
+          rule_key?: string | null
+          success?: boolean
+          threshold?: number
+          triggered?: boolean
+        }
+        Relationships: []
+      }
       card_templates: {
         Row: {
           category: string

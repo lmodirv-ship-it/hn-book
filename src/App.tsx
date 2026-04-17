@@ -75,6 +75,7 @@ import StudioTemplates from "./pages/studio/StudioTemplates.tsx";
 import StudioEditor from "./pages/studio/StudioEditor.tsx";
 import StudioAdmin from "./admin/pages/StudioAdmin.tsx";
 import QueueManager from "./admin/pages/QueueManager.tsx";
+import AutoHealCenter from "./admin/pages/AutoHealCenter.tsx";
 
 // Lazy-load the heavy editor and viewer so non-editable assets never pull
 // the full editor bundle (and vice versa).
@@ -183,6 +184,7 @@ const App = () => (
               <Route path="user-permissions" element={<UserPermissionsAdmin />} />
               <Route path="studio" element={<StudioAdmin />} />
               <Route path="queue" element={<QueueManager />} />
+              <Route path="auto-heal" element={<AutoHealCenter />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />
