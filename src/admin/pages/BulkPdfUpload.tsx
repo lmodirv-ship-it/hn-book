@@ -195,31 +195,48 @@ const BulkPdfUpload = () => {
 
   const cfg = TYPE_CONFIG[importType];
 
+  const detectAssetType = (file: File): ImportType => {
+    const ext = file.name.split(".").pop()?.toLowerCase() || "";
+    if (["pdf"].includes(ext) && isBooks) return "books";
+    if (["psd", "ai", "eps", "indd"].includes(ext)) return "cards";
+    if (["svg"].includes(ext)) return "logos";
+    return importType === "books" ? "cards" : importType;
+  };
+
   const addFiles = (selected: File[]) => {
     if (!selected.length) return;
-    if (isBooks) {
-      const pdfs = selected.filter(
-        (f) => f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf")
+    const pdfs: File[] = [];
+    const assets: { file: File; type: ImportType }[] = [];
+
+    for (const f of selected) {
+      const ext = f.name.split(".").pop()?.toLowerCase() || "";
+      if (isBooks && (f.type === "application/pdf" || ext === "pdf")) {
+        pdfs.push(f);
+      } else {
+        assets.push({ file: f, type: isBooks ? detectAssetType(f) : importType });
+      }
+    }
+
+    if (pdfs.length) {
+      booksQ.enqueue(
+        pdfs.map((file) => {
+          const title = cleanFilename(file.name);
+          const { category } = detectCategory(title);
+          return { file, title, category };
+        })
       );
-      const others = selected.filter((f) => !pdfs.includes(f));
-      if (pdfs.length) {
-        booksQ.enqueue(
-          pdfs.map((file) => {
-            const title = cleanFilename(file.name);
-            const { category } = detectCategory(title);
-            return { file, title, category };
-          })
-        );
+    }
+    if (assets.length) {
+      if (isBooks) {
+        const groups = assets.reduce((acc, a) => {
+          acc[a.type] = (acc[a.type] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        const summary = Object.entries(groups).map(([k, v]) => `${v} ${TYPE_CONFIG[k as ImportType].label}`).join(" · ");
+        toast.info(`🔀 توجيه تلقائي: ${summary}`);
       }
-      if (others.length) {
-        toast.info(`${others.length} ملف غير PDF — سيُرفع كأصل عام`);
-        assetsQ.enqueue(
-          others.map((file) => ({ file, title: cleanFilename(file.name), type: "cards" as ImportType }))
-        );
-      }
-    } else {
       assetsQ.enqueue(
-        selected.map((file) => ({ file, title: cleanFilename(file.name), type: importType }))
+        assets.map(({ file, type }) => ({ file, title: cleanFilename(file.name), type }))
       );
     }
   };
