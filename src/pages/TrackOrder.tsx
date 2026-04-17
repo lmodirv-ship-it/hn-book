@@ -36,17 +36,32 @@ export default function TrackOrder() {
     setLoading(true);
     setNotFound(false);
     setOrder(null);
+
+    // Try print orders first (ORD-xxxxxx codes)
+    const code = orderCode.trim();
+    const { data: printOrder } = await supabase
+      .from("print_orders")
+      .select("*")
+      .eq("order_code", code)
+      .maybeSingle();
+    if (printOrder) {
+      setLoading(false);
+      setOrder({ ...printOrder, _kind: "print" });
+      return;
+    }
+
+    // Fallback: book/product orders by order_number
     const { data, error } = await db
       .from("orders")
       .select("*")
-      .eq("order_number", orderCode.trim())
+      .eq("order_number", code)
       .maybeSingle();
     setLoading(false);
     if (error || !data) {
       setNotFound(true);
       return;
     }
-    setOrder(data);
+    setOrder({ ...data, _kind: "book" });
   };
 
   useEffect(() => {
