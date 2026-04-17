@@ -146,7 +146,10 @@ const BACK_RE = /(^|[^a-z])(back|verso|khalf|khalfi|خلف|خلفية|ظهر)([^
 function buildFolderItem(folderPath: string, files: File[]): PendingFolderItem | null {
   const folderName = folderPath.split("/").pop() || folderPath;
   const images = files.filter((f) => IMAGE_EXTS.includes(fileExt(f.name)));
-  const sourceFile = files.find((f) => SOURCE_EXTS.includes(fileExt(f.name))) || null;
+  // Pick a source file but skip unsupported direct uploads (e.g. .cdr).
+  const sourceFile =
+    files.find((f) => SOURCE_EXTS.includes(fileExt(f.name)) && !UNSUPPORTED_DIRECT_EXTS.has(fileExt(f.name))) || null;
+  const hasUnsupportedSource = files.some((f) => UNSUPPORTED_DIRECT_EXTS.has(fileExt(f.name)));
 
   // Detect front/back by filename
   const frontByName = images.find((f) => FRONT_RE.test(f.name)) || null;
