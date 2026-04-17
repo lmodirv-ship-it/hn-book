@@ -22,6 +22,8 @@ import {
 } from "@/services/svgTemplateService";
 import StyledSvgRenderer, { type FieldStyle } from "@/components/editor/StyledSvgRenderer";
 import PrintReadyDialog from "@/components/editor/PrintReadyDialog";
+import { buildPrintReadyPdf } from "@/lib/print-pdf";
+import { communicationsService, applyTemplate } from "@/services/communicationsService";
 
 const FONT_FAMILIES = [
   { value: "Inter, sans-serif", label: "Inter" },
@@ -233,6 +235,57 @@ const TemplateEditor = () => {
     setExporting(false);
   };
 
+  /** Generates a print-ready PDF, downloads it, then opens WhatsApp to the configured print shop. */
+  const sendToPrintShop = async () => {
+    if (!frontRef.current) {
+      toast({ title: "البطاقة غير جاهزة بعد", variant: "destructive" });
+      return;
+    }
+    setExporting(true);
+    try {
+      const wa = await communicationsService.getWhatsApp();
+      if (!wa.enabled || !wa.phone_number) {
+        toast({
+          title: "واتساب غير مُكوَّن",
+          description: "اطلب من المسؤول ضبط رقم المطبعة في إعدادات الاتصالات.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const r = await buildPrintReadyPdf({
+        frontNode: frontRef.current,
+        backNode: hasBack ? backRef.current : null,
+        pageSize: "A4",
+        cutMarks: true,
+        registrationMarks: true,
+        mirrorBack: true,
+        fileName: `${template?.name ?? "carte"}-A4.pdf`,
+      });
+      // Auto-download so the user can attach it on WhatsApp.
+      const a = document.createElement("a");
+      a.href = r.url;
+      a.download = r.fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      const message = applyTemplate(wa.default_message || "🖨️ طلب طباعة بطاقات: {orderNumber}", {
+        orderNumber: template?.name ?? "بطاقة",
+        totalAmount: "",
+        pdfUrl: "",
+      });
+      const cleanPhone = wa.phone_number.replace(/\D/g, "");
+      const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+      toast({ title: "تم تجهيز الطلب ✅", description: "أرفق ملف PDF الذي تم تنزيله في محادثة واتساب." });
+    } catch (e: any) {
+      console.error("[sendToPrintShop]", e);
+      toast({ title: "فشل إرسال الطلب", description: e?.message ?? "خطأ غير معروف", variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-background" dir="rtl">
@@ -283,8 +336,8 @@ const TemplateEditor = () => {
           <Button variant="outline" size="sm" onClick={exportPdf} disabled={exporting} className="gap-1.5">
             {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} PDF
           </Button>
-          <Button size="sm" onClick={() => setPrintOpen(true)} className="gap-1.5">
-            <Printer className="w-4 h-4" /> طباعة
+          <Button size="sm" onClick={sendToPrintShop} disabled={exporting} className="gap-1.5">
+            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />} طباعة
           </Button>
         </div>
 
