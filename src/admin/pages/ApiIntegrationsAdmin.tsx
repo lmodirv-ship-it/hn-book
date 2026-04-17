@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Globe, Plus, RefreshCw, Loader2, Trash2, Edit3, Save, X,
-  CheckCircle2, XCircle, KeyRound, Eye, EyeOff, Shield,
+  CheckCircle2, XCircle, KeyRound, Eye, EyeOff, Shield, Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -153,6 +153,52 @@ const ApiIntegrationsAdmin = () => {
     } catch { toast.error("فشل الحذف"); }
   };
 
+  const [testingId, setTestingId] = useState<string | null>(null);
+  const [formTesting, setFormTesting] = useState(false);
+  const [formTestResult, setFormTestResult] = useState<null | {
+    ok: boolean; message: string;
+  }>(null);
+
+  const describeResult = (r: Awaited<ReturnType<typeof integrationsService.testConnection>>) => {
+    if (r.ok) return `نجح الاتصال (${r.status ?? 200})`;
+    if (r.stage === "validation") return r.error ?? "بيانات غير صالحة";
+    if (r.stage === "secret") return r.error ?? "السر غير موجود";
+    if (r.status && r.status >= 400) return `فشل (${r.status}) ${r.snippet ? "— " + r.snippet.slice(0, 80) : ""}`;
+    return r.error || r.snippet || "تعذّر الوصول إلى الرابط";
+  };
+
+  const testRow = async (api: ApiIntegration) => {
+    setTestingId(api.id);
+    try {
+      const result = await integrationsService.testConnection({ id: api.id });
+      const msg = describeResult(result);
+      result.ok ? toast.success(msg) : toast.error(msg);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "فشل الاختبار");
+    } finally {
+      setTestingId(null);
+    }
+  };
+
+  const testForm = async () => {
+    if (!form.base_url.trim()) { toast.error("الرابط الأساسي مطلوب"); return; }
+    setFormTesting(true);
+    setFormTestResult(null);
+    try {
+      const result = await integrationsService.testConnection({
+        base_url: form.base_url.trim(),
+        secret_ref: form.secret_ref?.trim() || undefined,
+        api_key_name: form.api_key_name?.trim() || undefined,
+      });
+      setFormTestResult({ ok: result.ok, message: describeResult(result) });
+    } catch (e: unknown) {
+      setFormTestResult({ ok: false, message: e instanceof Error ? e.message : "فشل الاختبار" });
+    } finally {
+      setFormTesting(false);
+    }
+  };
+
+
   if (loading) {
     return <div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
@@ -253,6 +299,18 @@ const ApiIntegrationsAdmin = () => {
                     </td>
                     <td className="p-3">
                       <div className="flex items-center justify-end gap-1">
+                        <Button
+                          size="sm" variant="ghost"
+                          className="h-8 px-2 gap-1 text-xs"
+                          onClick={() => testRow(api)}
+                          disabled={testingId === api.id}
+                          title="اختبار الاتصال"
+                        >
+                          {testingId === api.id
+                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            : <Zap className="w-3.5 h-3.5" />}
+                          اختبار
+                        </Button>
                         <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEdit(api)}>
                           <Edit3 className="w-4 h-4" />
                         </Button>
@@ -331,7 +389,26 @@ const ApiIntegrationsAdmin = () => {
             </div>
           </div>
 
-          <DialogFooter>
+          {formTestResult && (
+            <div
+              className={`rounded-lg border p-3 text-xs ${
+                formTestResult.ok
+                  ? "border-green-500/40 bg-green-500/10 text-green-600 dark:text-green-400"
+                  : "border-destructive/40 bg-destructive/10 text-destructive"
+              }`}
+            >
+              {formTestResult.message}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              variant="outline" onClick={testForm} disabled={formTesting || saving}
+              className="me-auto"
+            >
+              {formTesting ? <Loader2 className="w-4 h-4 ml-1 animate-spin" /> : <Zap className="w-4 h-4 ml-1" />}
+              اختبار الاتصال
+            </Button>
             <Button variant="ghost" onClick={() => setOpen(false)} disabled={saving}>
               <X className="w-4 h-4 ml-1" /> إلغاء
             </Button>
