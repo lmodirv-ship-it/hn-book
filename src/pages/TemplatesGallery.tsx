@@ -1,16 +1,17 @@
 /**
- * /templates — unified asset gallery.
- * Lists all assets from the `assets` table with type/category filters and search.
- * Each card shows type-aware actions (edit / order / view / download) based on the registry.
+ * /templates — premium asset gallery.
+ * Black & gold theme, sectioned layout (Featured / New / Popular), hover overlays
+ * with Edit / Order actions, dropdown filter, and CTA header.
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Loader2, Download, Edit3, Eye, Printer } from "lucide-react";
+import { Search, Loader2, Edit3, Printer, Sparkles, Flame, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card } from "@/components/ui/card";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import {
@@ -21,18 +22,17 @@ import {
   type AssetType,
   type AssetCategory,
 } from "@/services/assetService";
-import { getCapabilities, getRouteFor } from "@/lib/asset-registry";
+import { getRouteFor } from "@/lib/asset-registry";
 
 type CategoryFilter = AssetCategory | "all";
-
-const ACTION_ICONS = { edit: Edit3, order: Printer, view: Eye, download: Download } as const;
+type TypeFilter = AssetType | "all";
 
 const TemplatesGallery = () => {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<CategoryFilter>("all");
-  const [type, setType] = useState<AssetType | "all">("all");
+  const [type, setType] = useState<TypeFilter>("all");
 
   useEffect(() => {
     let cancelled = false;
@@ -58,7 +58,19 @@ const TemplatesGallery = () => {
     });
   }, [assets, search, category, type]);
 
-  // Types available within the current category filter
+  // Derive sections from the filtered set (no schema changes needed)
+  const featured = useMemo(() => filtered.slice(0, 8), [filtered]);
+  const newItems = useMemo(
+    () => [...filtered].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at)).slice(0, 8),
+    [filtered],
+  );
+  const popular = useMemo(() => {
+    // Heuristic until a real popularity metric exists: stable hash on id.
+    return [...filtered]
+      .sort((a, b) => (a.id < b.id ? 1 : -1))
+      .slice(0, 8);
+  }, [filtered]);
+
   const visibleTypes = useMemo<AssetType[]>(() => {
     return (Object.keys(ASSET_TYPE_META) as AssetType[]).filter((t) =>
       category === "all" ? true : ASSET_TYPE_META[t].category === category,
@@ -69,69 +81,96 @@ const TemplatesGallery = () => {
     <div className="min-h-screen bg-background flex flex-col" dir="rtl">
       <Navbar />
 
-      <main className="flex-1 container mx-auto px-4 py-8 space-y-6">
-        <header className="space-y-2">
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground">معرض القوالب والأصول</h1>
-          <p className="text-muted-foreground">تصفح وحرّر أو حمّل التصاميم والوسائط والوثائق المتاحة.</p>
-        </header>
-
-        {/* Search + category tabs */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="relative max-w-md w-full">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="ابحث بالاسم أو الكود..."
-              className="pr-10"
-            />
+      <main className="flex-1">
+        {/* Premium hero */}
+        <section className="relative overflow-hidden border-b border-border/40">
+          <div
+            className="absolute inset-0 opacity-[0.07]"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 20% 20%, hsl(var(--primary)) 0, transparent 40%), radial-gradient(circle at 80% 60%, hsl(var(--primary)) 0, transparent 35%)",
+            }}
+          />
+          <div className="relative container mx-auto px-4 py-14 md:py-20 text-center space-y-5">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/40 bg-primary/10 text-primary text-[11px] font-medium tracking-wide">
+              <Sparkles className="w-3 h-3" /> HN Studio · Premium Templates
+            </div>
+            <h1 className="text-4xl md:text-6xl font-semibold text-foreground">
+              معرض القوالب <span className="text-primary">الذهبية</span>
+            </h1>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              تصاميم احترافية جاهزة للتعديل والطباعة. ابدأ مشروعك خلال دقائق.
+            </p>
+            <div className="flex justify-center gap-3 pt-2">
+              <Button asChild size="lg" className="gap-2 shadow-lg shadow-primary/20">
+                <Link to="/studio/templates">
+                  <Sparkles className="w-4 h-4" /> ابدأ التصميم
+                </Link>
+              </Button>
+            </div>
           </div>
+        </section>
 
-          <Tabs value={category} onValueChange={(v) => { setCategory(v as CategoryFilter); setType("all"); }}>
-            <TabsList>
-              <TabsTrigger value="all">الكل</TabsTrigger>
-              {(Object.keys(ASSET_CATEGORIES) as AssetCategory[]).map((c) => (
-                <TabsTrigger key={c} value={c}>{ASSET_CATEGORIES[c]}</TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        </div>
+        {/* Filters */}
+        <section className="container mx-auto px-4 pt-8 pb-2">
+          <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="ابحث بالاسم أو الكود..."
+                className="pr-10 h-11 bg-card/60 border-border/60"
+              />
+            </div>
 
-        {/* Type chips */}
-        <div className="flex flex-wrap gap-2">
-          <Badge
-            variant={type === "all" ? "default" : "secondary"}
-            className="cursor-pointer"
-            onClick={() => setType("all")}
-          >
-            كل الأنواع
-          </Badge>
-          {visibleTypes.map((t) => (
-            <Badge
-              key={t}
-              variant={type === t ? "default" : "secondary"}
-              className="cursor-pointer gap-1"
-              onClick={() => setType(t)}
-            >
-              <span>{ASSET_TYPE_META[t].emoji}</span> {ASSET_TYPE_META[t].label}
-            </Badge>
-          ))}
-        </div>
+            <div className="flex gap-2 md:gap-3">
+              <Select
+                value={category}
+                onValueChange={(v) => { setCategory(v as CategoryFilter); setType("all"); }}
+              >
+                <SelectTrigger className="h-11 min-w-[160px] bg-card/60 border-border/60">
+                  <SelectValue placeholder="الفئة" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">كل الفئات</SelectItem>
+                  {(Object.keys(ASSET_CATEGORIES) as AssetCategory[]).map((c) => (
+                    <SelectItem key={c} value={c}>{ASSET_CATEGORIES[c]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-        {/* Grid */}
+              <Select value={type} onValueChange={(v) => setType(v as TypeFilter)}>
+                <SelectTrigger className="h-11 min-w-[160px] bg-card/60 border-border/60">
+                  <SelectValue placeholder="النوع" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">كل الأنواع</SelectItem>
+                  {visibleTypes.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {ASSET_TYPE_META[t].emoji} {ASSET_TYPE_META[t].label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </section>
+
+        {/* Sections */}
         {loading ? (
-          <div className="flex justify-center py-16">
+          <div className="flex justify-center py-24">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : filtered.length === 0 ? (
-          <Card className="py-16 text-center text-muted-foreground">
+          <Card className="container mx-auto my-16 py-16 text-center text-muted-foreground bg-card/40">
             لا توجد عناصر مطابقة.
           </Card>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filtered.map((a) => (
-              <AssetGridCard key={a.id} asset={a} />
-            ))}
+          <div className="container mx-auto px-4 py-10 space-y-14">
+            <SectionRow title="القوالب المميزة" icon={Sparkles} items={featured} />
+            <SectionRow title="جديدنا" icon={Clock} items={newItems} />
+            <SectionRow title="الأكثر طلبًا" icon={Flame} items={popular} />
           </div>
         )}
       </main>
@@ -141,62 +180,71 @@ const TemplatesGallery = () => {
   );
 };
 
-const AssetGridCard = ({ asset }: { asset: Asset }) => {
-  const cap = getCapabilities(asset.asset_type);
+const SectionRow = ({
+  title, icon: Icon, items,
+}: { title: string; icon: typeof Sparkles; items: Asset[] }) => {
+  if (items.length === 0) return null;
+  return (
+    <section className="space-y-5">
+      <div className="flex items-center gap-2.5">
+        <Icon className="w-5 h-5 text-primary" />
+        <h2 className="text-2xl md:text-3xl font-semibold text-foreground">{title}</h2>
+        <span className="h-px flex-1 bg-gradient-to-l from-transparent via-primary/30 to-transparent ms-3" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        {items.map((a) => <PremiumCard key={a.id} asset={a} />)}
+      </div>
+    </section>
+  );
+};
+
+const PremiumCard = ({ asset }: { asset: Asset }) => {
   const meta = ASSET_TYPE_META[asset.asset_type];
-  const primaryHref = getRouteFor(asset.asset_type, asset.id);
+  const editHref = getRouteFor(asset.asset_type, asset.id);
 
   return (
-    <Card className="overflow-hidden group hover:border-primary/40 transition">
-      <Link to={primaryHref} className="block aspect-[4/3] bg-muted relative overflow-hidden">
-        <img
-          src={asset.image_url}
-          alt={asset.title}
-          loading="lazy"
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-        />
-        <Badge className="absolute top-2 right-2 gap-1" variant="secondary">
-          <span>{meta.emoji}</span> {meta.label}
-        </Badge>
-      </Link>
-      <CardContent className="p-3 space-y-2">
-        <div>
-          <h3 className="font-semibold text-sm line-clamp-1 text-foreground">{asset.title}</h3>
-          {asset.code && <p className="text-[10px] text-muted-foreground font-mono">{asset.code}</p>}
+    <div className="group relative">
+      {/* Subtle gold glow on hover */}
+      <div className="absolute -inset-px rounded-xl bg-gradient-to-br from-primary/0 via-primary/0 to-primary/0 group-hover:from-primary/40 group-hover:to-primary/10 transition-all duration-500 blur-sm" />
+
+      <div className="relative rounded-xl overflow-hidden bg-card border border-border/60 group-hover:border-primary/50 transition-all duration-300">
+        <div className="relative aspect-[4/5] overflow-hidden bg-muted">
+          <img
+            src={asset.image_url}
+            alt={asset.title}
+            loading="lazy"
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+          />
+
+          {/* Type chip */}
+          <div className="absolute top-3 right-3 px-2 py-1 rounded-md bg-background/80 backdrop-blur text-[10px] font-medium text-foreground border border-border/60">
+            <span className="me-1">{meta.emoji}</span>{meta.label}
+          </div>
+
+          {/* Hover overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 gap-2">
+            <Button asChild size="sm" className="w-full gap-1.5 shadow-lg shadow-primary/30">
+              <Link to={editHref}>
+                <Edit3 className="w-3.5 h-3.5" /> تعديل التصميم
+              </Link>
+            </Button>
+            <Button asChild size="sm" variant="outline" className="w-full gap-1.5 border-primary/40 text-foreground hover:bg-primary/10">
+              <Link to={editHref}>
+                <Printer className="w-3.5 h-3.5" /> اطلب الطباعة
+              </Link>
+            </Button>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {cap.actions.map((action) => {
-            const Icon = ACTION_ICONS[action];
-            // Edit/order/view all route to the primary entry; download links to file_url if present.
-            if (action === "download" && asset.file_url) {
-              return (
-                <Button key={action} asChild size="sm" variant="outline" className="h-7 text-xs gap-1 flex-1 min-w-[80px]">
-                  <a href={asset.file_url} target="_blank" rel="noopener noreferrer" download>
-                    <Icon className="w-3 h-3" /> تحميل
-                  </a>
-                </Button>
-              );
-            }
-            const labels: Record<typeof action, string> = {
-              edit: "تعديل", order: "اطلب طباعة", view: "عرض", download: "تحميل",
-            };
-            return (
-              <Button
-                key={action}
-                asChild
-                size="sm"
-                variant={action === "edit" || action === "order" ? "default" : "outline"}
-                className="h-7 text-xs gap-1 flex-1 min-w-[80px]"
-              >
-                <Link to={primaryHref}>
-                  <Icon className="w-3 h-3" /> {labels[action]}
-                </Link>
-              </Button>
-            );
-          })}
+
+        {/* Title */}
+        <div className="px-4 py-3 text-center">
+          <h3 className="text-sm font-medium text-foreground line-clamp-1">{asset.title}</h3>
+          {asset.code && (
+            <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5">{asset.code}</p>
+          )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
