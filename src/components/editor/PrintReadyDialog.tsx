@@ -120,6 +120,7 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
         city: city.trim(),
         delivery_option: deliveryOption,
         shipping_fee: shippingFee,
+        total_price: grandTotal,
         pdf_url: pdfUrl,
         template_design: designData ?? {},
         notes: note,
