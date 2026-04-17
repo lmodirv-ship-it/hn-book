@@ -207,6 +207,7 @@ export default function AssetsManager() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -271,8 +272,8 @@ export default function AssetsManager() {
             </TableHeader>
             <TableBody>
               {assets.map((a) => (
-                <TableRow key={a.id}>
-                  <TableCell>
+                <TableRow key={a.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setDetailAsset(a)}>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <img src={a.image_url} alt={a.title} className="w-12 h-12 rounded object-cover" />
                   </TableCell>
                   <TableCell className="font-mono text-xs">{a.code}</TableCell>
