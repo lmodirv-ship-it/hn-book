@@ -25,6 +25,7 @@ const ALL_TYPES = Object.keys(ASSET_TYPE_META) as AssetType[];
 
 export default function AssetsManager() {
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [templateMap, setTemplateMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState<AssetCategory | "all">("all");
