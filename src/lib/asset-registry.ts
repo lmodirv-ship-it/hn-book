@@ -53,15 +53,22 @@ export const ASSET_CAPABILITIES: Record<AssetType, AssetCapabilities> = {
   // Design — editable
   CRD: { ...DESIGN_FULL, hasBackSide: true, printable: true, actions: ["edit", "order", "download"] },
   TPL: { ...DESIGN_FULL },
-  FLY: { ...DESIGN_FULL },
-  PST: { ...DESIGN_FULL },
+  FLY: { ...DESIGN_FULL, printable: true, actions: ["edit", "order", "download"] },
+  PST: { ...DESIGN_FULL, printable: true, actions: ["edit", "order", "download"] },
   LOG: { ...DESIGN_FULL, exportFormats: ["png", "svg"] },
+  TSH: { ...DESIGN_FULL, printable: true, actions: ["edit", "order", "download"] },
+  RES: { ...DESIGN_FULL },
+  THM: { ...VIEW_ONLY, actions: ["view", "download"] },
+  ICN: { ...VIEW_ONLY, exportFormats: ["png", "svg"] },
   // Media — view + download
   IMG: { ...VIEW_ONLY },
   ART: { ...VIEW_ONLY },
+  VFX: { ...VIEW_ONLY, actions: ["view", "download"] },
+  PRE: { ...VIEW_ONLY, actions: ["view", "download"] },
+  // Fonts — download only
+  FNT: { ...VIEW_ONLY, actions: ["download"] },
   // Documents — view + download
   DOC: { ...DOC_VIEW },
-  PRE: { ...DOC_VIEW },
   LST: { ...DOC_VIEW },
   // Other — basic display
   OTH: { ...VIEW_ONLY, actions: ["view"] },
