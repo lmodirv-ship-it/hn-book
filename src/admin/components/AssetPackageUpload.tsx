@@ -14,7 +14,21 @@ const ASSET_TYPES = [
   { value: "PST", label: "🖼️ ملصق (PST)" },
   { value: "LOG", label: "🎨 شعار (LOG)" },
   { value: "TPL", label: "🧩 قالب عام (TPL)" },
+  { value: "TSH", label: "👕 تيشيرت (TSH)" },
+  { value: "RES", label: "📋 سيرة ذاتية (RES)" },
+  { value: "THM", label: "🌐 ثيم/موقع (THM)" },
+  { value: "ICN", label: "✨ أيقونات (ICN)" },
+  { value: "FNT", label: "🔤 خطوط (FNT)" },
+  { value: "PRE", label: "🎞️ بريسيت (PRE)" },
+  { value: "VFX", label: "🎬 مؤثرات فيديو (VFX)" },
+  { value: "IMG", label: "📷 صور ستوك (IMG)" },
   { value: "DOC", label: "📄 وثيقة (DOC)" },
+];
+
+const MODES = [
+  { value: "auto", label: "🧠 تلقائي (يكتشف النوع)" },
+  { value: "single", label: "📦 عنصر واحد (مجلد واحد = أصل)" },
+  { value: "mega", label: "🗂️ أرشيف ضخم (يقسّم لعدة أصول)" },
 ];
 
 interface Props {
