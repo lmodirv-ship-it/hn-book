@@ -41,24 +41,26 @@ const PAGES: Record<PageSize, { w: number; h: number }> = {
   A3: { w: 297, h: 420 },
 };
 
-/** Layout: portrait sheets — A4 = 2×5 (10/page), A3 = 4×5 (20/page). */
+/** Fixed layout — A4 = 2×5 (10/page), A3 = 4×5 (20/page). */
+const FIXED_GRID: Record<PageSize, { cols: number; rows: number }> = {
+  A4: { cols: 2, rows: 5 },
+  A3: { cols: 4, rows: 5 },
+};
+
 export function computeLayout(pageSize: PageSize): PrintLayoutInfo {
   const { w: pageWidth, h: pageHeight } = PAGES[pageSize];
   const bleedWidth = CARD_W + 2 * BLEED;   // 91
   const bleedHeight = CARD_H + 2 * BLEED;  // 61
+  const { cols, rows } = FIXED_GRID[pageSize];
 
-  // Densest grid that respects MIN_PAGE_MARGIN on all sides.
-  const cols = Math.max(
-    1,
-    Math.floor((pageWidth - 2 * MIN_PAGE_MARGIN + GAP) / (bleedWidth + GAP)),
-  );
-  const rows = Math.max(
-    1,
-    Math.floor((pageHeight - 2 * MIN_PAGE_MARGIN + GAP) / (bleedHeight + GAP)),
-  );
+  // Pick the largest gap that still fits the fixed grid (>=2mm), then center.
+  const maxGapX = cols > 1 ? (pageWidth - 2 * MIN_PAGE_MARGIN - cols * bleedWidth) / (cols - 1) : 0;
+  const maxGapY = rows > 1 ? (pageHeight - 2 * MIN_PAGE_MARGIN - rows * bleedHeight) / (rows - 1) : 0;
+  const gapX = Math.max(2, Math.min(GAP, maxGapX));
+  const gapY = Math.max(2, Math.min(GAP, maxGapY));
 
-  const usedW = cols * bleedWidth + (cols - 1) * GAP;
-  const usedH = rows * bleedHeight + (rows - 1) * GAP;
+  const usedW = cols * bleedWidth + (cols - 1) * gapX;
+  const usedH = rows * bleedHeight + (rows - 1) * gapY;
   const marginX = (pageWidth - usedW) / 2;
   const marginY = (pageHeight - usedH) / 2;
 
@@ -75,8 +77,8 @@ export function computeLayout(pageSize: PageSize): PrintLayoutInfo {
     perPage: cols * rows,
     marginX,
     marginY,
-    gapX: GAP,
-    gapY: GAP,
+    gapX,
+    gapY,
     bleed: BLEED,
     safeMargin: SAFE,
   };
