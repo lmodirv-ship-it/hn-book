@@ -328,6 +328,45 @@ export type Database = {
         }
         Relationships: []
       }
+      digital_assets: {
+        Row: {
+          asset_type: string
+          category: string
+          created_at: string
+          description: string | null
+          file_url: string | null
+          id: string
+          image_url: string
+          is_active: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          asset_type?: string
+          category?: string
+          created_at?: string
+          description?: string | null
+          file_url?: string | null
+          id?: string
+          image_url: string
+          is_active?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          asset_type?: string
+          category?: string
+          created_at?: string
+          description?: string | null
+          file_url?: string | null
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       feature_flags: {
         Row: {
           category: string
