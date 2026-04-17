@@ -197,6 +197,10 @@ const TemplateEditor = () => {
 
   // Exports
   const exportPng = async () => {
+    if (!canExportPng) {
+      toast({ title: "🔒 غير مسموح لك بتحميل الملفات", description: "تحتاج إذن export_png من المدير.", variant: "destructive" });
+      return;
+    }
     setExporting(true);
     try {
       const sides: Array<{ ref: HTMLDivElement | null; label: string }> = [
