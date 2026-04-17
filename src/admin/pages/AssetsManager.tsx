@@ -284,6 +284,13 @@ export default function AssetsManager() {
                   </TableCell>
                   <TableCell className="text-end">
                     <div className="flex justify-end gap-1">
+                      {a.asset_type === "CRD" && templateMap[a.id] && (
+                        <Link to={`/editor/${templateMap[a.id]}`}>
+                          <Button size="icon" variant="ghost" title="تعديل التصميم">
+                            <Pencil className="w-4 h-4 text-primary" />
+                          </Button>
+                        </Link>
+                      )}
                       <Button size="icon" variant="ghost" onClick={() => handleToggle(a)}>
                         {a.is_active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </Button>
