@@ -55,6 +55,7 @@ import FeatureManager from "./admin/pages/FeatureManager.tsx";
 import SystemMonitoring from "./admin/pages/SystemMonitoring.tsx";
 import ApiIntegrationsAdmin from "./admin/pages/ApiIntegrationsAdmin.tsx";
 import AssetsManager from "./admin/pages/AssetsManager.tsx";
+import SmartImportPage from "./admin/pages/SmartImportPage.tsx";
 
 const queryClient = new QueryClient();
 
@@ -125,6 +126,7 @@ const App = () => (
               <Route path="monitoring" element={<SystemMonitoring />} />
               <Route path="api-integrations" element={<ApiIntegrationsAdmin />} />
               <Route path="assets" element={<AssetsManager />} />
+              <Route path="smart-import" element={<SmartImportPage />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />
