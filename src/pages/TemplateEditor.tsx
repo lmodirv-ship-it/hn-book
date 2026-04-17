@@ -48,6 +48,9 @@ const TemplateEditor = () => {
   const [searchParams] = useSearchParams();
   const fromStudio = searchParams.get("from") === "studio";
   const backHref = fromStudio ? "/studio/templates" : "/admin/svg-templates";
+  const { has: hasPermission, loading: permsLoading } = usePermissions();
+  const canExportPng = !permsLoading && hasPermission("export_png");
+  const canExportPdf = !permsLoading && hasPermission("export_pdf");
   const [template, setTemplate] = useState<SvgTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
