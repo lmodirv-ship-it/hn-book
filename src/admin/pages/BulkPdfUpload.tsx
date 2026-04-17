@@ -42,28 +42,28 @@ const TYPE_CONFIG: Record<ImportType, {
   imageField: string;
 }> = {
   books: {
-    label: "الكتب (PDF)",
+    label: "الكتب",
     icon: BookOpen,
-    accept: ".pdf,application/pdf",
-    hint: "ملفات PDF — يتم توليد غلاف تلقائياً",
+    accept: "*/*",
+    hint: "PDF, DOCX, EPUB, TXT, ZIP — يُولَّد غلاف تلقائياً",
     bucket: "book-files",
-    table: "card_templates", // unused for books
+    table: "card_templates",
     imageField: "image",
   },
   cards: {
     label: "البطاقات",
     icon: CreditCard,
-    accept: "image/*",
-    hint: "صور تصاميم البطاقات",
+    accept: "*/*",
+    hint: "صور, PDF, SVG, AI, PSD — جميع الصيغ",
     bucket: "book-images",
     table: "card_templates",
     imageField: "image_url",
   },
   tablous: {
-    label: "اللوحات (Tablous)",
+    label: "اللوحات",
     icon: ImageIcon,
-    accept: "image/*",
-    hint: "صور اللوحات والإطارات",
+    accept: "*/*",
+    hint: "صور, PDF, PSD, TIFF — جميع الصيغ",
     bucket: "book-images",
     table: "tablous",
     imageField: "image_url",
@@ -71,8 +71,8 @@ const TYPE_CONFIG: Record<ImportType, {
   logos: {
     label: "الشعارات",
     icon: Award,
-    accept: "image/*,.svg",
-    hint: "صور الشعارات (SVG/PNG)",
+    accept: "*/*",
+    hint: "SVG, PNG, AI, PDF — جميع الصيغ",
     bucket: "book-images",
     table: "logos",
     imageField: "image_url",
@@ -196,23 +196,30 @@ const BulkPdfUpload = () => {
   const cfg = TYPE_CONFIG[importType];
 
   const addFiles = (selected: File[]) => {
+    if (!selected.length) return;
     if (isBooks) {
       const pdfs = selected.filter(
         (f) => f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf")
       );
-      if (!pdfs.length) { toast.error("يرجى اختيار ملفات PDF فقط"); return; }
-      booksQ.enqueue(
-        pdfs.map((file) => {
-          const title = cleanFilename(file.name);
-          const { category } = detectCategory(title);
-          return { file, title, category };
-        })
-      );
+      const others = selected.filter((f) => !pdfs.includes(f));
+      if (pdfs.length) {
+        booksQ.enqueue(
+          pdfs.map((file) => {
+            const title = cleanFilename(file.name);
+            const { category } = detectCategory(title);
+            return { file, title, category };
+          })
+        );
+      }
+      if (others.length) {
+        toast.info(`${others.length} ملف غير PDF — سيُرفع كأصل عام`);
+        assetsQ.enqueue(
+          others.map((file) => ({ file, title: cleanFilename(file.name), type: "cards" as ImportType }))
+        );
+      }
     } else {
-      const imgs = selected.filter((f) => f.type.startsWith("image/") || f.name.toLowerCase().endsWith(".svg"));
-      if (!imgs.length) { toast.error("يرجى اختيار صور فقط"); return; }
       assetsQ.enqueue(
-        imgs.map((file) => ({ file, title: cleanFilename(file.name), type: importType }))
+        selected.map((file) => ({ file, title: cleanFilename(file.name), type: importType }))
       );
     }
   };
