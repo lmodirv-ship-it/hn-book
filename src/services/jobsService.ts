@@ -80,13 +80,63 @@ export const jobsService = {
     return res.job as Job;
   },
 
-  list: async (filter?: { status?: JobStatus; type?: JobType; limit?: number }): Promise<Job[]> => {
+  list: async (filter?: { status?: JobStatus | "retrying"; type?: JobType; limit?: number }): Promise<Job[]> => {
     let q = supabase.from("jobs" as any).select("*").order("created_at", { ascending: false });
-    if (filter?.status) q = q.eq("status", filter.status);
+    // "retrying" = pending jobs with attempts > 0
+    if (filter?.status === "retrying") {
+      q = q.eq("status", "pending").gt("attempts", 0);
+    } else if (filter?.status) {
+      q = q.eq("status", filter.status);
+    }
     if (filter?.type) q = q.eq("type", filter.type);
     q = q.limit(filter?.limit ?? 100);
     const { data, error } = await q;
     if (error) throw new Error(error.message);
     return (data || []) as unknown as Job[];
+  },
+
+  // Manually revive a dead job (resets attempts, requeues)
+  reviveDead: async (jobId: string): Promise<void> => {
+    const { error } = await supabase
+      .from("jobs" as any)
+      .update({
+        status: "pending",
+        error: null,
+        attempts: 0,
+        scheduled_at: new Date().toISOString(),
+        started_at: null,
+        completed_at: null,
+        last_notified_at: null,
+      })
+      .eq("id", jobId);
+    if (error) throw new Error(error.message);
+  },
+
+  // Per-job attempt history
+  attempts: async (jobId: string): Promise<JobAttempt[]> => {
+    const { data, error } = await supabase
+      .from("job_attempts" as any)
+      .select("*")
+      .eq("job_id", jobId)
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(error.message);
+    return (data || []) as unknown as JobAttempt[];
+  },
+
+  // Retry policies (per type)
+  listPolicies: async (): Promise<JobRetryPolicy[]> => {
+    const { data, error } = await supabase
+      .from("job_retry_policies" as any)
+      .select("*")
+      .order("job_type");
+    if (error) throw new Error(error.message);
+    return (data || []) as unknown as JobRetryPolicy[];
+  },
+
+  upsertPolicy: async (p: Pick<JobRetryPolicy, "job_type" | "max_attempts" | "backoff_seconds" | "enabled">): Promise<void> => {
+    const { error } = await supabase
+      .from("job_retry_policies" as any)
+      .upsert(p, { onConflict: "job_type" });
+    if (error) throw new Error(error.message);
   },
 };
