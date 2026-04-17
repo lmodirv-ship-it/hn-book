@@ -350,6 +350,23 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
               </div>
             </div>
 
+            {/* Price summary */}
+            <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-3 space-y-1.5 text-sm">
+              <div className="flex justify-between text-muted-foreground">
+                <span>الطباعة ({quantity} × {pageSize} · {printType === "double_side" ? "وجهين" : "وجه واحد"})</span>
+                <span className="font-medium text-foreground">{printSubtotal} د.م</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>الشحن ({deliveryOption === "express" ? "سريع" : "عادي"})</span>
+                <span className="font-medium text-foreground">{shippingFee} د.م</span>
+              </div>
+              <div className="h-px bg-border my-1" />
+              <div className="flex justify-between items-baseline">
+                <span className="font-bold text-foreground">المجموع الكلي</span>
+                <span className="text-xl font-bold text-primary">{grandTotal} <span className="text-xs">د.م</span></span>
+              </div>
+            </div>
+
             <DialogFooter>
               <Button variant="ghost" onClick={download}>
                 تحميل PDF فقط
