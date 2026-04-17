@@ -33,6 +33,9 @@ const SAFE = 3;           // mm inner safe area
 const GAP = 5;            // mm between cards (room for crop marks)
 const MIN_PAGE_MARGIN = 8; // mm minimum outer margin
 
+export type ColorMode = "RGB" | "CMYK_SIM";
+export type PaperFinish = "none" | "glossy" | "matte";
+
 const PAGES: Record<PageSize, { w: number; h: number }> = {
   A4: { w: 210, h: 297 },
   A3: { w: 297, h: 420 },
@@ -105,9 +108,42 @@ function cloneSvgForExport(svg: SVGSVGElement): SVGSVGElement {
   return clone;
 }
 
-/** High-res PNG fallback (~600 DPI) for nodes without an inline SVG. */
-async function nodeToHiResPng(node: HTMLElement): Promise<string> {
-  return toPng(node, { pixelRatio: 6, cacheBust: true, backgroundColor: "#ffffff" });
+/** High-res PNG fallback (~600 DPI) for nodes without an inline SVG.
+ *  Optionally simulates CMYK gamut by clamping out-of-gamut sRGB values. */
+async function nodeToHiResPng(node: HTMLElement, colorMode: ColorMode): Promise<string> {
+  const dataUrl = await toPng(node, { pixelRatio: 6, cacheBust: true, backgroundColor: "#ffffff" });
+  if (colorMode !== "CMYK_SIM") return dataUrl;
+  return simulateCmykOnPng(dataUrl);
+}
+
+/** Approximate CMYK gamut by reducing saturation ~12% and clamping pure RGB primaries. */
+async function simulateCmykOnPng(dataUrl: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const c = document.createElement("canvas");
+        c.width = img.width; c.height = img.height;
+        const ctx = c.getContext("2d");
+        if (!ctx) return resolve(dataUrl);
+        ctx.drawImage(img, 0, 0);
+        const data = ctx.getImageData(0, 0, c.width, c.height);
+        const d = data.data;
+        for (let i = 0; i < d.length; i += 4) {
+          const r = d[i], g = d[i + 1], b = d[i + 2];
+          const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+          // 12% desaturate toward luminance — common print-gamut approximation
+          d[i]     = Math.round(r * 0.88 + gray * 0.12);
+          d[i + 1] = Math.round(g * 0.88 + gray * 0.12);
+          d[i + 2] = Math.round(b * 0.88 + gray * 0.12);
+        }
+        ctx.putImageData(data, 0, 0);
+        resolve(c.toDataURL("image/png", 1.0));
+      } catch (e) { reject(e); }
+    };
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
 }
 
 /**
@@ -121,12 +157,12 @@ async function drawCard(
   x: number,
   y: number,
   layout: PrintLayoutInfo,
+  colorMode: ColorMode,
 ): Promise<void> {
   const svg = findSvg(node);
-  if (svg) {
+  if (svg && colorMode !== "CMYK_SIM") {
     try {
       const clone = cloneSvgForExport(svg);
-      // Place SVG at trim coordinates inside the bleed box.
       await svg2pdf(clone, pdf, {
         x: x + layout.bleed,
         y: y + layout.bleed,
@@ -135,11 +171,11 @@ async function drawCard(
       });
       return;
     } catch (err) {
-      // Fall through to raster fallback.
       console.warn("[print-pdf] vector export failed, using raster fallback", err);
     }
   }
-  const png = await nodeToHiResPng(node);
+  // CMYK simulation requires pixel-level color work — forces raster path.
+  const png = await nodeToHiResPng(node, colorMode);
   pdf.addImage(
     png,
     "PNG",
@@ -150,6 +186,25 @@ async function drawCard(
     undefined,
     "SLOW",
   );
+}
+
+/** Subtle finish simulation overlay — gloss = top highlight, matte = soft tint. */
+function drawFinishOverlay(pdf: jsPDF, x: number, y: number, layout: PrintLayoutInfo, finish: PaperFinish) {
+  if (finish === "none") return;
+  const tx = x + layout.bleed;
+  const ty = y + layout.bleed;
+  const tw = layout.cardWidth;
+  const th = layout.cardHeight;
+  const GS = (pdf as any).GState;
+  if (GS) (pdf as any).setGState(new GS({ opacity: finish === "glossy" ? 0.08 : 0.05 }));
+  if (finish === "glossy") {
+    pdf.setFillColor(255, 255, 255);
+    pdf.rect(tx, ty, tw, th / 2, "F");
+  } else {
+    pdf.setFillColor(225, 225, 225);
+    pdf.rect(tx, ty, tw, th, "F");
+  }
+  if (GS) (pdf as any).setGState(new GS({ opacity: 1 }));
 }
 
 /** Crop marks at the trim box corners (sit in the bleed area). */
@@ -206,6 +261,12 @@ export interface BuildPrintPdfOptions {
   registrationMarks?: boolean;
   /** Mirror columns on back page for long-edge duplex printing. Default true. */
   mirrorBack?: boolean;
+  /** Color mode — RGB (default, vector) or CMYK_SIM (raster + gamut clamp). */
+  colorMode?: ColorMode;
+  /** Paper finish simulation overlaid on each card. */
+  finish?: PaperFinish;
+  /** Extra inner page margin (mm) to compensate for printers that crop edges. */
+  marginCompensation?: number;
   fileName?: string;
 }
 
@@ -225,10 +286,17 @@ export async function buildPrintReadyPdf(opts: BuildPrintPdfOptions): Promise<Bu
     cutMarks = true,
     registrationMarks = true,
     mirrorBack = true,
+    colorMode = "RGB",
+    finish = "none",
+    marginCompensation = 0,
   } = opts;
 
   if (!frontNode) throw new Error("frontNode is required");
-  const layout = computeLayout(pageSize);
+  const baseLayout = computeLayout(pageSize);
+  // Apply printer margin compensation by shrinking the printable area uniformly.
+  const layout: PrintLayoutInfo = marginCompensation > 0
+    ? { ...baseLayout, marginX: baseLayout.marginX + marginCompensation, marginY: baseLayout.marginY + marginCompensation }
+    : baseLayout;
 
   const pdf = new jsPDF({
     orientation: "portrait",
@@ -237,13 +305,11 @@ export async function buildPrintReadyPdf(opts: BuildPrintPdfOptions): Promise<Bu
     compress: true,
   });
 
-  // ── Page 1: fronts ──
-  await renderPage(pdf, frontNode, layout, { mirror: false, cutMarks, registrationMarks });
+  await renderPage(pdf, frontNode, layout, { mirror: false, cutMarks, registrationMarks, colorMode, finish });
 
-  // ── Page 2: backs ──
   if (backNode) {
     pdf.addPage(pageSize.toLowerCase() as "a4" | "a3", "portrait");
-    await renderPage(pdf, backNode, layout, { mirror: mirrorBack, cutMarks, registrationMarks });
+    await renderPage(pdf, backNode, layout, { mirror: mirrorBack, cutMarks, registrationMarks, colorMode, finish });
   }
 
   const blob = pdf.output("blob");
@@ -256,13 +322,15 @@ interface RenderPageOpts {
   mirror: boolean;
   cutMarks: boolean;
   registrationMarks: boolean;
+  colorMode: ColorMode;
+  finish: PaperFinish;
 }
 
 async function renderPage(
   pdf: jsPDF,
   node: HTMLElement,
   layout: PrintLayoutInfo,
-  { mirror, cutMarks, registrationMarks }: RenderPageOpts,
+  { mirror, cutMarks, registrationMarks, colorMode, finish }: RenderPageOpts,
 ): Promise<void> {
   const { cols, rows, bleedWidth, bleedHeight, marginX, marginY, gapX, gapY } = layout;
   for (let r = 0; r < rows; r++) {
@@ -271,7 +339,8 @@ async function renderPage(
       const x = marginX + col * (bleedWidth + gapX);
       const y = marginY + r * (bleedHeight + gapY);
       try {
-        await drawCard(pdf, node, x, y, layout);
+        await drawCard(pdf, node, x, y, layout, colorMode);
+        drawFinishOverlay(pdf, x, y, layout, finish);
       } catch (err) {
         console.error("[print-pdf] failed to draw card, skipping", err);
       }
