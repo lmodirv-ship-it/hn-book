@@ -712,13 +712,24 @@ const SmartImportPage = () => {
                         className="h-8 text-xs"
                       />
 
-                      {/* Progress */}
+                      {/* Progress / Status */}
                       {item.uploading && (
                         <div className="space-y-1">
                           <Progress value={item.progress} className="h-1.5" />
                           <p className="text-[10px] text-muted-foreground text-center">
                             {item.progress < 100 ? `جاري الرفع... ${item.progress}%` : "تم"}
                           </p>
+                        </div>
+                      )}
+                      {item.status === "success" && !item.uploading && (
+                        <div className="flex items-center justify-center gap-1 text-[11px] text-emerald-500 bg-emerald-500/10 border border-emerald-500/30 rounded-md py-1.5">
+                          <Check className="w-3.5 h-3.5" /> تم الحفظ بنجاح
+                        </div>
+                      )}
+                      {item.status === "error" && item.error && (
+                        <div className="flex items-start gap-1.5 text-[11px] text-destructive bg-destructive/10 border border-destructive/30 rounded-md p-2">
+                          <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                          <span className="leading-snug">{item.error}</span>
                         </div>
                       )}
 
