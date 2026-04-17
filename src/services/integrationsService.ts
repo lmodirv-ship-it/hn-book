@@ -99,6 +99,28 @@ export const integrationsService = {
     if (error) throw error;
   },
 
+  async listLogs(opts?: { provider?: string; integration_id?: string; limit?: number }): Promise<IntegrationLog[]> {
+    let q = supabase
+      .from("integration_logs" as never)
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(opts?.limit ?? 100);
+    if (opts?.provider) q = q.eq("provider" as never, opts.provider as never);
+    if (opts?.integration_id) q = q.eq("integration_id" as never, opts.integration_id as never);
+    const { data, error } = await q;
+    if (error) throw error;
+    return (data ?? []) as unknown as IntegrationLog[];
+  },
+
+  async clearLogs(opts?: { provider?: string }) {
+    let q = supabase.from("integration_logs" as never).delete();
+    if (opts?.provider) q = q.eq("provider" as never, opts.provider as never);
+    else q = q.gt("created_at" as never, "1970-01-01" as never);
+    const { error } = await q;
+    if (error) throw error;
+  },
+
+
   async resolveSecure(name: string) {
     const { data, error } = await supabase.functions.invoke("get-integration-config", {
       body: { name },
