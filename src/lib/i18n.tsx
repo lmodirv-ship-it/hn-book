@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from "react";
 import { translations } from "./translations";
+import { useContentRaw } from "@/contexts/ContentContext";
 
 export type Locale = "en" | "ar" | "fr";
 
@@ -31,9 +32,18 @@ export const I18nProvider = ({ children }: { children: ReactNode }) => {
     document.documentElement.lang = l;
   }, []);
 
+  const { map: cmsMap } = useContentRaw();
+
   const t = useCallback(
-    (key: string) => translations[locale]?.[key] || translations.en[key] || key,
-    [locale]
+    (key: string) => {
+      // CMS overrides win. Try locale-specific, then unscoped.
+      const localeOverride = cmsMap[`cms.${locale}.${key}`];
+      if (localeOverride) return localeOverride;
+      const override = cmsMap[`cms.${key}`];
+      if (override) return override;
+      return translations[locale]?.[key] || translations.en[key] || key;
+    },
+    [locale, cmsMap]
   );
 
   const dir = locales.find((loc) => loc.code === locale)?.dir || "ltr";

@@ -331,6 +331,45 @@ export type Database = {
         }
         Relationships: []
       }
+      cms_content: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          label: string | null
+          page: string
+          updated_at: string
+          updated_by: string | null
+          value: string
+          value_type: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          label?: string | null
+          page?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
+          value_type?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          label?: string | null
+          page?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
+          value_type?: string
+        }
+        Relationships: []
+      }
       coupons: {
         Row: {
           applies_to: string
@@ -752,6 +791,33 @@ export type Database = {
           sort_order?: number
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      permissions: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          label: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          label: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          label?: string
         }
         Relationships: []
       }
@@ -1220,6 +1286,35 @@ export type Database = {
           },
         ]
       }
+      role_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          permission_key: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          permission_key: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          permission_key?: string
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_permission_key_fkey"
+            columns: ["permission_key"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           created_at: string
@@ -1533,6 +1628,10 @@ export type Database = {
     }
     Functions: {
       asset_category_for_type: { Args: { _type: string }; Returns: string }
+      has_permission: {
+        Args: { _permission: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1542,7 +1641,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "manager" | "editor"
       file_type: "image" | "pdf" | "other"
       order_status: "pending" | "processing" | "completed" | "cancelled"
       subscription_status: "active" | "expired" | "cancelled"
@@ -1673,7 +1772,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "manager", "editor"],
       file_type: ["image", "pdf", "other"],
       order_status: ["pending", "processing", "completed", "cancelled"],
       subscription_status: ["active", "expired", "cancelled"],

@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { I18nProvider } from "@/lib/i18n";
 import { CartProvider } from "@/contexts/CartContext";
+import { ContentProvider } from "@/contexts/ContentContext";
 import ChatBot from "@/components/ChatBot";
 import Index from "./pages/Index.tsx";
 import Landing from "./pages/Landing.tsx";
@@ -62,6 +63,9 @@ import ApiSettings from "./admin/pages/ApiSettings.tsx";
 import AssetsManager from "./admin/pages/AssetsManager.tsx";
 import SmartImportPage from "./admin/pages/SmartImportPage.tsx";
 import SvgTemplatesAdmin from "./admin/pages/SvgTemplatesAdmin.tsx";
+import UsersAdmin from "./admin/pages/UsersAdmin.tsx";
+import PermissionsAdmin from "./admin/pages/PermissionsAdmin.tsx";
+import CmsAdmin from "./admin/pages/CmsAdmin.tsx";
 import TrackOrder from "./pages/TrackOrder.tsx";
 import TemplatesGallery from "./pages/TemplatesGallery.tsx";
 
@@ -85,12 +89,13 @@ const ProductRedirect = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <I18nProvider>
-      <CartProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <ChatBot />
+    <ContentProvider>
+      <I18nProvider>
+        <CartProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <ChatBot />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Landing />} />
@@ -160,14 +165,18 @@ const App = () => (
               <Route path="assets" element={<AssetsManager />} />
               <Route path="smart-import" element={<SmartImportPage />} />
               <Route path="svg-templates" element={<SvgTemplatesAdmin />} />
+              <Route path="users" element={<UsersAdmin />} />
+              <Route path="permissions" element={<PermissionsAdmin />} />
+              <Route path="cms" element={<CmsAdmin />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
-      </CartProvider>
-    </I18nProvider>
+        </CartProvider>
+      </I18nProvider>
+    </ContentProvider>
   </QueryClientProvider>
 );
 
