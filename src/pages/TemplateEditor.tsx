@@ -223,6 +223,10 @@ const TemplateEditor = () => {
   };
 
   const exportPdf = async () => {
+    if (!canExportPdf) {
+      toast({ title: "🔒 غير مسموح لك بتحميل الملفات", description: "تحتاج إذن export_pdf من المدير.", variant: "destructive" });
+      return;
+    }
     setExporting(true);
     try {
       const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [90, 50] });
