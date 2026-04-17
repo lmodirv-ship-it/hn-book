@@ -157,12 +157,12 @@ async function drawCard(
   x: number,
   y: number,
   layout: PrintLayoutInfo,
+  colorMode: ColorMode,
 ): Promise<void> {
   const svg = findSvg(node);
-  if (svg) {
+  if (svg && colorMode !== "CMYK_SIM") {
     try {
       const clone = cloneSvgForExport(svg);
-      // Place SVG at trim coordinates inside the bleed box.
       await svg2pdf(clone, pdf, {
         x: x + layout.bleed,
         y: y + layout.bleed,
@@ -171,11 +171,11 @@ async function drawCard(
       });
       return;
     } catch (err) {
-      // Fall through to raster fallback.
       console.warn("[print-pdf] vector export failed, using raster fallback", err);
     }
   }
-  const png = await nodeToHiResPng(node);
+  // CMYK simulation requires pixel-level color work — forces raster path.
+  const png = await nodeToHiResPng(node, colorMode);
   pdf.addImage(
     png,
     "PNG",
@@ -186,6 +186,25 @@ async function drawCard(
     undefined,
     "SLOW",
   );
+}
+
+/** Subtle finish simulation overlay — gloss = top highlight, matte = soft tint. */
+function drawFinishOverlay(pdf: jsPDF, x: number, y: number, layout: PrintLayoutInfo, finish: PaperFinish) {
+  if (finish === "none") return;
+  const tx = x + layout.bleed;
+  const ty = y + layout.bleed;
+  const tw = layout.cardWidth;
+  const th = layout.cardHeight;
+  const GS = (pdf as any).GState;
+  if (GS) (pdf as any).setGState(new GS({ opacity: finish === "glossy" ? 0.08 : 0.05 }));
+  if (finish === "glossy") {
+    pdf.setFillColor(255, 255, 255);
+    pdf.rect(tx, ty, tw, th / 2, "F");
+  } else {
+    pdf.setFillColor(225, 225, 225);
+    pdf.rect(tx, ty, tw, th, "F");
+  }
+  if (GS) (pdf as any).setGState(new GS({ opacity: 1 }));
 }
 
 /** Crop marks at the trim box corners (sit in the bleed area). */
