@@ -34,6 +34,43 @@ const PrintOrdersAdmin = () => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [detail, setDetail] = useState<PrintOrder | null>(null);
 
+  // Tracking form state (lives inside detail dialog)
+  const [trackCarrier, setTrackCarrier] = useState("");
+  const [trackNumber, setTrackNumber] = useState("");
+  const [trackNote, setTrackNote] = useState("");
+  const [savingTrack, setSavingTrack] = useState(false);
+
+  const openDetail = (o: PrintOrder) => {
+    setDetail(o);
+    setTrackCarrier(o.tracking_carrier || "");
+    setTrackNumber(o.tracking_number || "");
+    setTrackNote(o.tracking_note || "");
+  };
+
+  const saveTracking = async () => {
+    if (!detail) return;
+    setSavingTrack(true);
+    try {
+      await printService.updateShipping(detail.id, {
+        tracking_carrier: trackCarrier.trim(),
+        tracking_number: trackNumber.trim(),
+        tracking_note: trackNote.trim(),
+      });
+      toast({ title: "تم حفظ معلومات الشحن ✅" });
+      await fetchOrders();
+    } catch (e: any) {
+      toast({ title: "فشل الحفظ", description: e.message, variant: "destructive" });
+    } finally {
+      setSavingTrack(false);
+    }
+  };
+
+  const markShipped = async (o: PrintOrder) => {
+    await printService.updateOrderStatus(o.id, "shipped");
+    toast({ title: "تم تحديد الطلب كمشحون 🚚" });
+    fetchOrders();
+  };
+
   const fetchOrders = async () => {
     const data = await printService.getAllOrders();
     setOrders(data);
