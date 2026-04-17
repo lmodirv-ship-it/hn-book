@@ -102,10 +102,13 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
         cutMarks,
         registrationMarks,
         mirrorBack,
+        colorMode,
+        finish,
+        marginCompensation,
         fileName: `${cardName || "carte"}-${pageSize}.pdf`,
       });
       setResult(r);
-      toast({ title: "تم توليد ملف الطباعة ✅", description: `${r.totalCards} بطاقة في الصفحة • ${pageSize} • نزيف 3mm` });
+      toast({ title: "تم توليد ملف الطباعة ✅", description: `${r.totalCards} بطاقة • ${pageSize} • ${colorMode === "CMYK_SIM" ? "CMYK" : "RGB"} • نزيف 3mm` });
     } catch (e: any) {
       toast({ title: "فشل توليد PDF", description: e?.message ?? "خطأ غير معروف", variant: "destructive" });
     } finally {
