@@ -192,7 +192,7 @@ export default function PrintPricingManagement() {
                   <TableCell>{Number(r.shipping_price).toFixed(2)} د.م</TableCell>
                   <TableCell>
                     {r.is_active ? (
-                      <Badge className="bg-green-500/15 text-green-600 hover:bg-green-500/20">مفعّل</Badge>
+                      <Badge className="bg-primary/15 text-primary hover:bg-primary/20">مفعّل</Badge>
                     ) : (
                       <Badge variant="secondary">معطّل</Badge>
                     )}
