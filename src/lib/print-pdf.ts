@@ -157,11 +157,19 @@ function ensureHtmlWrapper(node: HTMLElement): { target: HTMLElement; cleanup: (
   return { target: wrapper, cleanup: () => wrapper.remove() };
 }
 
-/** High-res PNG fallback (~600 DPI). Optionally clamps to CMYK-ish gamut. */
+/** High-res PNG fallback (~600 DPI). Optionally clamps to CMYK-ish gamut.
+ *  `skipFonts: true` avoids CORS errors when reading cross-origin stylesheets
+ *  (Google Fonts), which was the silent cause of the previous failure. */
 async function nodeToHiResPng(node: HTMLElement, colorMode: ColorMode): Promise<string> {
   const { target, cleanup } = ensureHtmlWrapper(node);
   try {
-    const dataUrl = await toPng(target, { pixelRatio: 6, cacheBust: true, backgroundColor: "#ffffff" });
+    const dataUrl = await toPng(target, {
+      pixelRatio: 4,
+      cacheBust: true,
+      backgroundColor: "#ffffff",
+      skipFonts: true,
+      style: { transform: "none" },
+    } as any);
     if (!dataUrl?.startsWith("data:image")) throw new Error("Raster export returned empty data URL");
     if (colorMode !== "CMYK_SIM") return dataUrl;
     return await simulateCmykOnPng(dataUrl);
@@ -435,7 +443,12 @@ export async function exportCardAsPng(
   await waitForFonts();
   const { target, cleanup } = ensureHtmlWrapper(node);
   try {
-    const dataUrl = await toPng(target, { pixelRatio: 6, cacheBust: true, backgroundColor: "#ffffff" });
+    const dataUrl = await toPng(target, {
+      pixelRatio: 6,
+      cacheBust: true,
+      backgroundColor: "#ffffff",
+      skipFonts: true,
+    } as any);
     const res = await fetch(dataUrl);
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
