@@ -119,6 +119,11 @@ const TemplateEditor = () => {
 
   const currentFields = side === "front" ? fieldsBySide.front : fieldsBySide.back;
   const hasBack = !!template.back_svg_content;
+  // When a logo image is uploaded, hide the monogram fallback so they don't overlap.
+  const renderValues = useMemo(
+    () => (values.logo ? { ...values, monogram: "" } : values),
+    [values]
+  );
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
