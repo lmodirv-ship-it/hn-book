@@ -22,6 +22,8 @@ import {
 } from "@/services/svgTemplateService";
 import StyledSvgRenderer, { type FieldStyle } from "@/components/editor/StyledSvgRenderer";
 import PrintReadyDialog from "@/components/editor/PrintReadyDialog";
+import { buildPrintReadyPdf } from "@/lib/print-pdf";
+import { communicationsService, applyTemplate } from "@/services/communicationsService";
 
 const FONT_FAMILIES = [
   { value: "Inter, sans-serif", label: "Inter" },
