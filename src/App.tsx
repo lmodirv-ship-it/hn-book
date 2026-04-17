@@ -9,6 +9,7 @@ import { I18nProvider } from "@/lib/i18n";
 import { CartProvider } from "@/contexts/CartContext";
 import ChatBot from "@/components/ChatBot";
 import Index from "./pages/Index.tsx";
+import Landing from "./pages/Landing.tsx";
 import ProductDetail from "./pages/ProductDetail.tsx";
 import CategoryPage from "./pages/CategoryPage.tsx";
 import BookReader from "./pages/BookReader.tsx";
