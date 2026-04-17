@@ -173,6 +173,10 @@ const TemplateEditor = () => {
     setStyles((s) => ({ ...s, [key]: { ...(s[key] || {}), dx, dy } }));
   }, []);
 
+  const onInlineEdit = useCallback((key: string, value: string) => {
+    setValues((v) => ({ ...v, [key]: value }));
+  }, []);
+
   // Exports
   const exportPng = async () => {
     setExporting(true);
@@ -541,6 +545,7 @@ const TemplateEditor = () => {
                       selectedKey={side === "front" ? selectedKey : null}
                       onSelect={setSelectedKey}
                       onDragEnd={onDragEnd}
+                      onEdit={onInlineEdit}
                       className="w-[600px] rounded-xl border border-border bg-white overflow-hidden shadow-2xl"
                     />
                   </div>
@@ -555,6 +560,7 @@ const TemplateEditor = () => {
                         selectedKey={side === "back" ? selectedKey : null}
                         onSelect={setSelectedKey}
                         onDragEnd={onDragEnd}
+                        onEdit={onInlineEdit}
                         className="w-[600px] rounded-xl border border-border bg-white overflow-hidden shadow-2xl"
                       />
                     </div>
