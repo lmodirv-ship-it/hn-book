@@ -429,6 +429,8 @@ export default function ApiSettings() {
           );
         })}
       </div>
+
+      <IntegrationLogsPanel />
     </div>
   );
 }
