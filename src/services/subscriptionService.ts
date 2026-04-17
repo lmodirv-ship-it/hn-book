@@ -110,7 +110,7 @@ export const subscriptionService = {
       .limit(1)
       .maybeSingle();
     if (error) throw error;
-    return (data as UserSubscription | null) ?? null;
+    return (data as unknown as UserSubscription | null) ?? null;
   },
 
   async getMyCredits(): Promise<UserCredits | null> {
@@ -122,7 +122,7 @@ export const subscriptionService = {
       .eq("user_id", user.id)
       .maybeSingle();
     if (error) throw error;
-    return (data as UserCredits | null) ?? { user_id: user.id, balance: 0, total_earned: 0, total_spent: 0 };
+    return (data as unknown as UserCredits | null) ?? { user_id: user.id, balance: 0, total_earned: 0, total_spent: 0 };
   },
 
   async listMyTransactions(limit = 20): Promise<CreditTransaction[]> {
