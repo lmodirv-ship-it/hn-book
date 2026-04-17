@@ -6,7 +6,7 @@ import {
   Menu, X, Shield, BookOpen, Tag, LayoutDashboard,
   ShoppingCart, FileText, LogOut, Ticket, Activity, ShieldCheck, FolderUp, Globe, ScanText, DollarSign, KeyRound,
   Bell, AlertTriangle, XCircle, Database, Crown, CreditCard, Printer, Image, Frame, Brain,
-  ToggleRight, MonitorDot,
+  ToggleRight, MonitorDot, Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +38,7 @@ const navItems = [
   { path: "/admin/svg-templates", icon: CreditCard, label: "قوالب SVG" },
   { path: "/admin/logos", icon: Image, label: "مكتبة الشعارات" },
   { path: "/admin/tablou", icon: Frame, label: "التابلوهات" },
+  { path: "/admin/studio", icon: Sparkles, label: "إدارة الاستوديو" },
   { path: "/admin/print-orders", icon: Printer, label: "طلبات الطباعة" },
   { path: "/admin/ai-classifier", icon: Brain, label: "محرك الذكاء" },
   { path: "/admin/features", icon: ToggleRight, label: "مدير الميزات" },

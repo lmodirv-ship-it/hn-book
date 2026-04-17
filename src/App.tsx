@@ -69,6 +69,10 @@ import CmsAdmin from "./admin/pages/CmsAdmin.tsx";
 import UserPermissionsAdmin from "./admin/pages/UserPermissionsAdmin.tsx";
 import TrackOrder from "./pages/TrackOrder.tsx";
 import TemplatesGallery from "./pages/TemplatesGallery.tsx";
+import StudioHome from "./pages/studio/StudioHome.tsx";
+import StudioTemplates from "./pages/studio/StudioTemplates.tsx";
+import StudioEditor from "./pages/studio/StudioEditor.tsx";
+import StudioAdmin from "./admin/pages/StudioAdmin.tsx";
 
 // Lazy-load the heavy editor and viewer so non-editable assets never pull
 // the full editor bundle (and vice versa).
@@ -115,6 +119,10 @@ const App = () => (
             <Route path="/read/:id" element={<BookReader />} />
             <Route path="/document-processing" element={<DocumentProcessing />} />
             <Route path="/templates" element={<TemplatesGallery />} />
+            {/* Studio (same domain, shared auth/db/admin) */}
+            <Route path="/studio" element={<StudioHome />} />
+            <Route path="/studio/templates" element={<StudioTemplates />} />
+            <Route path="/studio/editor/:id" element={<StudioEditor />} />
             <Route
               path="/editor/:id"
               element={<Suspense fallback={<PageFallback />}><TemplateEditor /></Suspense>}
@@ -170,6 +178,7 @@ const App = () => (
               <Route path="permissions" element={<PermissionsAdmin />} />
               <Route path="cms" element={<CmsAdmin />} />
               <Route path="user-permissions" element={<UserPermissionsAdmin />} />
+              <Route path="studio" element={<StudioAdmin />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />
