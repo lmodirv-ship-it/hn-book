@@ -1,8 +1,9 @@
 import { useRef, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Upload, Check, Loader2,
-  Zap, Database, RotateCcw, BookOpen, CreditCard, Image as ImageIcon, Award,
+  Upload, Check, Loader2, Zap, Database, RotateCcw,
+  BookOpen, CreditCard, Image as ImageIcon, Award,
+  FileText, Presentation, Layers, Sticker, List, Files, Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -18,75 +19,55 @@ import { supabase } from "@/integrations/supabase/client";
 
 // ── Types ──
 
-type ImportType = "books" | "cards" | "tablous" | "logos";
+type ImportType =
+  | "books" | "cards" | "templates" | "images" | "documents"
+  | "presentations" | "tablous" | "logos" | "flyers"
+  | "stickers" | "menus" | "other";
 
-interface BookPayload {
-  file: File;
-  title: string;
-  category: string;
-}
+interface BookPayload { file: File; title: string; category: string; }
+interface AssetPayload { file: File; title: string; type: ImportType; }
 
-interface AssetPayload {
-  file: File;
-  title: string;
-  type: ImportType;
-}
-
-const TYPE_CONFIG: Record<ImportType, {
+interface TypeCfg {
   label: string;
   icon: typeof BookOpen;
-  accept: string;
   hint: string;
-  bucket: string;
-  table: "card_templates" | "tablous" | "logos";
+  table: "card_templates" | "tablous" | "logos" | "digital_assets";
   imageField: string;
-}> = {
-  books: {
-    label: "الكتب",
-    icon: BookOpen,
-    accept: "*/*",
-    hint: "PDF, DOCX, EPUB, TXT, ZIP — يُولَّد غلاف تلقائياً",
-    bucket: "book-files",
-    table: "card_templates",
-    imageField: "image",
-  },
-  cards: {
-    label: "البطاقات",
-    icon: CreditCard,
-    accept: "*/*",
-    hint: "صور, PDF, SVG, AI, PSD — جميع الصيغ",
-    bucket: "book-images",
-    table: "card_templates",
-    imageField: "image_url",
-  },
-  tablous: {
-    label: "اللوحات",
-    icon: ImageIcon,
-    accept: "*/*",
-    hint: "صور, PDF, PSD, TIFF — جميع الصيغ",
-    bucket: "book-images",
-    table: "tablous",
-    imageField: "image_url",
-  },
-  logos: {
-    label: "الشعارات",
-    icon: Award,
-    accept: "*/*",
-    hint: "SVG, PNG, AI, PDF — جميع الصيغ",
-    bucket: "book-images",
-    table: "logos",
-    imageField: "image_url",
-  },
+  assetType?: string;
+}
+
+const TYPE_CONFIG: Record<ImportType, TypeCfg> = {
+  books:         { label: "كتب",       icon: BookOpen,     hint: "PDF, DOCX, EPUB, TXT — يُولَّد غلاف تلقائياً", table: "card_templates", imageField: "image" },
+  cards:         { label: "بطاقات",    icon: CreditCard,   hint: "PSD, AI, SVG, صور",            table: "card_templates",   imageField: "image_url" },
+  templates:     { label: "قوالب",     icon: Layers,       hint: "PSD, AI, INDD, صور",           table: "digital_assets",   imageField: "image_url", assetType: "template" },
+  images:        { label: "صور",       icon: ImageIcon,    hint: "JPG, PNG, WEBP, TIFF",         table: "digital_assets",   imageField: "image_url", assetType: "image" },
+  documents:     { label: "وثائق",     icon: FileText,     hint: "PDF, DOCX, TXT",               table: "digital_assets",   imageField: "image_url", assetType: "document" },
+  presentations: { label: "عروض",      icon: Presentation, hint: "PPTX, PDF, KEY",               table: "digital_assets",   imageField: "image_url", assetType: "presentation" },
+  tablous:       { label: "تابلوهات",  icon: ImageIcon,    hint: "صور عالية الدقة, PSD",         table: "tablous",          imageField: "image_url" },
+  logos:         { label: "شعارات",    icon: Award,        hint: "SVG, PNG, AI, PDF",            table: "logos",            imageField: "image_url" },
+  flyers:        { label: "فلاير",     icon: Sparkles,     hint: "PSD, AI, PDF, JPG",            table: "digital_assets",   imageField: "image_url", assetType: "flyer" },
+  stickers:      { label: "ملصقات",    icon: Sticker,      hint: "SVG, PNG شفاف, PSD",           table: "digital_assets",   imageField: "image_url", assetType: "sticker" },
+  menus:         { label: "قوائم",     icon: List,         hint: "PDF, PSD, AI",                 table: "digital_assets",   imageField: "image_url", assetType: "menu" },
+  other:         { label: "أخرى",      icon: Files,        hint: "أي صيغة أخرى",                 table: "digital_assets",   imageField: "image_url", assetType: "other" },
 };
+
+const BUCKET = "book-images";
 
 // ── Helpers ──
 
 function cleanFilename(filename: string): string {
-  return filename
-    .replace(/\.[^.]+$/, "")
-    .replace(/[-_]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return filename.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+/** Auto-detect type by extension when user is on "books" tab and uploads non-PDF */
+function detectAssetTypeByExt(file: File): ImportType {
+  const ext = file.name.split(".").pop()?.toLowerCase() || "";
+  if (["psd", "ai", "eps", "indd"].includes(ext)) return "templates";
+  if (["svg"].includes(ext)) return "logos";
+  if (["pptx", "ppt", "key"].includes(ext)) return "presentations";
+  if (["docx", "doc", "txt", "rtf"].includes(ext)) return "documents";
+  if (["jpg", "jpeg", "png", "webp", "tiff", "bmp", "gif"].includes(ext)) return "images";
+  return "other";
 }
 
 async function uploadFilesAndCreateJob(payload: BookPayload): Promise<void> {
@@ -103,21 +84,11 @@ async function uploadFilesAndCreateJob(payload: BookPayload): Promise<void> {
   const coverResult = await storageService.uploadBookImage(coverFile, referenceCode);
   const image = coverResult.data?.publicUrl || pdfUrl;
 
-  const { error: jobError } = await db
-    .from("upload_jobs")
-    .insert({
-      file_name: payload.file.name,
-      status: "pending",
-      result: {
-        title: payload.title,
-        category: payload.category,
-        pdfUrl,
-        image,
-        referenceCode,
-        storagePath,
-        pageCount,
-      },
-    } as any);
+  const { error: jobError } = await db.from("upload_jobs").insert({
+    file_name: payload.file.name,
+    status: "pending",
+    result: { title: payload.title, category: payload.category, pdfUrl, image, referenceCode, storagePath, pageCount },
+  } as any);
 
   if (jobError) {
     await storageService.removePdfByPath(storagePath);
@@ -125,27 +96,35 @@ async function uploadFilesAndCreateJob(payload: BookPayload): Promise<void> {
   }
 }
 
-/**
- * Direct upload for non-book assets (cards/tablous/logos) — image only, no backend job needed.
- */
 async function uploadAsset(payload: AssetPayload): Promise<void> {
   const cfg = TYPE_CONFIG[payload.type];
-  const ext = payload.file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const ext = payload.file.name.split(".").pop()?.toLowerCase() || "bin";
   const safeKey = `${payload.type}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
   const { error: upErr } = await supabase.storage
-    .from(cfg.bucket)
+    .from(BUCKET)
     .upload(safeKey, payload.file, { cacheControl: "3600", upsert: false });
   if (upErr) throw new Error(upErr.message);
 
-  const { data: pub } = supabase.storage.from(cfg.bucket).getPublicUrl(safeKey);
+  const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(safeKey);
   const publicUrl = pub.publicUrl;
 
-  const row: any = { name: payload.title, [cfg.imageField]: publicUrl, is_active: true };
-  if (payload.type === "tablous") {
-    row.title = payload.title;
-    delete row.name;
-    row.base_price = 100;
+  const isImage = payload.file.type.startsWith("image/");
+  const previewUrl = isImage ? publicUrl : "/placeholder.svg";
+
+  let row: any;
+  if (cfg.table === "tablous") {
+    row = { title: payload.title, image_url: previewUrl, base_price: 100, is_active: true };
+  } else if (cfg.table === "digital_assets") {
+    row = {
+      title: payload.title,
+      asset_type: cfg.assetType || "other",
+      image_url: previewUrl,
+      file_url: publicUrl,
+      is_active: true,
+    };
+  } else {
+    row = { name: payload.title, [cfg.imageField]: previewUrl, is_active: true };
   }
 
   const { error: insErr } = await (supabase as any).from(cfg.table).insert(row);
@@ -158,22 +137,16 @@ const BulkPdfUpload = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importType, setImportType] = useState<ImportType>("books");
 
-  // Books queue (PDF + worker)
   const booksQ = useUploadQueue<BookPayload>({
-    concurrency: 5,
-    maxRetries: 2,
-    processor: uploadFilesAndCreateJob,
+    concurrency: 5, maxRetries: 2, processor: uploadFilesAndCreateJob,
     onComplete: ({ success, failed }) => {
       if (success) toast.success(`تم رفع ${success} ملف — جاري إنشاء الكتب...`);
       if (failed) toast.error(`فشل رفع ${failed} ملف`);
     },
   });
 
-  // Assets queue (cards/tablous/logos)
   const assetsQ = useUploadQueue<AssetPayload>({
-    concurrency: 5,
-    maxRetries: 2,
-    processor: uploadAsset,
+    concurrency: 5, maxRetries: 2, processor: uploadAsset,
     onComplete: ({ success, failed }) => {
       if (success) toast.success(`✅ تم رفع وإضافة ${success} عنصر`);
       if (failed) toast.error(`❌ فشل ${failed} عنصر`);
@@ -195,14 +168,6 @@ const BulkPdfUpload = () => {
 
   const cfg = TYPE_CONFIG[importType];
 
-  const detectAssetType = (file: File): ImportType => {
-    const ext = file.name.split(".").pop()?.toLowerCase() || "";
-    if (["pdf"].includes(ext) && isBooks) return "books";
-    if (["psd", "ai", "eps", "indd"].includes(ext)) return "cards";
-    if (["svg"].includes(ext)) return "logos";
-    return importType === "books" ? "cards" : importType;
-  };
-
   const addFiles = (selected: File[]) => {
     if (!selected.length) return;
     const pdfs: File[] = [];
@@ -213,7 +178,7 @@ const BulkPdfUpload = () => {
       if (isBooks && (f.type === "application/pdf" || ext === "pdf")) {
         pdfs.push(f);
       } else {
-        assets.push({ file: f, type: isBooks ? detectAssetType(f) : importType });
+        assets.push({ file: f, type: isBooks ? detectAssetTypeByExt(f) : importType });
       }
     }
 
@@ -232,7 +197,9 @@ const BulkPdfUpload = () => {
           acc[a.type] = (acc[a.type] || 0) + 1;
           return acc;
         }, {} as Record<string, number>);
-        const summary = Object.entries(groups).map(([k, v]) => `${v} ${TYPE_CONFIG[k as ImportType].label}`).join(" · ");
+        const summary = Object.entries(groups)
+          .map(([k, v]) => `${v} ${TYPE_CONFIG[k as ImportType].label}`)
+          .join(" · ");
         toast.info(`🔀 توجيه تلقائي: ${summary}`);
       }
       assetsQ.enqueue(
@@ -251,12 +218,12 @@ const BulkPdfUpload = () => {
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl font-extrabold text-foreground">🗂️ نظام الاستيراد الذكي</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          ارفع كتب، بطاقات، لوحات أو شعارات بكميات كبيرة — مع إضافة تلقائية إلى الموقع
+          ارفع كتب، بطاقات، قوالب، صور، عروض، فلاير، شعارات وغيرها — توجيه تلقائي حسب الصيغة
         </p>
       </motion.div>
 
       {/* Type selector */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
         {(Object.keys(TYPE_CONFIG) as ImportType[]).map((t) => {
           const c = TYPE_CONFIG[t];
           const Icon = c.icon;
@@ -292,12 +259,11 @@ const BulkPdfUpload = () => {
           <span className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary flex items-center gap-1">
             <Zap className="w-3 h-3" /> 5x متزامن
           </span>
-          {isBooks && (
+          {isBooks ? (
             <span className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary flex items-center gap-1">
-              <Database className="w-3 h-3" /> Backend Worker
+              <Database className="w-3 h-3" /> Backend Worker + توجيه تلقائي
             </span>
-          )}
-          {!isBooks && (
+          ) : (
             <span className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary flex items-center gap-1">
               <Check className="w-3 h-3" /> إضافة فورية
             </span>
@@ -305,7 +271,7 @@ const BulkPdfUpload = () => {
         </div>
       </div>
       <input
-        ref={fileInputRef} type="file" accept={cfg.accept} multiple
+        ref={fileInputRef} type="file" accept="*/*" multiple
         onChange={(e) => { addFiles(Array.from(e.target.files || [])); e.target.value = ""; }}
         className="hidden"
       />
@@ -368,7 +334,14 @@ const BulkPdfUpload = () => {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{j.payload.title}</p>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[10px] text-muted-foreground">{(j.payload.file.size / 1024 / 1024).toFixed(2)} MB</span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {(j.payload.file.size / 1024 / 1024).toFixed(2)} MB
+                  </span>
+                  {j.payload.type && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                      {TYPE_CONFIG[j.payload.type as ImportType]?.label}
+                    </span>
+                  )}
                 </div>
                 {j.status === "error" && <p className="text-[11px] text-destructive mt-0.5">{j.error}</p>}
               </div>
