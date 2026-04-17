@@ -23,6 +23,34 @@ const BUCKET = "book-images";
 const IMAGE_EXTS = ["jpg", "jpeg", "png", "webp", "gif", "bmp", "tiff"];
 const SOURCE_EXTS = ["eps", "ai", "psd", "indd", "svg", "cdr", "sketch", "fig"];
 
+// Formats that the browser/Supabase storage cannot accept directly.
+// .cdr (CorelDRAW) needs server-side conversion (Inkscape/Ghostscript) which is
+// NOT available in this environment. Reject upfront with a clear message.
+const UNSUPPORTED_DIRECT_EXTS = new Set(["cdr"]);
+const MAX_FILE_SIZE_MB = 50;
+
+function describeUploadError(err: unknown, file: File): string {
+  const msg = err instanceof Error ? err.message : String(err ?? "");
+  const ext = fileExt(file.name);
+  // Common patterns
+  if (/Failed to fetch|NetworkError|network/i.test(msg)) {
+    return `تعذّر الاتصال بالخادم أثناء رفع "${file.name}". تحقق من الإنترنت أو حجم الملف (${(file.size / 1024 / 1024).toFixed(1)}MB).`;
+  }
+  if (/payload|too large|413/i.test(msg)) {
+    return `الملف "${file.name}" كبير جداً (${(file.size / 1024 / 1024).toFixed(1)}MB). الحد الأقصى ${MAX_FILE_SIZE_MB}MB.`;
+  }
+  if (/row-level security|policy|permission|403|401/i.test(msg)) {
+    return `لا تملك صلاحية رفع "${file.name}". يرجى تسجيل الدخول كمسؤول.`;
+  }
+  if (/duplicate|already exists|409/i.test(msg)) {
+    return `ملف بنفس الاسم موجود مسبقاً (${file.name}).`;
+  }
+  if (/mime|type|unsupported/i.test(msg)) {
+    return `نوع الملف غير مدعوم: .${ext}`;
+  }
+  return msg || `فشل رفع "${file.name}"`;
+}
+
 // ── Auto-detect asset type from file ──
 function detectType(file: File): AssetType {
   const ext = file.name.split(".").pop()?.toLowerCase() || "";
@@ -73,6 +101,8 @@ interface PendingFileItem {
   isImage: boolean;
   uploading: boolean;
   progress: number;
+  error: string | null;
+  status: "idle" | "uploading" | "success" | "error";
 }
 
 interface PendingFolderItem {
@@ -89,6 +119,8 @@ interface PendingFolderItem {
   warning: string | null;
   uploading: boolean;
   progress: number;
+  error: string | null;
+  status: "idle" | "uploading" | "success" | "error";
 }
 
 type PendingItem = PendingFileItem | PendingFolderItem;
@@ -114,7 +146,10 @@ const BACK_RE = /(^|[^a-z])(back|verso|khalf|khalfi|خلف|خلفية|ظهر)([^
 function buildFolderItem(folderPath: string, files: File[]): PendingFolderItem | null {
   const folderName = folderPath.split("/").pop() || folderPath;
   const images = files.filter((f) => IMAGE_EXTS.includes(fileExt(f.name)));
-  const sourceFile = files.find((f) => SOURCE_EXTS.includes(fileExt(f.name))) || null;
+  // Pick a source file but skip unsupported direct uploads (e.g. .cdr).
+  const sourceFile =
+    files.find((f) => SOURCE_EXTS.includes(fileExt(f.name)) && !UNSUPPORTED_DIRECT_EXTS.has(fileExt(f.name))) || null;
+  const hasUnsupportedSource = files.some((f) => UNSUPPORTED_DIRECT_EXTS.has(fileExt(f.name)));
 
   // Detect front/back by filename
   const frontByName = images.find((f) => FRONT_RE.test(f.name)) || null;
@@ -137,6 +172,7 @@ function buildFolderItem(folderPath: string, files: File[]): PendingFolderItem |
 
   const warnings: string[] = [];
   if (!sourceFile) warnings.push("ملف المصدر (EPS/AI) غير موجود");
+  if (hasUnsupportedSource) warnings.push("ملف .cdr تم تخطيه (يحتاج تحويل سيرفر)");
   if (!backFile && images.length >= 2) warnings.push("لم يتم تحديد الوجه الخلفي تلقائياً");
 
   return {
@@ -153,6 +189,8 @@ function buildFolderItem(folderPath: string, files: File[]): PendingFolderItem |
     warning: warnings.length ? warnings.join(" • ") : null,
     uploading: false,
     progress: 0,
+    error: null,
+    status: "idle",
   };
 }
 
@@ -185,7 +223,26 @@ const SmartImportPage = () => {
   // ── Add individual files ──
   const addFiles = (files: File[]) => {
     if (!files.length) return;
-    const items: PendingFileItem[] = files.map((file) => {
+
+    // Pre-validate: reject unsupported formats and oversize files with a clear message.
+    const accepted: File[] = [];
+    const rejections: string[] = [];
+    for (const file of files) {
+      const ext = fileExt(file.name);
+      if (UNSUPPORTED_DIRECT_EXTS.has(ext)) {
+        rejections.push(`❌ ${file.name}: صيغة .${ext} تتطلب تحويلاً للسيرفر (Inkscape/Ghostscript). ارفع SVG/PDF بدلها أو حوّل الملف أولاً.`);
+        continue;
+      }
+      if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+        rejections.push(`❌ ${file.name}: حجم ${(file.size / 1024 / 1024).toFixed(1)}MB يتجاوز الحد ${MAX_FILE_SIZE_MB}MB.`);
+        continue;
+      }
+      accepted.push(file);
+    }
+    rejections.forEach((m) => toast.error(m, { duration: 6000 }));
+    if (!accepted.length) return;
+
+    const items: PendingFileItem[] = accepted.map((file) => {
       const type = detectType(file);
       const isImage = file.type.startsWith("image/");
       return {
@@ -198,6 +255,8 @@ const SmartImportPage = () => {
         isImage,
         uploading: false,
         progress: 0,
+        error: null,
+        status: "idle",
       };
     });
     setPending((prev) => [...items, ...prev]);
@@ -249,21 +308,28 @@ const SmartImportPage = () => {
     });
   };
 
-  // ── Upload helper ──
+  // ── Upload helper (with timeout + descriptive errors) ──
   const uploadToBucket = async (file: File, prefix: string): Promise<string> => {
     const ext = fileExt(file.name) || "bin";
+    if (UNSUPPORTED_DIRECT_EXTS.has(ext)) {
+      throw new Error(`الصيغة .${ext} لا تُدعم للرفع المباشر. حوّل الملف إلى SVG/PDF أولاً.`);
+    }
     const safeKey = `${prefix}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-    const { error: upErr } = await supabase.storage
-      .from(BUCKET)
-      .upload(safeKey, file, { cacheControl: "3600", upsert: false });
-    if (upErr) throw upErr;
+    try {
+      const { error: upErr } = await supabase.storage
+        .from(BUCKET)
+        .upload(safeKey, file, { cacheControl: "3600", upsert: false });
+      if (upErr) throw upErr;
+    } catch (e) {
+      throw new Error(describeUploadError(e, file));
+    }
     const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(safeKey);
     return pub.publicUrl;
   };
 
   // ── Save single file asset ──
   const saveFileAsset = async (item: PendingFileItem) => {
-    updatePending(item.id, { uploading: true, progress: 10 } as Partial<PendingFileItem>);
+    updatePending(item.id, { uploading: true, progress: 10, status: "uploading", error: null } as Partial<PendingFileItem>);
     try {
       updatePending(item.id, { progress: 40 } as Partial<PendingFileItem>);
       const fileUrl = await uploadToBucket(item.file, `assets/${item.type}`);
@@ -277,23 +343,33 @@ const SmartImportPage = () => {
         file_url: fileUrl,
       });
 
-      updatePending(item.id, { progress: 100 } as Partial<PendingFileItem>);
+      updatePending(item.id, { progress: 100, status: "success" } as Partial<PendingFileItem>);
       toast.success(`✅ ${created.code}`);
-      removePending(item.id);
+      // Keep success card briefly then remove
+      setTimeout(() => removePending(item.id), 800);
       setSavedAssets((prev) => [created, ...prev]);
     } catch (e: any) {
-      toast.error(`❌ فشل الحفظ: ${e.message}`);
-      updatePending(item.id, { uploading: false, progress: 0 } as Partial<PendingFileItem>);
+      const msg = e?.message || "خطأ غير معروف";
+      toast.error(`❌ ${item.file.name}: ${msg}`, { duration: 6000 });
+      updatePending(item.id, {
+        uploading: false,
+        progress: 0,
+        status: "error",
+        error: msg,
+      } as Partial<PendingFileItem>);
+      throw e;
     }
   };
 
   // ── Save folder asset (CRD) ──
   const saveFolderAsset = async (item: PendingFolderItem) => {
     if (!item.previewFile) {
-      toast.error("لا توجد صورة معاينة");
+      const msg = "لا توجد صورة معاينة في المجلد";
+      toast.error(msg);
+      updatePending(item.id, { status: "error", error: msg } as Partial<PendingFolderItem>);
       return;
     }
-    updatePending(item.id, { uploading: true, progress: 5 } as Partial<PendingFolderItem>);
+    updatePending(item.id, { uploading: true, progress: 5, status: "uploading", error: null } as Partial<PendingFolderItem>);
     try {
       // Upload front (preview) image
       updatePending(item.id, { progress: 20 } as Partial<PendingFolderItem>);
@@ -306,7 +382,7 @@ const SmartImportPage = () => {
         backUrl = await uploadToBucket(item.backFile, `assets/CRD/back`);
       }
 
-      // Upload source file if available
+      // Upload source file if available (skipped automatically for unsupported formats)
       let fileUrl: string | null = null;
       if (item.sourceFile) {
         updatePending(item.id, { progress: 70 } as Partial<PendingFolderItem>);
@@ -328,13 +404,20 @@ const SmartImportPage = () => {
         },
       });
 
-      updatePending(item.id, { progress: 100 } as Partial<PendingFolderItem>);
+      updatePending(item.id, { progress: 100, status: "success" } as Partial<PendingFolderItem>);
       toast.success(`✅ ${created.code} (${item.folderName})`);
-      removePending(item.id);
+      setTimeout(() => removePending(item.id), 800);
       setSavedAssets((prev) => [created, ...prev]);
     } catch (e: any) {
-      toast.error(`❌ ${item.folderName}: ${e.message}`);
-      updatePending(item.id, { uploading: false, progress: 0 } as Partial<PendingFolderItem>);
+      const msg = e?.message || "خطأ غير معروف";
+      toast.error(`❌ ${item.folderName}: ${msg}`, { duration: 6000 });
+      updatePending(item.id, {
+        uploading: false,
+        progress: 0,
+        status: "error",
+        error: msg,
+      } as Partial<PendingFolderItem>);
+      throw e;
     }
   };
 
@@ -629,13 +712,24 @@ const SmartImportPage = () => {
                         className="h-8 text-xs"
                       />
 
-                      {/* Progress */}
+                      {/* Progress / Status */}
                       {item.uploading && (
                         <div className="space-y-1">
                           <Progress value={item.progress} className="h-1.5" />
                           <p className="text-[10px] text-muted-foreground text-center">
                             {item.progress < 100 ? `جاري الرفع... ${item.progress}%` : "تم"}
                           </p>
+                        </div>
+                      )}
+                      {item.status === "success" && !item.uploading && (
+                        <div className="flex items-center justify-center gap-1 text-[11px] text-primary bg-primary/10 border border-primary/30 rounded-md py-1.5">
+                          <Check className="w-3.5 h-3.5" /> تم الحفظ بنجاح
+                        </div>
+                      )}
+                      {item.status === "error" && item.error && (
+                        <div className="flex items-start gap-1.5 text-[11px] text-destructive bg-destructive/10 border border-destructive/30 rounded-md p-2">
+                          <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                          <span className="leading-snug">{item.error}</span>
                         </div>
                       )}
 
