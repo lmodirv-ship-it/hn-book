@@ -205,7 +205,7 @@ const PremiumCard = ({ asset }: { asset: Asset }) => {
   // Inside Studio, always route to the studio editor; elsewhere fall back
   // to the asset-type-specific route (book reader, tablou page, etc.).
   const inStudio = location.pathname.startsWith("/studio");
-  const editHref = inStudio ? `/studio/editor/${asset.id}` : getRouteFor(asset.asset_type, asset.id);
+  const editHref = inStudio ? `/studio/editor/${asset.id}?from=studio` : getRouteFor(asset.asset_type, asset.id);
 
   const goToEditor = () => navigate(editHref);
 
