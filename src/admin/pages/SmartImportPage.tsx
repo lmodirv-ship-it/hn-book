@@ -722,7 +722,7 @@ const SmartImportPage = () => {
                         </div>
                       )}
                       {item.status === "success" && !item.uploading && (
-                        <div className="flex items-center justify-center gap-1 text-[11px] text-emerald-500 bg-emerald-500/10 border border-emerald-500/30 rounded-md py-1.5">
+                        <div className="flex items-center justify-center gap-1 text-[11px] text-primary bg-primary/10 border border-primary/30 rounded-md py-1.5">
                           <Check className="w-3.5 h-3.5" /> تم الحفظ بنجاح
                         </div>
                       )}
