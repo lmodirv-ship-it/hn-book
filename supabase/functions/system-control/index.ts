@@ -113,21 +113,27 @@ Deno.serve(async (req) => {
       }
 
       case "restart_workers": {
-        // Reset stuck "processing" jobs back to pending so they get reprocessed
         const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-        const { data, error } = await svc
+        // Legacy upload_jobs
+        const { data: u } = await svc
           .from("upload_jobs")
           .update({ status: "pending", updated_at: new Date().toISOString() })
           .eq("status", "processing")
           .lt("updated_at", tenMinAgo)
           .select("id");
-        if (error) throw error;
-        await logAlert(svc, "info", "workers", `Restarted ${data?.length ?? 0} stuck workers`);
-        return json({ ok: true, restarted: data?.length ?? 0 });
+        // New generic jobs
+        const { data: j } = await svc
+          .from("jobs")
+          .update({ status: "pending", started_at: null, updated_at: new Date().toISOString() })
+          .eq("status", "processing")
+          .lt("updated_at", tenMinAgo)
+          .select("id");
+        const total = (u?.length ?? 0) + (j?.length ?? 0);
+        await logAlert(svc, "info", "workers", `Restarted ${total} stuck workers`);
+        return json({ ok: true, restarted: total, upload_jobs: u?.length ?? 0, jobs: j?.length ?? 0 });
       }
 
       case "clear_cache": {
-        // Bump cms_content updated_at to invalidate client caches; also clear old metrics
         const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         const { count } = await svc.from("system_metrics").delete({ count: "exact" }).lt("created_at", cutoff);
         await logAlert(svc, "info", "cache", `Cleared ${count ?? 0} old metric samples`);
@@ -135,15 +141,37 @@ Deno.serve(async (req) => {
       }
 
       case "retry_failed": {
-        const { data, error } = await svc
+        // Legacy upload_jobs (no attempts column → just re-queue)
+        const { data: u } = await svc
           .from("upload_jobs")
           .update({ status: "pending", updated_at: new Date().toISOString() })
           .eq("status", "error")
           .select("id");
-        if (error) throw error;
-        await logAlert(svc, "info", "queue", `Retrying ${data?.length ?? 0} failed jobs`);
-        return json({ ok: true, retried: data?.length ?? 0 });
+
+        // Generic jobs: only retry while attempts < max_attempts
+        const { data: failed } = await svc
+          .from("jobs")
+          .select("id, attempts, max_attempts")
+          .eq("status", "failed");
+        const eligible = (failed ?? []).filter((x: any) => (x.attempts ?? 0) < (x.max_attempts ?? 3));
+        const exhausted = (failed ?? []).length - eligible.length;
+        if (eligible.length > 0) {
+          await svc
+            .from("jobs")
+            .update({ status: "pending", error: null, started_at: null, updated_at: new Date().toISOString() })
+            .in("id", eligible.map((x: any) => x.id));
+        }
+        if (exhausted > 0) {
+          await logAlert(svc, "warning", "queue",
+            `${exhausted} job(s) exhausted max retries — manual review needed`,
+            { exhausted_ids: (failed ?? []).filter((x: any) => (x.attempts ?? 0) >= (x.max_attempts ?? 3)).map((x: any) => x.id) }
+          );
+        }
+        const total = (u?.length ?? 0) + eligible.length;
+        await logAlert(svc, "info", "queue", `Retrying ${total} failed jobs (${exhausted} exhausted)`);
+        return json({ ok: true, retried: total, exhausted });
       }
+
 
       case "reprocess_imports": {
         // Trigger the upload jobs processor
