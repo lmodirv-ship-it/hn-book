@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Plus, Search, Trash2, Eye, EyeOff, Loader2, Upload } from "lucide-react";
+import { Plus, Search, Trash2, Eye, EyeOff, Loader2, Upload, Pencil } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   assetService,
   ASSET_TYPE_META,
@@ -24,6 +25,7 @@ const ALL_TYPES = Object.keys(ASSET_TYPE_META) as AssetType[];
 
 export default function AssetsManager() {
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [templateMap, setTemplateMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState<AssetCategory | "all">("all");
@@ -48,6 +50,20 @@ export default function AssetsManager() {
         search: search || undefined,
       });
       setAssets(data);
+
+      // Map asset_id -> template_id for CRD assets that have an editable SVG template
+      const crdIds = data.filter((a) => a.asset_type === "CRD").map((a) => a.id);
+      if (crdIds.length) {
+        const { data: tpls } = await supabase
+          .from("svg_templates" as never)
+          .select("id, asset_id")
+          .in("asset_id", crdIds);
+        const map: Record<string, string> = {};
+        (tpls as any[] | null)?.forEach((t) => { if (t.asset_id) map[t.asset_id] = t.id; });
+        setTemplateMap(map);
+      } else {
+        setTemplateMap({});
+      }
     } catch (e: any) {
       toast.error(e.message ?? "فشل التحميل");
     } finally {
@@ -268,6 +284,13 @@ export default function AssetsManager() {
                   </TableCell>
                   <TableCell className="text-end">
                     <div className="flex justify-end gap-1">
+                      {a.asset_type === "CRD" && templateMap[a.id] && (
+                        <Link to={`/editor/${templateMap[a.id]}`}>
+                          <Button size="icon" variant="ghost" title="تعديل التصميم">
+                            <Pencil className="w-4 h-4 text-primary" />
+                          </Button>
+                        </Link>
+                      )}
                       <Button size="icon" variant="ghost" onClick={() => handleToggle(a)}>
                         {a.is_active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </Button>
