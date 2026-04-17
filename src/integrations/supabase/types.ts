@@ -25,8 +25,11 @@ export type Database = {
           id: string
           is_active: boolean
           key_hint: string | null
+          last_test_message: string | null
+          last_tested_at: string | null
           name: string
           secret_ref: string | null
+          status: string
           updated_at: string
         }
         Insert: {
@@ -39,8 +42,11 @@ export type Database = {
           id?: string
           is_active?: boolean
           key_hint?: string | null
+          last_test_message?: string | null
+          last_tested_at?: string | null
           name: string
           secret_ref?: string | null
+          status?: string
           updated_at?: string
         }
         Update: {
@@ -53,8 +59,11 @@ export type Database = {
           id?: string
           is_active?: boolean
           key_hint?: string | null
+          last_test_message?: string | null
+          last_tested_at?: string | null
           name?: string
           secret_ref?: string | null
+          status?: string
           updated_at?: string
         }
         Relationships: []
