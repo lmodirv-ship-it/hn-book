@@ -4,7 +4,7 @@
  * with Edit / Order actions, dropdown filter, and CTA header.
  */
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Search, Loader2, Edit3, Printer, Sparkles, Flame, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -31,8 +31,21 @@ const TemplatesGallery = () => {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState<CategoryFilter>("all");
-  const [type, setType] = useState<TypeFilter>("all");
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Initial filters from URL (?type=FNT or ?category=DSN)
+  const urlType = (searchParams.get("type") as TypeFilter) || "all";
+  const urlCat = (searchParams.get("category") as CategoryFilter) || "all";
+  const [category, setCategory] = useState<CategoryFilter>(urlCat);
+  const [type, setType] = useState<TypeFilter>(urlType);
+
+  // Keep URL in sync so links/share work.
+  useEffect(() => {
+    const next = new URLSearchParams();
+    if (category !== "all") next.set("category", category);
+    if (type !== "all") next.set("type", type);
+    setSearchParams(next, { replace: true });
+  }, [category, type, setSearchParams]);
 
   useEffect(() => {
     let cancelled = false;
