@@ -54,6 +54,7 @@ import AIClassifier from "./admin/pages/AIClassifier.tsx";
 import FeatureManager from "./admin/pages/FeatureManager.tsx";
 import SystemMonitoring from "./admin/pages/SystemMonitoring.tsx";
 import ApiIntegrationsAdmin from "./admin/pages/ApiIntegrationsAdmin.tsx";
+import AssetsManager from "./admin/pages/AssetsManager.tsx";
 
 const queryClient = new QueryClient();
 
@@ -123,6 +124,7 @@ const App = () => (
               <Route path="features" element={<FeatureManager />} />
               <Route path="monitoring" element={<SystemMonitoring />} />
               <Route path="api-integrations" element={<ApiIntegrationsAdmin />} />
+              <Route path="assets" element={<AssetsManager />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />
