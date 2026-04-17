@@ -19,33 +19,42 @@ export type Database = {
           api_key_name: string | null
           base_url: string
           category: string
+          config: Json
           created_at: string
           description: string | null
           id: string
           is_active: boolean
+          key_hint: string | null
           name: string
+          secret_ref: string | null
           updated_at: string
         }
         Insert: {
           api_key_name?: string | null
           base_url?: string
           category?: string
+          config?: Json
           created_at?: string
           description?: string | null
           id?: string
           is_active?: boolean
+          key_hint?: string | null
           name: string
+          secret_ref?: string | null
           updated_at?: string
         }
         Update: {
           api_key_name?: string | null
           base_url?: string
           category?: string
+          config?: Json
           created_at?: string
           description?: string | null
           id?: string
           is_active?: boolean
+          key_hint?: string | null
           name?: string
+          secret_ref?: string | null
           updated_at?: string
         }
         Relationships: []
