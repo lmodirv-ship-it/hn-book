@@ -1,6 +1,6 @@
 import { useLocation, useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { CheckCircle2, Package, ArrowLeft, BookOpen, Copy } from "lucide-react";
+import { CheckCircle2, Package, ArrowLeft, BookOpen, Copy, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import Navbar from "@/components/Navbar";
