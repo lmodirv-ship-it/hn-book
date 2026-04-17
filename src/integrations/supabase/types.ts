@@ -1407,6 +1407,36 @@ export type Database = {
           },
         ]
       }
+      system_alerts: {
+        Row: {
+          acknowledged: boolean
+          created_at: string
+          details: Json
+          id: string
+          level: string
+          message: string
+          source: string
+        }
+        Insert: {
+          acknowledged?: boolean
+          created_at?: string
+          details?: Json
+          id?: string
+          level?: string
+          message: string
+          source?: string
+        }
+        Update: {
+          acknowledged?: boolean
+          created_at?: string
+          details?: Json
+          id?: string
+          level?: string
+          message?: string
+          source?: string
+        }
+        Relationships: []
+      }
       system_config: {
         Row: {
           category: string
@@ -1470,6 +1500,30 @@ export type Database = {
           skipped_count?: number
           total_issues?: number
           triggered_by?: string
+        }
+        Relationships: []
+      }
+      system_metrics: {
+        Row: {
+          created_at: string
+          id: string
+          metadata: Json
+          metric_key: string
+          metric_value: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metadata?: Json
+          metric_key: string
+          metric_value: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metadata?: Json
+          metric_key?: string
+          metric_value?: number
         }
         Relationships: []
       }
