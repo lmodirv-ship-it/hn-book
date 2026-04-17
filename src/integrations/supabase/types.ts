@@ -579,6 +579,60 @@ export type Database = {
           },
         ]
       }
+      jobs: {
+        Row: {
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          data: Json
+          error: string | null
+          id: string
+          max_attempts: number
+          priority: number
+          result: Json | null
+          scheduled_at: string
+          started_at: string | null
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          error?: string | null
+          id?: string
+          max_attempts?: number
+          priority?: number
+          result?: Json | null
+          scheduled_at?: string
+          started_at?: string | null
+          status?: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          error?: string | null
+          id?: string
+          max_attempts?: number
+          priority?: number
+          result?: Json | null
+          scheduled_at?: string
+          started_at?: string | null
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       logos: {
         Row: {
           category: string
