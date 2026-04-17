@@ -43,6 +43,7 @@ import DocumentProcessing from "./pages/DocumentProcessing.tsx";
 import DocumentProcessor from "./admin/pages/DocumentProcessor.tsx";
 import CategoryManagement from "./admin/pages/CategoryManagement.tsx";
 import PricingManagement from "./admin/pages/PricingManagement.tsx";
+import PrintPricingManagement from "./admin/pages/PrintPricingManagement.tsx";
 import DatabaseManager from "./admin/pages/DatabaseManager.tsx";
 import SalesManagement from "./admin/pages/SalesManagement.tsx";
 import RecommendationsManagement from "./admin/pages/RecommendationsManagement.tsx";
@@ -142,6 +143,7 @@ const App = () => (
               <Route path="health-check" element={<SystemHealthCheck />} />
               <Route path="settings" element={<AdminSettings />} />
               <Route path="pricing" element={<PricingManagement />} />
+              <Route path="print-pricing" element={<PrintPricingManagement />} />
               <Route path="database" element={<DatabaseManager />} />
               <Route path="sales" element={<SalesManagement />} />
               <Route path="recommendations" element={<RecommendationsManagement />} />

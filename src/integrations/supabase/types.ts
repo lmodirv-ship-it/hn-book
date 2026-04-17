@@ -867,6 +867,42 @@ export type Database = {
           },
         ]
       }
+      print_pricing_rules: {
+        Row: {
+          asset_type: string
+          base_price: number
+          created_at: string
+          id: string
+          is_active: boolean
+          paper_size: string | null
+          quantity: number
+          shipping_price: number
+          updated_at: string
+        }
+        Insert: {
+          asset_type: string
+          base_price?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          paper_size?: string | null
+          quantity: number
+          shipping_price?: number
+          updated_at?: string
+        }
+        Update: {
+          asset_type?: string
+          base_price?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          paper_size?: string | null
+          quantity?: number
+          shipping_price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       processed_documents: {
         Row: {
           confidence: number | null

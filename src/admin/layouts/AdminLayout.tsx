@@ -30,6 +30,7 @@ const navItems = [
   { path: "/admin/analytics", icon: BarChart3, label: "تحليلات المتجر" },
   { path: "/admin/health-check", icon: ShieldCheck, label: "فحص صحة النظام" },
   { path: "/admin/pricing", icon: DollarSign, label: "إدارة التسعير" },
+  { path: "/admin/print-pricing", icon: DollarSign, label: "تسعير الطباعة" },
   { path: "/admin/database", icon: Database, label: "مدير قاعدة البيانات" },
   { path: "/admin/sales", icon: Crown, label: "المبيعات والاشتراكات" },
   { path: "/admin/recommendations", icon: BookOpen, label: "التوصيات" },
