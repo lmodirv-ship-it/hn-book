@@ -44,6 +44,7 @@ const navItems = [
   { path: "/admin/features", icon: ToggleRight, label: "مدير الميزات" },
   { path: "/admin/monitoring", icon: MonitorDot, label: "مراقبة النظام" },
   { path: "/admin/queue", icon: ListChecks, label: "قائمة الانتظار" },
+  { path: "/admin/auto-heal", icon: MonitorDot, label: "الإصلاح التلقائي" },
   { path: "/admin/api-integrations", icon: Globe, label: "تكاملات API" },
   { path: "/admin/cms", icon: FileText, label: "إدارة المحتوى (CMS)" },
   { path: "/admin/users", icon: Users, label: "المستخدمون والأدوار" },
