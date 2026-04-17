@@ -11,6 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { buildPrintReadyPdf, type PageSize, type BuildPrintPdfResult } from "@/lib/print-pdf";
 import { printService, DELIVERY_OPTIONS, getShippingFee, calculatePrice } from "@/services/printService";
 import { printPricingService } from "@/services/printPricingService";
+import CardPrintPreview from "@/components/editor/CardPrintPreview";
 
 interface PrintReadyDialogProps {
   open: boolean;
@@ -29,10 +30,15 @@ interface PrintReadyDialogProps {
 const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, templateId, designData, defaultPhone }: PrintReadyDialogProps) => {
   const [pageSize, setPageSize] = useState<PageSize>("A4");
   const [cutMarks, setCutMarks] = useState(true);
+  const [registrationMarks, setRegistrationMarks] = useState(true);
+  const [mirrorBack, setMirrorBack] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState<BuildPrintPdfResult | null>(null);
   const [phone, setPhone] = useState(defaultPhone ?? "212600000000");
   const [note, setNote] = useState("");
+  const [overlayBleed, setOverlayBleed] = useState(true);
+  const [overlaySafe, setOverlaySafe] = useState(true);
+  const [overlayCrop, setOverlayCrop] = useState(true);
 
   // Order details
   const [customerName, setCustomerName] = useState("");
@@ -91,12 +97,14 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
         backNode: backNode || null,
         pageSize,
         cutMarks,
+        registrationMarks,
+        mirrorBack,
         fileName: `${cardName || "carte"}-${pageSize}.pdf`,
       });
       setResult(r);
-      toast({ title: "تم توليد ملف الطباعة ✅", description: `${r.totalCards} بطاقة في الصفحة • ${pageSize}` });
+      toast({ title: "تم توليد ملف الطباعة ✅", description: `${r.totalCards} بطاقة في الصفحة • ${pageSize} • نزيف 3mm` });
     } catch (e: any) {
-      toast({ title: "فشل توليد PDF", description: e.message, variant: "destructive" });
+      toast({ title: "فشل توليد PDF", description: e?.message ?? "خطأ غير معروف", variant: "destructive" });
     } finally {
       setGenerating(false);
     }
@@ -240,7 +248,7 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
                   <RadioGroupItem id="ps-a4" value="A4" />
                   <div>
                     <div className="font-semibold text-sm">A4</div>
-                    <div className="text-xs text-muted-foreground">210×297mm — ~10 بطاقات</div>
+                    <div className="text-xs text-muted-foreground">210×297mm — 10 بطاقات (2×5)</div>
                   </div>
                 </label>
                 <label
@@ -250,24 +258,43 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
                   <RadioGroupItem id="ps-a3" value="A3" />
                   <div>
                     <div className="font-semibold text-sm">A3</div>
-                    <div className="text-xs text-muted-foreground">297×420mm — ~21 بطاقة</div>
+                    <div className="text-xs text-muted-foreground">297×420mm — 20 بطاقة (4×5)</div>
                   </div>
                 </label>
               </RadioGroup>
             </div>
 
-            <div className="flex items-center justify-between rounded-lg border border-border p-3">
-              <div>
-                <Label className="text-sm">علامات القص (Cut marks)</Label>
-                <p className="text-xs text-muted-foreground">يضيف علامات صغيرة عند زوايا كل بطاقة لتسهيل القص.</p>
+            <CardPrintPreview
+              frontNode={frontNode}
+              showBleed={overlayBleed}
+              showSafe={overlaySafe}
+              showCrop={overlayCrop}
+              onToggle={(k, v) => {
+                if (k === "bleed") setOverlayBleed(v);
+                else if (k === "safe") setOverlaySafe(v);
+                else setOverlayCrop(v);
+              }}
+            />
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div className="flex items-center justify-between rounded-lg border border-border p-2.5 text-xs">
+                <span>علامات القص</span>
+                <Switch checked={cutMarks} onCheckedChange={setCutMarks} />
               </div>
-              <Switch checked={cutMarks} onCheckedChange={setCutMarks} />
+              <div className="flex items-center justify-between rounded-lg border border-border p-2.5 text-xs">
+                <span>علامات المحاذاة</span>
+                <Switch checked={registrationMarks} onCheckedChange={setRegistrationMarks} />
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-border p-2.5 text-xs">
+                <span>عكس الخلف (Duplex)</span>
+                <Switch checked={mirrorBack} onCheckedChange={setMirrorBack} disabled={!backNode} />
+              </div>
             </div>
 
             <div className="rounded-lg bg-muted/30 border border-border p-3 text-xs text-muted-foreground space-y-1">
-              <p className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> صفحة 1: الوجه الأمامي مكرر في شبكة</p>
-              {backNode && <p className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> صفحة 2: الوجه الخلفي بنفس الترتيب (مرآة) — مناسب للطباعة على الوجهين</p>}
-              <p className="flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> دقة ~300 DPI • مقاس البطاقة 85×55mm</p>
+              <p className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> صفحة 1: الوجه الأمامي • شبكة منتظمة مع نزيف 3mm</p>
+              {backNode && <p className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> صفحة 2: الوجه الخلفي {mirrorBack ? "(معكوس)" : "(بنفس الترتيب)"} للطباعة على الوجهين</p>}
+              <p className="flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> SVG Vector عند الإمكان • Raster احتياطي 600 DPI • قص 85×55mm</p>
             </div>
 
             <DialogFooter>
