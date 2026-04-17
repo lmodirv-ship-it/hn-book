@@ -394,3 +394,17 @@ async function renderPage(
   }
   if (registrationMarks) drawRegistrationMarks(pdf, layout);
 }
+
+/** Export a single card node as a high-resolution PNG (300+ DPI). */
+export async function exportCardAsPng(
+  node: HTMLElement,
+  fileName = `card-${Date.now()}.png`,
+): Promise<{ blob: Blob; url: string; fileName: string }> {
+  if (!node) throw new Error("لا يوجد عنصر تصميم للتصدير");
+  await waitForFonts();
+  const dataUrl = await toPng(node, { pixelRatio: 6, cacheBust: true, backgroundColor: "#ffffff" });
+  const res = await fetch(dataUrl);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  return { blob, url, fileName };
+}
