@@ -82,25 +82,56 @@ Deno.serve(async (req) => {
       .update({ status: "processing", started_at: new Date().toISOString(), attempts: 0 })
       .in("id", ids);
 
+    // Load per-type retry policies once
+    const { data: policies } = await supabase
+      .from("job_retry_policies")
+      .select("job_type,max_attempts,backoff_seconds,enabled");
+    const policyByType: Record<string, { max_attempts: number; backoff_seconds: number; enabled: boolean }> = {};
+    for (const p of policies || []) policyByType[p.job_type] = p;
+
+    async function recordAttempt(jobId: string, attempt: number, status: string, error: string | null, durationMs: number | null) {
+      try {
+        await supabase.from("job_attempts").insert({ job_id: jobId, attempt, status, error, duration_ms: durationMs });
+      } catch (_) { /* swallow */ }
+    }
+
+    async function notifyDead(job: any, error: string) {
+      try {
+        await supabase.functions.invoke("notify-dead-job", { body: { jobId: job.id, type: job.type, error } });
+        await supabase.from("jobs").update({ last_notified_at: new Date().toISOString() }).eq("id", job.id);
+      } catch (_) { /* swallow */ }
+    }
+
     const results: any[] = [];
 
     for (const job of jobs) {
       const handler = handlers[job.type];
       const attempt = (job.attempts ?? 0) + 1;
+      const policy = policyByType[job.type];
+      const effectiveMax = policy?.enabled === false
+        ? 1
+        : (policy?.max_attempts ?? job.max_attempts ?? 3);
+      const backoffBase = (policy?.backoff_seconds ?? 30) * 1000;
+      const startedAt = Date.now();
+      await recordAttempt(job.id, attempt, "started", null, null);
 
       if (!handler) {
+        const msg = `No handler for type: ${job.type}`;
         await supabase.from("jobs").update({
-          status: "failed",
-          error: `No handler for type: ${job.type}`,
+          status: "dead",
+          error: msg,
           attempts: attempt,
           completed_at: new Date().toISOString(),
         }).eq("id", job.id);
-        results.push({ id: job.id, success: false, error: "no handler" });
+        await recordAttempt(job.id, attempt, "dead", msg, Date.now() - startedAt);
+        await notifyDead(job, msg);
+        results.push({ id: job.id, success: false, error: "no handler", dead: true });
         continue;
       }
 
       try {
         const result = await handler(job.data, { supabase, jobId: job.id });
+        const durationMs = Date.now() - startedAt;
         await supabase.from("jobs").update({
           status: "completed",
           result,
@@ -108,20 +139,25 @@ Deno.serve(async (req) => {
           completed_at: new Date().toISOString(),
           error: null,
         }).eq("id", job.id);
+        await recordAttempt(job.id, attempt, "succeeded", null, durationMs);
         results.push({ id: job.id, success: true });
       } catch (err: any) {
         const msg = err?.message || "Unknown error";
-        const shouldRetry = attempt < (job.max_attempts ?? 3);
+        const durationMs = Date.now() - startedAt;
+        const shouldRetry = attempt < effectiveMax;
+        const isDead = !shouldRetry;
         await supabase.from("jobs").update({
-          status: shouldRetry ? "pending" : "failed",
+          status: shouldRetry ? "pending" : "dead",
           error: msg,
           attempts: attempt,
           completed_at: shouldRetry ? null : new Date().toISOString(),
           scheduled_at: shouldRetry
-            ? new Date(Date.now() + 30_000 * attempt).toISOString() // backoff
+            ? new Date(Date.now() + backoffBase * attempt).toISOString() // linear backoff per policy
             : job.scheduled_at,
         }).eq("id", job.id);
-        results.push({ id: job.id, success: false, error: msg, retrying: shouldRetry });
+        await recordAttempt(job.id, attempt, isDead ? "dead" : "failed", msg, durationMs);
+        if (isDead) await notifyDead(job, msg);
+        results.push({ id: job.id, success: false, error: msg, retrying: shouldRetry, dead: isDead });
       }
     }
 

@@ -4,8 +4,26 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 
-export type JobType = "pdf_generation" | "eps_to_svg" | "import" | "whatsapp_send" | string;
-export type JobStatus = "pending" | "processing" | "completed" | "failed" | "cancelled";
+export type JobType = "pdf_generation" | "eps_to_svg" | "import" | "whatsapp_send" | "generate_pdf" | "convert_eps_to_svg" | "import_designs" | "send_whatsapp" | string;
+export type JobStatus = "pending" | "processing" | "completed" | "failed" | "cancelled" | "dead";
+
+export interface JobAttempt {
+  id: number;
+  job_id: string;
+  attempt: number;
+  status: "started" | "succeeded" | "failed" | "dead";
+  error: string | null;
+  duration_ms: number | null;
+  created_at: string;
+}
+
+export interface JobRetryPolicy {
+  id: string;
+  job_type: string;
+  max_attempts: number;
+  backoff_seconds: number;
+  enabled: boolean;
+}
 
 export interface Job {
   id: string;
