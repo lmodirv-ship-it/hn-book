@@ -23,6 +23,34 @@ const BUCKET = "book-images";
 const IMAGE_EXTS = ["jpg", "jpeg", "png", "webp", "gif", "bmp", "tiff"];
 const SOURCE_EXTS = ["eps", "ai", "psd", "indd", "svg", "cdr", "sketch", "fig"];
 
+// Formats that the browser/Supabase storage cannot accept directly.
+// .cdr (CorelDRAW) needs server-side conversion (Inkscape/Ghostscript) which is
+// NOT available in this environment. Reject upfront with a clear message.
+const UNSUPPORTED_DIRECT_EXTS = new Set(["cdr"]);
+const MAX_FILE_SIZE_MB = 50;
+
+function describeUploadError(err: unknown, file: File): string {
+  const msg = err instanceof Error ? err.message : String(err ?? "");
+  const ext = fileExt(file.name);
+  // Common patterns
+  if (/Failed to fetch|NetworkError|network/i.test(msg)) {
+    return `تعذّر الاتصال بالخادم أثناء رفع "${file.name}". تحقق من الإنترنت أو حجم الملف (${(file.size / 1024 / 1024).toFixed(1)}MB).`;
+  }
+  if (/payload|too large|413/i.test(msg)) {
+    return `الملف "${file.name}" كبير جداً (${(file.size / 1024 / 1024).toFixed(1)}MB). الحد الأقصى ${MAX_FILE_SIZE_MB}MB.`;
+  }
+  if (/row-level security|policy|permission|403|401/i.test(msg)) {
+    return `لا تملك صلاحية رفع "${file.name}". يرجى تسجيل الدخول كمسؤول.`;
+  }
+  if (/duplicate|already exists|409/i.test(msg)) {
+    return `ملف بنفس الاسم موجود مسبقاً (${file.name}).`;
+  }
+  if (/mime|type|unsupported/i.test(msg)) {
+    return `نوع الملف غير مدعوم: .${ext}`;
+  }
+  return msg || `فشل رفع "${file.name}"`;
+}
+
 // ── Auto-detect asset type from file ──
 function detectType(file: File): AssetType {
   const ext = file.name.split(".").pop()?.toLowerCase() || "";
