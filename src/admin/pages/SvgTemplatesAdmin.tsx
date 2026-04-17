@@ -221,6 +221,28 @@ const SvgTemplatesAdmin = () => {
               <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="business" />
             </div>
 
+            <div>
+              <Label className="flex items-center justify-between">
+                <span>نوع القالب</span>
+                {typeAutoDetected && (
+                  <Badge variant="secondary" className="text-[9px]">مكتشف تلقائياً • قابل للتعديل</Badge>
+                )}
+              </Label>
+              <Select value={templateType} onValueChange={(v) => { setTemplateType(v as SvgTemplateType); setTypeAutoDetected(false); }}>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {SVG_TEMPLATE_TYPES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      <span className="font-mono text-xs me-2 opacity-60">{t.value}</span>{t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                سيتم توليد كود فريد تلقائياً (مثل <code className="font-mono">{templateType.charAt(0)}000001</code>) وحفظ الملف في مجلد <code className="font-mono">{SVG_TEMPLATE_TYPES.find(t=>t.value===templateType)?.folder}/</code>.
+              </p>
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">SVG الوجه الأمامي *</Label>
