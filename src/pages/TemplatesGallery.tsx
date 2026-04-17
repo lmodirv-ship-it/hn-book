@@ -4,7 +4,7 @@
  * with Edit / Order actions, dropdown filter, and CTA header.
  */
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Search, Loader2, Edit3, Printer, Sparkles, Flame, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -200,10 +200,23 @@ const SectionRow = ({
 
 const PremiumCard = ({ asset }: { asset: Asset }) => {
   const meta = ASSET_TYPE_META[asset.asset_type];
-  const editHref = getRouteFor(asset.asset_type, asset.id);
+  const navigate = useNavigate();
+  const location = useLocation();
+  // Inside Studio, always route to the studio editor; elsewhere fall back
+  // to the asset-type-specific route (book reader, tablou page, etc.).
+  const inStudio = location.pathname.startsWith("/studio");
+  const editHref = inStudio ? `/studio/editor/${asset.id}` : getRouteFor(asset.asset_type, asset.id);
+
+  const goToEditor = () => navigate(editHref);
 
   return (
-    <div className="group relative">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={goToEditor}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goToEditor(); } }}
+      className="group relative cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded-xl"
+    >
       {/* Subtle gold glow on hover */}
       <div className="absolute -inset-px rounded-xl bg-gradient-to-br from-primary/0 via-primary/0 to-primary/0 group-hover:from-primary/40 group-hover:to-primary/10 transition-all duration-500 blur-sm" />
 
