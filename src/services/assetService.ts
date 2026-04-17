@@ -23,6 +23,7 @@ export interface CreateAssetInput {
   image_url: string;
   file_url?: string | null;
   description?: string;
+  metadata?: Record<string, any>;
 }
 
 export const ASSET_TYPE_META: Record<AssetType, { label: string; category: AssetCategory; emoji: string }> = {
@@ -64,6 +65,7 @@ export const assetService = {
         image_url: input.image_url,
         file_url: input.file_url ?? null,
         description: input.description ?? "",
+        metadata: input.metadata ?? {},
       } as never)
       .select()
       .single();

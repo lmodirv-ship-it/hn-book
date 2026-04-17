@@ -80,11 +80,13 @@ interface PendingFolderItem {
   id: string;
   folderName: string;
   title: string;
-  previewFile: File | null;
+  previewFile: File | null;        // front (or only) preview image
+  backFile: File | null;           // back image when detected
   sourceFile: File | null;
   extraFiles: File[];
-  previewUrl: string;
-  warning: string | null; // missing source warning
+  previewUrl: string;              // front preview blob url
+  backUrl: string;                 // back preview blob url
+  warning: string | null;
   uploading: boolean;
   progress: number;
 }
@@ -99,7 +101,6 @@ function groupFilesByFolder(files: File[]): Map<string, File[]> {
     const rel: string = f.webkitRelativePath || "";
     if (!rel.includes("/")) continue;
     const parts = rel.split("/");
-    // Use the deepest folder (parent of file) as the asset group
     const folderKey = parts.slice(0, -1).join("/");
     if (!groups.has(folderKey)) groups.set(folderKey, []);
     groups.get(folderKey)!.push(f);
@@ -107,17 +108,36 @@ function groupFilesByFolder(files: File[]): Map<string, File[]> {
   return groups;
 }
 
+const FRONT_RE = /(^|[^a-z])(front|recto|amam|amami|أمام|واجهة)([^a-z]|$)/i;
+const BACK_RE = /(^|[^a-z])(back|verso|khalf|khalfi|خلف|خلفية|ظهر)([^a-z]|$)/i;
+
 function buildFolderItem(folderPath: string, files: File[]): PendingFolderItem | null {
   const folderName = folderPath.split("/").pop() || folderPath;
-  const previewFile =
-    files.find((f) => IMAGE_EXTS.includes(fileExt(f.name))) || null;
-  const sourceFile =
-    files.find((f) => SOURCE_EXTS.includes(fileExt(f.name))) || null;
+  const images = files.filter((f) => IMAGE_EXTS.includes(fileExt(f.name)));
+  const sourceFile = files.find((f) => SOURCE_EXTS.includes(fileExt(f.name))) || null;
+
+  // Detect front/back by filename
+  const frontByName = images.find((f) => FRONT_RE.test(f.name)) || null;
+  const backByName = images.find((f) => BACK_RE.test(f.name)) || null;
+
+  let previewFile: File | null = frontByName;
+  let backFile: File | null = backByName;
+
+  // Fallbacks
+  if (!previewFile) {
+    // pick first image that isn't the back
+    previewFile = images.find((f) => f !== backFile) || null;
+  }
+  if (!previewFile) return null; // skip folders without any preview
+
+  const usedImages = new Set([previewFile, backFile].filter(Boolean) as File[]);
   const extraFiles = files.filter(
-    (f) => f !== previewFile && f !== sourceFile,
+    (f) => !usedImages.has(f) && f !== sourceFile,
   );
 
-  if (!previewFile) return null; // skip folders without preview
+  const warnings: string[] = [];
+  if (!sourceFile) warnings.push("ملف المصدر (EPS/AI) غير موجود");
+  if (!backFile && images.length >= 2) warnings.push("لم يتم تحديد الوجه الخلفي تلقائياً");
 
   return {
     kind: "folder",
@@ -125,10 +145,12 @@ function buildFolderItem(folderPath: string, files: File[]): PendingFolderItem |
     folderName,
     title: folderName.replace(/[-_]+/g, " ").trim(),
     previewFile,
+    backFile,
     sourceFile,
     extraFiles,
     previewUrl: URL.createObjectURL(previewFile),
-    warning: sourceFile ? null : "ملف المصدر (EPS/AI) غير موجود",
+    backUrl: backFile ? URL.createObjectURL(backFile) : "",
+    warning: warnings.length ? warnings.join(" • ") : null,
     uploading: false,
     progress: 0,
   };
@@ -219,8 +241,9 @@ const SmartImportPage = () => {
   const removePending = (id: string) => {
     setPending((prev) => {
       const item = prev.find((p) => p.id === id);
-      if (item && "previewUrl" in item && item.previewUrl) {
-        URL.revokeObjectURL(item.previewUrl);
+      if (item) {
+        if ("previewUrl" in item && item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+        if (item.kind === "folder" && item.backUrl) URL.revokeObjectURL(item.backUrl);
       }
       return prev.filter((p) => p.id !== id);
     });
@@ -272,23 +295,37 @@ const SmartImportPage = () => {
     }
     updatePending(item.id, { uploading: true, progress: 5 } as Partial<PendingFolderItem>);
     try {
-      // Upload preview image
-      updatePending(item.id, { progress: 25 } as Partial<PendingFolderItem>);
-      const imageUrl = await uploadToBucket(item.previewFile, `assets/CRD/preview`);
+      // Upload front (preview) image
+      updatePending(item.id, { progress: 20 } as Partial<PendingFolderItem>);
+      const imageUrl = await uploadToBucket(item.previewFile, `assets/CRD/front`);
+
+      // Upload back image if detected
+      let backUrl: string | null = null;
+      if (item.backFile) {
+        updatePending(item.id, { progress: 45 } as Partial<PendingFolderItem>);
+        backUrl = await uploadToBucket(item.backFile, `assets/CRD/back`);
+      }
 
       // Upload source file if available
       let fileUrl: string | null = null;
       if (item.sourceFile) {
-        updatePending(item.id, { progress: 60 } as Partial<PendingFolderItem>);
+        updatePending(item.id, { progress: 70 } as Partial<PendingFolderItem>);
         fileUrl = await uploadToBucket(item.sourceFile, `assets/CRD/source`);
       }
 
-      updatePending(item.id, { progress: 85 } as Partial<PendingFolderItem>);
+      updatePending(item.id, { progress: 90 } as Partial<PendingFolderItem>);
       const created = await assetService.create({
         asset_type: "CRD",
         title: item.title.trim() || item.folderName,
         image_url: imageUrl,
         file_url: fileUrl ?? imageUrl,
+        metadata: {
+          front_image: imageUrl,
+          back_image: backUrl,
+          has_back: !!backUrl,
+          source_url: fileUrl,
+          folder_name: item.folderName,
+        },
       });
 
       updatePending(item.id, { progress: 100 } as Partial<PendingFolderItem>);
@@ -417,6 +454,7 @@ const SmartImportPage = () => {
                 <Button size="sm" variant="ghost" onClick={() => {
                   pending.forEach((p) => {
                     if ("previewUrl" in p && p.previewUrl) URL.revokeObjectURL(p.previewUrl);
+                    if (p.kind === "folder" && p.backUrl) URL.revokeObjectURL(p.backUrl);
                   });
                   setPending([]);
                 }}>
@@ -445,13 +483,39 @@ const SmartImportPage = () => {
                     <div className="aspect-video bg-muted flex items-center justify-center relative">
                       {isFolder ? (
                         <>
-                          <img
-                            src={(item as PendingFolderItem).previewUrl}
-                            alt={(item as PendingFolderItem).folderName}
-                            className="w-full h-full object-cover"
-                          />
+                          {(item as PendingFolderItem).backFile ? (
+                            <div className="grid grid-cols-2 w-full h-full divide-x divide-border/40">
+                              <div className="relative h-full">
+                                <img
+                                  src={(item as PendingFolderItem).previewUrl}
+                                  alt="front"
+                                  className="w-full h-full object-cover"
+                                />
+                                <Badge className="absolute bottom-1 right-1 text-[9px] py-0 px-1.5 bg-background/80 text-foreground">
+                                  أمام
+                                </Badge>
+                              </div>
+                              <div className="relative h-full">
+                                <img
+                                  src={(item as PendingFolderItem).backUrl}
+                                  alt="back"
+                                  className="w-full h-full object-cover"
+                                />
+                                <Badge className="absolute bottom-1 right-1 text-[9px] py-0 px-1.5 bg-background/80 text-foreground">
+                                  خلف
+                                </Badge>
+                              </div>
+                            </div>
+                          ) : (
+                            <img
+                              src={(item as PendingFolderItem).previewUrl}
+                              alt={(item as PendingFolderItem).folderName}
+                              className="w-full h-full object-cover"
+                            />
+                          )}
                           <Badge className="absolute top-2 right-2 gap-1 bg-primary/90">
-                            <FolderOpen className="w-3 h-3" /> مجلد
+                            <FolderOpen className="w-3 h-3" />
+                            {(item as PendingFolderItem).backFile ? "وجهين" : "مجلد"}
                           </Badge>
                         </>
                       ) : (item as PendingFileItem).isImage ? (
@@ -495,9 +559,15 @@ const SmartImportPage = () => {
                             </span>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">🖼️ المعاينة:</span>
+                            <span className="text-muted-foreground">🟢 أمام:</span>
                             <span className="text-foreground truncate max-w-[60%]">
                               {(item as PendingFolderItem).previewFile?.name}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">🔵 خلف:</span>
+                            <span className={(item as PendingFolderItem).backFile ? "text-foreground truncate max-w-[60%]" : "text-muted-foreground/60"}>
+                              {(item as PendingFolderItem).backFile?.name || "—"}
                             </span>
                           </div>
                           <div className="flex items-center justify-between">
