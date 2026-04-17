@@ -381,11 +381,25 @@ const TemplateEditor = () => {
             </Button>
           </Link>
           <h1 className="font-bold text-sm flex-1 truncate">{template.name}</h1>
-          <Button variant="outline" size="sm" onClick={exportPng} disabled={exporting} className="gap-1.5">
-            <FileImage className="w-4 h-4" /> PNG
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportPng}
+            disabled={exporting || !canExportPng}
+            title={canExportPng ? "تحميل PNG" : "غير مسموح لك بتحميل الملفات"}
+            className="gap-1.5"
+          >
+            {canExportPng ? <FileImage className="w-4 h-4" /> : <Lock className="w-4 h-4" />} PNG
           </Button>
-          <Button variant="outline" size="sm" onClick={exportPdf} disabled={exporting} className="gap-1.5">
-            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} PDF
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportPdf}
+            disabled={exporting || !canExportPdf}
+            title={canExportPdf ? "تحميل PDF" : "غير مسموح لك بتحميل الملفات"}
+            className="gap-1.5"
+          >
+            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : canExportPdf ? <Download className="w-4 h-4" /> : <Lock className="w-4 h-4" />} PDF
           </Button>
           <Button size="sm" onClick={sendToPrintShop} disabled={exporting} className="gap-1.5">
             {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />} طباعة
