@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Loader2, Download, FileImage, FileText, RotateCw, ArrowRight, Palette, Upload, X, Image as ImageIcon } from "lucide-react";
+import { Loader2, Download, FileImage, FileText, RotateCw, ArrowRight, Palette, Upload, X, Image as ImageIcon, Printer } from "lucide-react";
 import { toPng } from "html-to-image";
 import jsPDF from "jspdf";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { svgTemplateService, type SvgTemplate, type SvgField } from "@/services/svgTemplateService";
 import SvgRenderer from "@/components/editor/SvgRenderer";
+import PrintReadyDialog from "@/components/editor/PrintReadyDialog";
 
 const TemplateEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +20,7 @@ const TemplateEditor = () => {
   const [side, setSide] = useState<"front" | "back">("front");
   const [flipping, setFlipping] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [printOpen, setPrintOpen] = useState(false);
 
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
@@ -139,8 +141,11 @@ const TemplateEditor = () => {
           <Button variant="outline" size="sm" onClick={exportPng} disabled={exporting} className="gap-1.5">
             <FileImage className="w-4 h-4" /> PNG
           </Button>
-          <Button size="sm" onClick={exportPdf} disabled={exporting} className="gap-1.5">
+          <Button variant="outline" size="sm" onClick={exportPdf} disabled={exporting} className="gap-1.5">
             {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} PDF
+          </Button>
+          <Button size="sm" onClick={() => setPrintOpen(true)} className="gap-1.5">
+            <Printer className="w-4 h-4" /> طباعة
           </Button>
         </div>
       </header>
@@ -293,6 +298,14 @@ const TemplateEditor = () => {
           </p>
         </div>
       </div>
+
+      <PrintReadyDialog
+        open={printOpen}
+        onOpenChange={setPrintOpen}
+        frontNode={frontRef.current}
+        backNode={hasBack ? backRef.current : null}
+        cardName={template.name}
+      />
     </div>
   );
 };
