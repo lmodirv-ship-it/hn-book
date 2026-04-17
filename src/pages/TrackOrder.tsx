@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Search, Package, Clock, CheckCircle2, XCircle, Loader2, Truck, PackageCheck, MapPin } from "lucide-react";
+import { Search, Package, Clock, CheckCircle2, XCircle, Loader2, Truck, PackageCheck, MapPin, Cog } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
