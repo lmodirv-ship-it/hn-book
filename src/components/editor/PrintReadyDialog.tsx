@@ -48,12 +48,25 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
   const printType = backNode ? "double_side" : "one_side";
 
   // Dynamic pricing — try DB rules first, fall back to hardcoded calculatePrice
-  const [dynamicPrice, setDynamicPrice] = useState<{ base: number; ship: number } | null>(null);
+  const [dynamicPrice, setDynamicPrice] = useState<{
+    base: number; original: number; discount: number; ship: number;
+    promo: string | null; featured: boolean;
+  } | null>(null);
   useEffect(() => {
     let cancelled = false;
     printPricingService
       .resolvePrice("CRD", quantity, pageSize)
-      .then((r) => { if (!cancelled) setDynamicPrice(r ? { base: r.base_price, ship: r.shipping_price } : null); })
+      .then((r) => {
+        if (cancelled) return;
+        setDynamicPrice(r ? {
+          base: r.base_price,
+          original: r.original_price,
+          discount: r.discount_percent,
+          ship: r.shipping_price,
+          promo: r.promo_label,
+          featured: r.is_featured,
+        } : null);
+      })
       .catch(() => { if (!cancelled) setDynamicPrice(null); });
     return () => { cancelled = true; };
   }, [quantity, pageSize]);
@@ -370,9 +383,24 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
 
             {/* Price summary */}
             <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-3 space-y-1.5 text-sm">
+              {dynamicPrice?.promo && (
+                <div className="flex items-center justify-between -mt-1 mb-1">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/15 text-primary text-xs font-medium">
+                    ✨ {dynamicPrice.promo}
+                  </span>
+                  {dynamicPrice.discount > 0 && (
+                    <span className="text-xs font-semibold text-destructive">−{dynamicPrice.discount}%</span>
+                  )}
+                </div>
+              )}
               <div className="flex justify-between text-muted-foreground">
                 <span>الطباعة ({quantity} × {pageSize} · {printType === "double_side" ? "وجهين" : "وجه واحد"})</span>
-                <span className="font-medium text-foreground">{printSubtotal} د.م</span>
+                <span className="font-medium text-foreground inline-flex items-baseline gap-1.5">
+                  {dynamicPrice && dynamicPrice.discount > 0 && (
+                    <span className="text-xs text-muted-foreground line-through">{Math.round(dynamicPrice.original)} د.م</span>
+                  )}
+                  {printSubtotal} د.م
+                </span>
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>الشحن ({deliveryOption === "express" ? "سريع" : "عادي"})</span>

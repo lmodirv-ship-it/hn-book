@@ -872,34 +872,49 @@ export type Database = {
           asset_type: string
           base_price: number
           created_at: string
+          discount_percent: number
           id: string
           is_active: boolean
+          is_featured: boolean
           paper_size: string | null
+          promo_label: string | null
           quantity: number
           shipping_price: number
           updated_at: string
+          valid_from: string | null
+          valid_until: string | null
         }
         Insert: {
           asset_type: string
           base_price?: number
           created_at?: string
+          discount_percent?: number
           id?: string
           is_active?: boolean
+          is_featured?: boolean
           paper_size?: string | null
+          promo_label?: string | null
           quantity: number
           shipping_price?: number
           updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
         }
         Update: {
           asset_type?: string
           base_price?: number
           created_at?: string
+          discount_percent?: number
           id?: string
           is_active?: boolean
+          is_featured?: boolean
           paper_size?: string | null
+          promo_label?: string | null
           quantity?: number
           shipping_price?: number
           updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
         }
         Relationships: []
       }
