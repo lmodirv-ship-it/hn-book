@@ -558,9 +558,15 @@ const SmartImportPage = () => {
                             </span>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">🖼️ المعاينة:</span>
+                            <span className="text-muted-foreground">🟢 أمام:</span>
                             <span className="text-foreground truncate max-w-[60%]">
                               {(item as PendingFolderItem).previewFile?.name}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">🔵 خلف:</span>
+                            <span className={(item as PendingFolderItem).backFile ? "text-foreground truncate max-w-[60%]" : "text-muted-foreground/60"}>
+                              {(item as PendingFolderItem).backFile?.name || "—"}
                             </span>
                           </div>
                           <div className="flex items-center justify-between">
