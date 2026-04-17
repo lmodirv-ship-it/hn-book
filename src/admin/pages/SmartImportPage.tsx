@@ -295,23 +295,37 @@ const SmartImportPage = () => {
     }
     updatePending(item.id, { uploading: true, progress: 5 } as Partial<PendingFolderItem>);
     try {
-      // Upload preview image
-      updatePending(item.id, { progress: 25 } as Partial<PendingFolderItem>);
-      const imageUrl = await uploadToBucket(item.previewFile, `assets/CRD/preview`);
+      // Upload front (preview) image
+      updatePending(item.id, { progress: 20 } as Partial<PendingFolderItem>);
+      const imageUrl = await uploadToBucket(item.previewFile, `assets/CRD/front`);
+
+      // Upload back image if detected
+      let backUrl: string | null = null;
+      if (item.backFile) {
+        updatePending(item.id, { progress: 45 } as Partial<PendingFolderItem>);
+        backUrl = await uploadToBucket(item.backFile, `assets/CRD/back`);
+      }
 
       // Upload source file if available
       let fileUrl: string | null = null;
       if (item.sourceFile) {
-        updatePending(item.id, { progress: 60 } as Partial<PendingFolderItem>);
+        updatePending(item.id, { progress: 70 } as Partial<PendingFolderItem>);
         fileUrl = await uploadToBucket(item.sourceFile, `assets/CRD/source`);
       }
 
-      updatePending(item.id, { progress: 85 } as Partial<PendingFolderItem>);
+      updatePending(item.id, { progress: 90 } as Partial<PendingFolderItem>);
       const created = await assetService.create({
         asset_type: "CRD",
         title: item.title.trim() || item.folderName,
         image_url: imageUrl,
         file_url: fileUrl ?? imageUrl,
+        metadata: {
+          front_image: imageUrl,
+          back_image: backUrl,
+          has_back: !!backUrl,
+          source_url: fileUrl,
+          folder_name: item.folderName,
+        },
       });
 
       updatePending(item.id, { progress: 100 } as Partial<PendingFolderItem>);
