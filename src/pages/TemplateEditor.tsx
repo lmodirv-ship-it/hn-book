@@ -173,6 +173,10 @@ const TemplateEditor = () => {
     setStyles((s) => ({ ...s, [key]: { ...(s[key] || {}), dx, dy } }));
   }, []);
 
+  const onInlineEdit = useCallback((key: string, value: string) => {
+    setValues((v) => ({ ...v, [key]: value }));
+  }, []);
+
   // Exports
   const exportPng = async () => {
     setExporting(true);
