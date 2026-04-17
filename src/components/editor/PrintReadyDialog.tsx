@@ -39,6 +39,9 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
   const [overlayBleed, setOverlayBleed] = useState(true);
   const [overlaySafe, setOverlaySafe] = useState(true);
   const [overlayCrop, setOverlayCrop] = useState(true);
+  const [colorMode, setColorMode] = useState<ColorMode>("RGB");
+  const [finish, setFinish] = useState<PaperFinish>("none");
+  const [marginCompensation, setMarginCompensation] = useState(0);
 
   // Order details
   const [customerName, setCustomerName] = useState("");
