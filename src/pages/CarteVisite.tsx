@@ -250,8 +250,9 @@ const CarteVisite = () => {
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {filteredTemplates.map(t => (
-                    <motion.button key={t.id} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setSelectedTemplate(t.id)}
-                      className={`relative rounded-xl overflow-hidden border-2 transition-all text-right ${selectedTemplate === t.id ? "border-primary shadow-lg shadow-primary/20" : "border-border hover:border-primary/40"}`}>
+                    <motion.button key={t.id} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                      onClick={() => { window.location.href = `/template-editor/${t.id}?from=studio`; }}
+                      className="relative rounded-xl overflow-hidden border-2 border-border hover:border-primary/40 transition-all text-right">
                       <div className="aspect-[1.8/1] bg-muted/10"><img src={t.image_url} alt={t.name} className="w-full h-full object-cover" /></div>
                       <div className="p-2 bg-card flex items-center justify-between">
                         <div className="min-w-0">
@@ -260,7 +261,6 @@ const CarteVisite = () => {
                         </div>
                         {popularIds.includes(t.id) && <Badge variant="secondary" className="text-[9px] px-1.5 py-0 gap-0.5 shrink-0"><Star className="w-2.5 h-2.5" /> شائع</Badge>}
                       </div>
-                      {selectedTemplate === t.id && <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center"><CheckCircle2 className="w-4 h-4 text-primary-foreground" /></div>}
                     </motion.button>
                   ))}
                 </div>
