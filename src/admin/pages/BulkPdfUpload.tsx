@@ -42,28 +42,28 @@ const TYPE_CONFIG: Record<ImportType, {
   imageField: string;
 }> = {
   books: {
-    label: "الكتب (PDF)",
+    label: "الكتب",
     icon: BookOpen,
-    accept: ".pdf,application/pdf",
-    hint: "ملفات PDF — يتم توليد غلاف تلقائياً",
+    accept: "*/*",
+    hint: "PDF, DOCX, EPUB, TXT, ZIP — يُولَّد غلاف تلقائياً",
     bucket: "book-files",
-    table: "card_templates", // unused for books
+    table: "card_templates",
     imageField: "image",
   },
   cards: {
     label: "البطاقات",
     icon: CreditCard,
-    accept: "image/*",
-    hint: "صور تصاميم البطاقات",
+    accept: "*/*",
+    hint: "صور, PDF, SVG, AI, PSD — جميع الصيغ",
     bucket: "book-images",
     table: "card_templates",
     imageField: "image_url",
   },
   tablous: {
-    label: "اللوحات (Tablous)",
+    label: "اللوحات",
     icon: ImageIcon,
-    accept: "image/*",
-    hint: "صور اللوحات والإطارات",
+    accept: "*/*",
+    hint: "صور, PDF, PSD, TIFF — جميع الصيغ",
     bucket: "book-images",
     table: "tablous",
     imageField: "image_url",
@@ -71,8 +71,8 @@ const TYPE_CONFIG: Record<ImportType, {
   logos: {
     label: "الشعارات",
     icon: Award,
-    accept: "image/*,.svg",
-    hint: "صور الشعارات (SVG/PNG)",
+    accept: "*/*",
+    hint: "SVG, PNG, AI, PDF — جميع الصيغ",
     bucket: "book-images",
     table: "logos",
     imageField: "image_url",
