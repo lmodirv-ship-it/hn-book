@@ -172,6 +172,7 @@ function buildFolderItem(folderPath: string, files: File[]): PendingFolderItem |
 
   const warnings: string[] = [];
   if (!sourceFile) warnings.push("ملف المصدر (EPS/AI) غير موجود");
+  if (hasUnsupportedSource) warnings.push("ملف .cdr تم تخطيه (يحتاج تحويل سيرفر)");
   if (!backFile && images.length >= 2) warnings.push("لم يتم تحديد الوجه الخلفي تلقائياً");
 
   return {
