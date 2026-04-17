@@ -96,6 +96,27 @@ export const svgTemplateService = {
     return (data as unknown as SvgTemplate) ?? null;
   },
 
+  /** Find a template attached to an asset (gallery cards expose asset.id, not template.id). */
+  async getByAssetId(assetId: string): Promise<SvgTemplate | null> {
+    const { data, error } = await supabase
+      .from("svg_templates" as never)
+      .select("*")
+      .eq("asset_id", assetId)
+      .eq("is_active", true)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    return (data as unknown as SvgTemplate) ?? null;
+  },
+
+  /** Resolve by either template id or asset id — used by the editor route. */
+  async resolve(id: string): Promise<SvgTemplate | null> {
+    const direct = await this.get(id);
+    if (direct) return direct;
+    return await this.getByAssetId(id);
+  },
+
   async create(input: {
     name: string;
     category: string;
