@@ -20,6 +20,7 @@ interface Props {
   selectedKey?: string | null;
   onSelect?: (key: string | null) => void;
   onDragEnd?: (key: string, dx: number, dy: number) => void;
+  onEdit?: (key: string, value: string) => void;
   className?: string;
 }
 
