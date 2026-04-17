@@ -25,7 +25,7 @@ const SystemMonitoring = () => {
   const [busy, setBusy] = useState<string | null>(null);
   const [alerts, setAlerts] = useState<any[]>([]);
   const [metrics, setMetrics] = useState<any[]>([]);
-  const [jobsHealth, setJobsHealth] = useState({ pending: 0, processing: 0, failed: 0, completed: 0, retrying: 0, exhausted: 0 });
+  const [jobsHealth, setJobsHealth] = useState({ pending: 0, processing: 0, failed: 0, completed: 0, retrying: 0, exhausted: 0, dead: 0 });
   const pollRef = useRef<number | null>(null);
 
   const fetchHealth = useCallback(async () => {
@@ -54,12 +54,13 @@ const SystemMonitoring = () => {
     const rows = data ?? [];
     const failed = rows.filter((r: any) => r.status === "failed");
     setJobsHealth({
-      pending: rows.filter((r: any) => r.status === "pending").length,
+      pending: rows.filter((r: any) => r.status === "pending" && (r.attempts ?? 0) === 0).length,
       processing: rows.filter((r: any) => r.status === "processing").length,
       failed: failed.length,
       completed: rows.filter((r: any) => r.status === "completed").length,
-      retrying: rows.filter((r: any) => (r.attempts ?? 0) > 0 && r.status !== "failed" && r.status !== "completed").length,
+      retrying: rows.filter((r: any) => r.status === "pending" && (r.attempts ?? 0) > 0).length,
       exhausted: failed.filter((r: any) => (r.attempts ?? 0) >= (r.max_attempts ?? 3)).length,
+      dead: rows.filter((r: any) => r.status === "dead").length,
     });
   }, []);
 
@@ -206,18 +207,19 @@ const SystemMonitoring = () => {
             <Wrench className="w-4 h-4 text-primary" /> صحة طابور الإصلاح الذاتي
           </h3>
           <div className="flex gap-2">
-            <Badge variant="outline" className="text-xs">حد المحاولات: 3</Badge>
-            {jobsHealth.exhausted > 0 && (
-              <Badge variant="destructive" className="text-xs">{jobsHealth.exhausted} يحتاج تدخل</Badge>
+            <Badge variant="outline" className="text-xs">حد المحاولات: حسب النوع</Badge>
+            {jobsHealth.dead > 0 && (
+              <Badge variant="destructive" className="text-xs">{jobsHealth.dead} dead — تدخل يدوي</Badge>
             )}
           </div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-7 gap-2">
           <QueueBox label="بانتظار" value={jobsHealth.pending} color="bg-yellow-500/10 text-yellow-600 border-yellow-500/30" />
           <QueueBox label="معالجة" value={jobsHealth.processing} color="bg-blue-500/10 text-blue-600 border-blue-500/30" />
           <QueueBox label="إعادة محاولة" value={jobsHealth.retrying} color="bg-purple-500/10 text-purple-600 border-purple-500/30" />
           <QueueBox label="فاشلة" value={jobsHealth.failed} color="bg-red-500/10 text-red-600 border-red-500/30" />
           <QueueBox label="استُنفدت" value={jobsHealth.exhausted} color="bg-orange-500/10 text-orange-600 border-orange-500/30" />
+          <QueueBox label="ميتة" value={jobsHealth.dead} color="bg-foreground/10 text-foreground border-foreground/40" />
           <QueueBox label="مكتملة" value={jobsHealth.completed} color="bg-green-500/10 text-green-600 border-green-500/30" />
         </div>
         <p className="text-xs text-muted-foreground mt-3">
