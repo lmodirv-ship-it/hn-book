@@ -34,6 +34,7 @@ const navItems = [
   { path: "/admin/sales", icon: Crown, label: "المبيعات والاشتراكات" },
   { path: "/admin/recommendations", icon: BookOpen, label: "التوصيات" },
   { path: "/admin/card-templates", icon: CreditCard, label: "تصاميم البطاقات" },
+  { path: "/admin/svg-templates", icon: CreditCard, label: "قوالب SVG" },
   { path: "/admin/logos", icon: Image, label: "مكتبة الشعارات" },
   { path: "/admin/tablou", icon: Frame, label: "التابلوهات" },
   { path: "/admin/print-orders", icon: Printer, label: "طلبات الطباعة" },
