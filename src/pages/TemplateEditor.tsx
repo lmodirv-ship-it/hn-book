@@ -1,30 +1,69 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Loader2, Download, FileImage, FileText, RotateCw, ArrowRight, Palette, Upload, X, Image as ImageIcon, Printer } from "lucide-react";
+import {
+  Loader2, Download, FileImage, RotateCw, ArrowRight, Palette, Upload, X,
+  Image as ImageIcon, Printer, Type, Bold, Italic, AlignLeft, AlignCenter,
+  AlignRight, Undo2, Redo2, ZoomIn, ZoomOut, Grid3x3, Minus, Plus, Layers,
+} from "lucide-react";
 import { toPng } from "html-to-image";
 import jsPDF from "jspdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { Toggle } from "@/components/ui/toggle";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { svgTemplateService, type SvgTemplate, type SvgField } from "@/services/svgTemplateService";
-import SvgRenderer from "@/components/editor/SvgRenderer";
+import {
+  svgTemplateService, type SvgTemplate, type SvgField,
+} from "@/services/svgTemplateService";
+import StyledSvgRenderer, { type FieldStyle } from "@/components/editor/StyledSvgRenderer";
 import PrintReadyDialog from "@/components/editor/PrintReadyDialog";
+
+const FONT_FAMILIES = [
+  { value: "Inter, sans-serif", label: "Inter" },
+  { value: "'Space Grotesk', sans-serif", label: "Space Grotesk" },
+  { value: "'DM Sans', sans-serif", label: "DM Sans" },
+  { value: "Arial, sans-serif", label: "Arial" },
+  { value: "Georgia, serif", label: "Georgia" },
+  { value: "'Times New Roman', serif", label: "Times" },
+  { value: "'Courier New', monospace", label: "Courier" },
+  { value: "'Cairo', sans-serif", label: "Cairo (عربي)" },
+  { value: "'Tajawal', sans-serif", label: "Tajawal (عربي)" },
+];
+
+interface HistoryEntry {
+  values: Record<string, string>;
+  styles: Record<string, FieldStyle>;
+}
 
 const TemplateEditor = () => {
   const { id } = useParams<{ id: string }>();
   const [template, setTemplate] = useState<SvgTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [values, setValues] = useState<Record<string, string>>({});
+  const [styles, setStyles] = useState<Record<string, FieldStyle>>({});
   const [side, setSide] = useState<"front" | "back">("front");
   const [flipping, setFlipping] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [printOpen, setPrintOpen] = useState(false);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [showGrid, setShowGrid] = useState(true);
+  const [activeTab, setActiveTab] = useState<"fields" | "logo">("fields");
+
+  // Undo/redo
+  const historyRef = useRef<HistoryEntry[]>([]);
+  const futureRef = useRef<HistoryEntry[]>([]);
+  const skipNextSnapshot = useRef(false);
 
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
 
+  // Load template
   useEffect(() => {
     if (!id) return;
     (async () => {
@@ -37,7 +76,18 @@ const TemplateEditor = () => {
         setTemplate(t);
         const init: Record<string, string> = {};
         for (const f of t.fields) init[f.key] = f.defaultValue || "";
+
+        // Restore overrides from localStorage
+        const saved = localStorage.getItem(`tpl-edit-${t.id}`);
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (parsed.values) Object.assign(init, parsed.values);
+            if (parsed.styles) setStyles(parsed.styles);
+          } catch {}
+        }
         setValues(init);
+        skipNextSnapshot.current = true;
       } catch (e: any) {
         toast({ title: "فشل التحميل", description: e.message, variant: "destructive" });
       } finally {
@@ -46,6 +96,22 @@ const TemplateEditor = () => {
     })();
   }, [id]);
 
+  // Persist + history
+  useEffect(() => {
+    if (!template) return;
+    localStorage.setItem(
+      `tpl-edit-${template.id}`,
+      JSON.stringify({ values, styles })
+    );
+    if (skipNextSnapshot.current) {
+      skipNextSnapshot.current = false;
+      return;
+    }
+    historyRef.current.push({ values, styles });
+    if (historyRef.current.length > 50) historyRef.current.shift();
+    futureRef.current = [];
+  }, [values, styles, template]);
+
   const fieldsBySide = useMemo(() => {
     const front: SvgField[] = [];
     const back: SvgField[] = [];
@@ -53,7 +119,6 @@ const TemplateEditor = () => {
     return { front, back };
   }, [template]);
 
-  // When a logo image is uploaded, hide the monogram fallback so they don't overlap.
   const renderValues = useMemo(
     () => (values.logo ? { ...values, monogram: "" } : values),
     [values]
@@ -64,10 +129,51 @@ const TemplateEditor = () => {
     setFlipping(true);
     setTimeout(() => {
       setSide((s) => (s === "front" ? "back" : "front"));
+      setSelectedKey(null);
       setFlipping(false);
     }, 300);
   };
 
+  // Undo / redo
+  const undo = useCallback(() => {
+    if (historyRef.current.length < 2) return;
+    const current = historyRef.current.pop()!;
+    futureRef.current.push(current);
+    const prev = historyRef.current[historyRef.current.length - 1];
+    skipNextSnapshot.current = true;
+    setValues(prev.values);
+    setStyles(prev.styles);
+  }, []);
+
+  const redo = useCallback(() => {
+    const next = futureRef.current.pop();
+    if (!next) return;
+    historyRef.current.push(next);
+    skipNextSnapshot.current = true;
+    setValues(next.values);
+    setStyles(next.styles);
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      if (e.key === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
+      else if ((e.key === "z" && e.shiftKey) || e.key === "y") { e.preventDefault(); redo(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [undo, redo]);
+
+  const updateStyle = (patch: Partial<FieldStyle>) => {
+    if (!selectedKey) return;
+    setStyles((s) => ({ ...s, [selectedKey]: { ...(s[selectedKey] || {}), ...patch } }));
+  };
+
+  const onDragEnd = useCallback((key: string, dx: number, dy: number) => {
+    setStyles((s) => ({ ...s, [key]: { ...(s[key] || {}), dx, dy } }));
+  }, []);
+
+  // Exports
   const exportPng = async () => {
     setExporting(true);
     try {
@@ -75,7 +181,6 @@ const TemplateEditor = () => {
         { ref: frontRef.current, label: "front" },
       ];
       if (template?.back_svg_content) sides.push({ ref: backRef.current, label: "back" });
-
       for (const s of sides) {
         if (!s.ref) continue;
         const dataUrl = await toPng(s.ref, { pixelRatio: 3, cacheBust: true });
@@ -95,7 +200,9 @@ const TemplateEditor = () => {
     setExporting(true);
     try {
       const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [90, 50] });
-      const front = frontRef.current ? await toPng(frontRef.current, { pixelRatio: 3, cacheBust: true }) : null;
+      const front = frontRef.current
+        ? await toPng(frontRef.current, { pixelRatio: 3, cacheBust: true })
+        : null;
       if (front) pdf.addImage(front, "PNG", 0, 0, 90, 50);
       if (template?.back_svg_content && backRef.current) {
         const back = await toPng(backRef.current, { pixelRatio: 3, cacheBust: true });
@@ -127,17 +234,21 @@ const TemplateEditor = () => {
 
   const currentFields = side === "front" ? fieldsBySide.front : fieldsBySide.back;
   const hasBack = !!template?.back_svg_content;
+  const selectedField = currentFields.find((f) => f.key === selectedKey);
+  const selectedStyle = selectedKey ? styles[selectedKey] || {} : {};
+  const logoFields = template.fields.filter((f) => f.type === "image");
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
-      <header className="border-b border-border bg-card/40 backdrop-blur sticky top-0 z-20">
-        <div className="container mx-auto px-4 py-3 flex items-center gap-3">
+    <div className="h-screen flex flex-col bg-background overflow-hidden" dir="rtl">
+      {/* TOP BAR */}
+      <header className="border-b border-border bg-card/40 backdrop-blur shrink-0">
+        <div className="px-4 py-2 flex items-center gap-3">
           <Link to="/admin/svg-templates">
             <Button variant="ghost" size="sm" className="gap-1">
               <ArrowRight className="w-4 h-4" /> عودة
             </Button>
           </Link>
-          <h1 className="font-bold text-lg flex-1 truncate">{template.name}</h1>
+          <h1 className="font-bold text-sm flex-1 truncate">{template.name}</h1>
           <Button variant="outline" size="sm" onClick={exportPng} disabled={exporting} className="gap-1.5">
             <FileImage className="w-4 h-4" /> PNG
           </Button>
@@ -148,155 +259,343 @@ const TemplateEditor = () => {
             <Printer className="w-4 h-4" /> طباعة
           </Button>
         </div>
+
+        {/* TOOLBAR */}
+        <div className="px-4 py-2 border-t border-border/60 flex items-center gap-2 flex-wrap text-sm">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={undo} title="تراجع (Ctrl+Z)">
+            <Undo2 className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={redo} title="إعادة (Ctrl+Y)">
+            <Redo2 className="w-4 h-4" />
+          </Button>
+          <Separator orientation="vertical" className="h-6" />
+
+          <Select
+            value={selectedStyle.fontFamily || ""}
+            onValueChange={(v) => updateStyle({ fontFamily: v })}
+            disabled={!selectedKey || selectedField?.type !== "text"}
+          >
+            <SelectTrigger className="w-[150px] h-8">
+              <SelectValue placeholder="الخط" />
+            </SelectTrigger>
+            <SelectContent>
+              {FONT_FAMILIES.map((f) => (
+                <SelectItem key={f.value} value={f.value} style={{ fontFamily: f.value }}>
+                  {f.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <div className="flex items-center gap-1 border border-border rounded-md h-8 px-1">
+            <Button
+              variant="ghost" size="icon" className="h-6 w-6"
+              disabled={!selectedKey}
+              onClick={() => updateStyle({ fontSize: Math.max(6, (selectedStyle.fontSize || 16) - 1) })}
+            >
+              <Minus className="w-3 h-3" />
+            </Button>
+            <Input
+              type="number"
+              value={selectedStyle.fontSize || ""}
+              placeholder="16"
+              disabled={!selectedKey}
+              onChange={(e) => updateStyle({ fontSize: Number(e.target.value) || undefined })}
+              className="w-12 h-6 text-center border-0 px-0 text-xs"
+            />
+            <Button
+              variant="ghost" size="icon" className="h-6 w-6"
+              disabled={!selectedKey}
+              onClick={() => updateStyle({ fontSize: (selectedStyle.fontSize || 16) + 1 })}
+            >
+              <Plus className="w-3 h-3" />
+            </Button>
+          </div>
+
+          <label className="relative">
+            <span className="sr-only">لون النص</span>
+            <input
+              type="color"
+              value={selectedStyle.fill || "#000000"}
+              disabled={!selectedKey}
+              onChange={(e) => updateStyle({ fill: e.target.value })}
+              className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
+            />
+            <Button variant="outline" size="sm" disabled={!selectedKey} className="gap-1.5 pointer-events-none">
+              <Palette className="w-4 h-4" />
+              <span
+                className="w-4 h-4 rounded border border-border"
+                style={{ background: selectedStyle.fill || "#000" }}
+              />
+            </Button>
+          </label>
+
+          <Separator orientation="vertical" className="h-6" />
+
+          <Toggle
+            size="sm" pressed={selectedStyle.fontWeight === "bold"}
+            disabled={!selectedKey}
+            onPressedChange={(v) => updateStyle({ fontWeight: v ? "bold" : "normal" })}
+          >
+            <Bold className="w-4 h-4" />
+          </Toggle>
+          <Toggle
+            size="sm" pressed={selectedStyle.fontStyle === "italic"}
+            disabled={!selectedKey}
+            onPressedChange={(v) => updateStyle({ fontStyle: v ? "italic" : "normal" })}
+          >
+            <Italic className="w-4 h-4" />
+          </Toggle>
+
+          <div className="flex items-center gap-0.5 border border-border rounded-md h-8 px-0.5">
+            <Toggle
+              size="sm" pressed={selectedStyle.textAnchor === "start"} disabled={!selectedKey}
+              onPressedChange={() => updateStyle({ textAnchor: "start" })}
+            >
+              <AlignLeft className="w-3.5 h-3.5" />
+            </Toggle>
+            <Toggle
+              size="sm" pressed={selectedStyle.textAnchor === "middle"} disabled={!selectedKey}
+              onPressedChange={() => updateStyle({ textAnchor: "middle" })}
+            >
+              <AlignCenter className="w-3.5 h-3.5" />
+            </Toggle>
+            <Toggle
+              size="sm" pressed={selectedStyle.textAnchor === "end"} disabled={!selectedKey}
+              onPressedChange={() => updateStyle({ textAnchor: "end" })}
+            >
+              <AlignRight className="w-3.5 h-3.5" />
+            </Toggle>
+          </div>
+
+          <div className="flex-1" />
+
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setZoom((z) => Math.max(0.5, z - 0.1))}>
+            <ZoomOut className="w-4 h-4" />
+          </Button>
+          <span className="text-xs w-10 text-center">{Math.round(zoom * 100)}%</span>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setZoom((z) => Math.min(2, z + 0.1))}>
+            <ZoomIn className="w-4 h-4" />
+          </Button>
+          <Toggle
+            size="sm" pressed={showGrid} onPressedChange={setShowGrid} title="شبكة"
+          >
+            <Grid3x3 className="w-4 h-4" />
+          </Toggle>
+        </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Form */}
-        <div className="space-y-4">
-          {hasBack && (
-            <Tabs value={side} onValueChange={(v) => setSide(v as "front" | "back")}>
-              <TabsList className="w-full">
-                <TabsTrigger value="front" className="flex-1">الوجه الأمامي ({fieldsBySide.front.length})</TabsTrigger>
-                <TabsTrigger value="back" className="flex-1">الوجه الخلفي ({fieldsBySide.back.length})</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          )}
+      {/* MAIN: sidebar + canvas */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* SIDEBAR */}
+        <aside className="w-72 border-l border-border bg-card/30 backdrop-blur flex flex-col overflow-hidden">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="flex flex-col h-full">
+            <TabsList className="m-3 grid grid-cols-2 shrink-0">
+              <TabsTrigger value="fields" className="gap-1.5">
+                <Type className="w-3.5 h-3.5" /> النصوص
+              </TabsTrigger>
+              <TabsTrigger value="logo" className="gap-1.5">
+                <ImageIcon className="w-3.5 h-3.5" /> الشعار
+              </TabsTrigger>
+            </TabsList>
 
-          <div className="space-y-3">
-            {currentFields.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">لا توجد حقول قابلة للتعديل في هذا الوجه</p>
-            ) : (
-              currentFields.map((f) => {
-                const val = values[f.key] ?? "";
-                if (f.type === "image") {
-                  const onPick = (file?: File | null) => {
-                    if (!file) return;
-                    if (file.size > 2 * 1024 * 1024) {
-                      toast({ title: "الصورة كبيرة", description: "الحد الأقصى 2 ميجابايت", variant: "destructive" });
-                      return;
-                    }
-                    const reader = new FileReader();
-                    reader.onload = () => setValues((v) => ({ ...v, [f.key]: String(reader.result || "") }));
-                    reader.readAsDataURL(file);
-                  };
-                  return (
-                    <div key={`${f.side}-${f.key}`}>
-                      <Label className="text-sm flex items-center gap-1.5 mb-1.5">
-                        <ImageIcon className="w-3.5 h-3.5 text-muted-foreground" />
-                        {f.label}
-                      </Label>
-                      <div className="flex items-center gap-3 rounded-lg border border-border bg-card/40 p-3">
-                        <div className="w-16 h-16 rounded-md bg-muted/50 border border-border flex items-center justify-center overflow-hidden shrink-0">
+            {activeTab === "fields" && (
+              <div className="flex-1 overflow-y-auto px-3 pb-4 space-y-3">
+                {hasBack && (
+                  <Tabs value={side} onValueChange={(v) => setSide(v as "front" | "back")}>
+                    <TabsList className="w-full">
+                      <TabsTrigger value="front" className="flex-1 text-xs">أمامي</TabsTrigger>
+                      <TabsTrigger value="back" className="flex-1 text-xs">خلفي</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                )}
+
+                {currentFields.filter((f) => f.type !== "image").length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-8">
+                    لا توجد حقول قابلة للتعديل
+                  </p>
+                ) : (
+                  currentFields
+                    .filter((f) => f.type !== "image")
+                    .map((f) => {
+                      const val = values[f.key] ?? "";
+                      const isSelected = selectedKey === f.key;
+                      return (
+                        <div
+                          key={`${f.side}-${f.key}`}
+                          className={`rounded-lg border p-2 transition-all ${
+                            isSelected
+                              ? "border-primary bg-primary/5"
+                              : "border-border bg-card/40 hover:border-border/80"
+                          }`}
+                          onClick={() => setSelectedKey(f.key)}
+                        >
+                          <Label className="text-xs flex items-center gap-1.5 mb-1 text-muted-foreground">
+                            {f.type === "color" && <Palette className="w-3 h-3" />}
+                            {f.label}
+                          </Label>
+                          <Input
+                            type={f.type === "color" ? "color" : "text"}
+                            value={val}
+                            onChange={(e) =>
+                              setValues((v) => ({ ...v, [f.key]: e.target.value }))
+                            }
+                            placeholder={f.label}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                      );
+                    })
+                )}
+              </div>
+            )}
+
+            {activeTab === "logo" && (
+              <div className="flex-1 overflow-y-auto px-3 pb-4 space-y-3">
+                {logoFields.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-8">
+                    هذا القالب لا يدعم رفع شعار
+                  </p>
+                ) : (
+                  logoFields.map((f) => {
+                    const val = values[f.key] ?? "";
+                    const onPick = (file?: File | null) => {
+                      if (!file) return;
+                      if (file.size > 2 * 1024 * 1024) {
+                        toast({ title: "الصورة كبيرة", description: "الحد الأقصى 2MB", variant: "destructive" });
+                        return;
+                      }
+                      const reader = new FileReader();
+                      reader.onload = () =>
+                        setValues((v) => ({ ...v, [f.key]: String(reader.result || "") }));
+                      reader.readAsDataURL(file);
+                    };
+                    return (
+                      <div key={f.key} className="rounded-lg border border-border bg-card/40 p-3">
+                        <Label className="text-xs mb-2 block text-muted-foreground">{f.label}</Label>
+                        <div className="aspect-video rounded-md bg-muted/30 border border-border flex items-center justify-center overflow-hidden mb-2">
                           {val ? (
-                            <img src={val} alt="logo preview" className="max-w-full max-h-full object-contain" />
+                            <img src={val} alt="logo" className="max-w-full max-h-full object-contain" />
                           ) : (
-                            <ImageIcon className="w-5 h-5 text-muted-foreground" />
+                            <ImageIcon className="w-8 h-8 text-muted-foreground/40" />
                           )}
                         </div>
-                        <div className="flex-1 flex flex-col gap-1.5">
-                          <label className="cursor-pointer">
-                            <input
-                              type="file"
-                              accept="image/png,image/jpeg,image/svg+xml,image/webp"
-                              className="hidden"
-                              onChange={(e) => onPick(e.target.files?.[0])}
-                            />
-                            <Button type="button" size="sm" variant="outline" asChild className="gap-1.5 w-full">
-                              <span><Upload className="w-3.5 h-3.5" /> {val ? "تغيير الشعار" : "ارفع الشعار"}</span>
-                            </Button>
-                          </label>
-                          {val && (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="ghost"
-                              className="gap-1.5 h-7 text-destructive"
-                              onClick={() => setValues((v) => ({ ...v, [f.key]: "" }))}
-                            >
-                              <X className="w-3 h-3" /> إزالة الشعار
-                            </Button>
-                          )}
-                        </div>
+                        <label className="cursor-pointer block">
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                            className="hidden"
+                            onChange={(e) => onPick(e.target.files?.[0])}
+                          />
+                          <Button type="button" size="sm" variant="outline" asChild className="gap-1.5 w-full">
+                            <span><Upload className="w-3.5 h-3.5" /> {val ? "تغيير" : "رفع شعار"}</span>
+                          </Button>
+                        </label>
+                        {val && (
+                          <Button
+                            size="sm" variant="ghost"
+                            className="gap-1.5 h-7 text-destructive w-full mt-1"
+                            onClick={() => setValues((v) => ({ ...v, [f.key]: "" }))}
+                          >
+                            <X className="w-3 h-3" /> إزالة
+                          </Button>
+                        )}
                       </div>
-                      <p className="text-[10px] text-muted-foreground mt-1">PNG / SVG شفاف يعطي أفضل نتيجة • حتى 2MB</p>
-                    </div>
-                  );
-                }
-                return (
-                  <div key={`${f.side}-${f.key}`}>
-                    <Label className="text-sm flex items-center gap-1.5">
-                      {f.type === "color" && <Palette className="w-3.5 h-3.5 text-muted-foreground" />}
-                      {f.label}
-                      <span className="text-[10px] text-muted-foreground">{`{{${f.key}}}`}</span>
-                    </Label>
-                    <Input
-                      type={f.type === "color" ? "color" : "text"}
-                      value={val}
-                      onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
-                      placeholder={f.label}
-                      className="mt-1"
+                    );
+                  })
+                )}
+                <p className="text-[10px] text-muted-foreground text-center">PNG/SVG شفاف، حتى 2MB</p>
+              </div>
+            )}
+          </Tabs>
+        </aside>
+
+        {/* CANVAS */}
+        <main className="flex-1 overflow-auto bg-muted/20 relative">
+          <div
+            className={`absolute inset-0 ${showGrid ? "opacity-100" : "opacity-0"} transition-opacity pointer-events-none`}
+            style={{
+              backgroundImage:
+                "linear-gradient(hsl(var(--border) / 0.4) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border) / 0.4) 1px, transparent 1px)",
+              backgroundSize: "20px 20px",
+            }}
+          />
+          <div className="min-h-full flex items-center justify-center p-8 relative">
+            <div
+              style={{ transform: `scale(${zoom})`, transformOrigin: "center center" }}
+              className="transition-transform"
+            >
+              <div className="perspective-1000">
+                <div
+                  className={`relative transition-transform duration-500 transform-style-3d ${
+                    flipping ? "rotate-y-180" : ""
+                  }`}
+                >
+                  <div className={side === "front" ? "block" : "hidden"}>
+                    <StyledSvgRenderer
+                      ref={frontRef}
+                      svg={template.front_svg_content ?? ""}
+                      fields={fieldsBySide.front}
+                      values={renderValues}
+                      styles={styles}
+                      selectedKey={side === "front" ? selectedKey : null}
+                      onSelect={setSelectedKey}
+                      onDragEnd={onDragEnd}
+                      className="w-[600px] rounded-xl border border-border bg-white overflow-hidden shadow-2xl"
                     />
                   </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-
-        {/* Preview */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-sm">معاينة مباشرة</h3>
-            {hasBack && (
-              <Button variant="outline" size="sm" onClick={flip} className="gap-1.5">
-                <RotateCw className="w-3.5 h-3.5" /> اقلب البطاقة
-              </Button>
-            )}
-          </div>
-
-          <div className="perspective-1000">
-            <div
-              className={`relative transition-transform duration-500 transform-style-3d ${
-                flipping ? "rotate-y-180" : ""
-              }`}
-            >
-              <div className={side === "front" ? "block" : "hidden"}>
-                <SvgRenderer
-                  ref={frontRef}
-                  svg={template.front_svg_content ?? ""}
-                  values={renderValues}
-                  className="w-full rounded-xl border border-border bg-white overflow-hidden [&>svg]:w-full [&>svg]:h-auto"
-                />
-              </div>
-              {hasBack && (
-                <div className={side === "back" ? "block" : "hidden"}>
-                  <SvgRenderer
-                    ref={backRef}
-                    svg={template.back_svg_content ?? ""}
-                    values={renderValues}
-                    className="w-full rounded-xl border border-border bg-white overflow-hidden [&>svg]:w-full [&>svg]:h-auto"
-                  />
+                  {hasBack && (
+                    <div className={side === "back" ? "block" : "hidden"}>
+                      <StyledSvgRenderer
+                        ref={backRef}
+                        svg={template.back_svg_content ?? ""}
+                        fields={fieldsBySide.back}
+                        values={renderValues}
+                        styles={styles}
+                        selectedKey={side === "back" ? selectedKey : null}
+                        onSelect={setSelectedKey}
+                        onDragEnd={onDragEnd}
+                        className="w-[600px] rounded-xl border border-border bg-white overflow-hidden shadow-2xl"
+                      />
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </div>
+
+          {hasBack && (
+            <Button
+              variant="outline" size="sm"
+              onClick={flip}
+              className="absolute bottom-4 left-1/2 -translate-x-1/2 gap-1.5 shadow-lg"
+            >
+              <RotateCw className="w-3.5 h-3.5" /> اقلب البطاقة
+            </Button>
+          )}
+
+          {selectedField && (
+            <div className="absolute top-4 right-4 rounded-lg border border-border bg-card/95 backdrop-blur px-3 py-2 text-xs flex items-center gap-2 shadow-lg">
+              <Layers className="w-3.5 h-3.5 text-primary" />
+              <span className="font-semibold">{selectedField.label}</span>
+              <span className="text-muted-foreground font-mono">{`{{${selectedField.key}}}`}</span>
+            </div>
+          )}
 
           {/* Hidden render of opposite side for export */}
           {hasBack && (
             <div className="absolute -left-[9999px] top-0 pointer-events-none">
-              <SvgRenderer
+              <StyledSvgRenderer
                 ref={side === "front" ? backRef : frontRef}
                 svg={(side === "front" ? template.back_svg_content : template.front_svg_content) ?? ""}
+                fields={side === "front" ? fieldsBySide.back : fieldsBySide.front}
                 values={renderValues}
-                className="w-[900px] [&>svg]:w-full [&>svg]:h-auto"
+                styles={styles}
+                className="w-[600px]"
               />
             </div>
           )}
-
-          <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
-            <FileText className="w-3 h-3" /> النصوص تتبدّل مباشرة على القالب
-          </p>
-        </div>
+        </main>
       </div>
 
       <PrintReadyDialog
