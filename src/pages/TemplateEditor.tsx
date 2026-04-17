@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Loader2, Download, FileImage, FileText, RotateCw, ArrowRight, Palette, Upload, X, Image as ImageIcon } from "lucide-react";
+import { Loader2, Download, FileImage, FileText, RotateCw, ArrowRight, Palette, Upload, X, Image as ImageIcon, Printer } from "lucide-react";
 import { toPng } from "html-to-image";
 import jsPDF from "jspdf";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { svgTemplateService, type SvgTemplate, type SvgField } from "@/services/svgTemplateService";
 import SvgRenderer from "@/components/editor/SvgRenderer";
+import PrintReadyDialog from "@/components/editor/PrintReadyDialog";
 
 const TemplateEditor = () => {
   const { id } = useParams<{ id: string }>();
