@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,7 @@ import { Loader2, Download, MessageCircle, Printer, FileText, Eye, Copy, CheckCi
 import { toast } from "@/hooks/use-toast";
 import { buildPrintReadyPdf, type PageSize, type BuildPrintPdfResult } from "@/lib/print-pdf";
 import { printService, DELIVERY_OPTIONS, getShippingFee, calculatePrice } from "@/services/printService";
+import { printPricingService } from "@/services/printPricingService";
 
 interface PrintReadyDialogProps {
   open: boolean;
@@ -44,9 +45,25 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
   const [orderCode, setOrderCode] = useState<string | null>(null);
   const [orderPdfUrl, setOrderPdfUrl] = useState<string | null>(null);
 
-  const shippingFee = getShippingFee(deliveryOption);
   const printType = backNode ? "double_side" : "one_side";
-  const printSubtotal = calculatePrice(quantity, "standard", printType, pageSize);
+
+  // Dynamic pricing — try DB rules first, fall back to hardcoded calculatePrice
+  const [dynamicPrice, setDynamicPrice] = useState<{ base: number; ship: number } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    printPricingService
+      .resolvePrice("CRD", quantity, pageSize)
+      .then((r) => { if (!cancelled) setDynamicPrice(r ? { base: r.base_price, ship: r.shipping_price } : null); })
+      .catch(() => { if (!cancelled) setDynamicPrice(null); });
+    return () => { cancelled = true; };
+  }, [quantity, pageSize]);
+
+  const printSubtotal = dynamicPrice
+    ? Math.round(dynamicPrice.base)
+    : calculatePrice(quantity, "standard", printType, pageSize);
+  const shippingFee = dynamicPrice && dynamicPrice.ship > 0
+    ? Math.round(dynamicPrice.ship)
+    : getShippingFee(deliveryOption);
   const grandTotal = printSubtotal + shippingFee;
 
   const generate = async () => {
