@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, Download, MessageCircle, Printer, FileText, Eye, Copy, CheckCircle2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { buildPrintReadyPdf, type PageSize, type BuildPrintPdfResult, type ColorMode, type PaperFinish } from "@/lib/print-pdf";
+import { buildPrintReadyPdf, exportCardAsPng, type PageSize, type BuildPrintPdfResult, type ColorMode, type PaperFinish } from "@/lib/print-pdf";
 import { printService, DELIVERY_OPTIONS, getShippingFee, calculatePrice } from "@/services/printService";
 import { printPricingService } from "@/services/printPricingService";
 import CardPrintPreview from "@/components/editor/CardPrintPreview";
