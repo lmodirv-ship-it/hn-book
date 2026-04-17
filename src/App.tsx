@@ -58,6 +58,7 @@ import AssetsManager from "./admin/pages/AssetsManager.tsx";
 import SmartImportPage from "./admin/pages/SmartImportPage.tsx";
 import SvgTemplatesAdmin from "./admin/pages/SvgTemplatesAdmin.tsx";
 import TemplateEditor from "./pages/TemplateEditor.tsx";
+import TrackOrder from "./pages/TrackOrder.tsx";
 
 const queryClient = new QueryClient();
 
