@@ -260,6 +260,42 @@ export type Database = {
         }
         Relationships: []
       }
+      cart_items: {
+        Row: {
+          book_id: string
+          category: string
+          created_at: string
+          id: string
+          image: string
+          name: string
+          price: number
+          reference_code: string | null
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          category?: string
+          created_at?: string
+          id?: string
+          image?: string
+          name: string
+          price?: number
+          reference_code?: string | null
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          category?: string
+          created_at?: string
+          id?: string
+          image?: string
+          name?: string
+          price?: number
+          reference_code?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
