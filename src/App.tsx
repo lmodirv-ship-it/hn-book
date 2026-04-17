@@ -91,7 +91,8 @@ const App = () => (
           <ChatBot />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<Landing />} />
+            <Route path="/home" element={<Index />} />
             <Route path="/books" element={<BooksPage />} />
             <Route path="/cart" element={<CartPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
