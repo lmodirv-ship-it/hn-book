@@ -112,7 +112,14 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
         fileName: `${cardName || "carte"}-${pageSize}.pdf`,
       });
       setResult(r);
-      toast({ title: "تم توليد ملف الطباعة ✅", description: `${r.totalCards} بطاقة • ${pageSize} • ${colorMode === "CMYK_SIM" ? "CMYK" : "RGB"} • نزيف 3mm` });
+      // Trigger immediate download — browser opens "Save As" / downloads folder.
+      const a = document.createElement("a");
+      a.href = r.url;
+      a.download = r.fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      toast({ title: "تم تحميل ملف PDF ✅", description: `${r.fileName} — تحقق من مجلد التنزيلات` });
     } catch (e: any) {
       const detail = e?.message || (typeof e === "string" ? e : JSON.stringify(e));
       console.error("[PrintReadyDialog] PDF generation failed", e);
