@@ -178,6 +178,14 @@ const SvgTemplatesAdmin = () => {
                   </Badge>
                 </div>
                 <div className="flex flex-wrap gap-1">
+                  {t.code && (
+                    <Badge className="text-[9px] font-mono bg-primary/15 text-primary hover:bg-primary/20">
+                      {t.code}
+                    </Badge>
+                  )}
+                  <Badge variant="outline" className="text-[9px]">
+                    {SVG_TEMPLATE_TYPES.find((x) => x.value === t.template_type)?.label ?? t.template_type}
+                  </Badge>
                   {t.back_svg_url && <Badge variant="outline" className="text-[9px]">وجهان</Badge>}
                   <Badge variant="outline" className="text-[9px]">{t.category}</Badge>
                 </div>
