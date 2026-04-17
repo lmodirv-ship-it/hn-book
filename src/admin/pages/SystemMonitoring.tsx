@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { FailoverCard } from "@/admin/components/FailoverCard";
 
 type Status = "ok" | "warn" | "down" | "checking";
 interface ServiceState { status: Status; latency_ms?: number; [k: string]: any }
@@ -140,6 +141,9 @@ const SystemMonitoring = () => {
           <RefreshCw className="w-4 h-4 ml-1" /> تحديث
         </Button>
       </div>
+
+      {/* Failover control (admin-only via RequireAdmin on the route) */}
+      <FailoverCard />
 
       {/* Service health grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
