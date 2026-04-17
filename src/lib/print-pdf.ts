@@ -331,7 +331,12 @@ export async function buildPrintReadyPdf(opts: BuildPrintPdfOptions): Promise<Bu
     marginCompensation = 0,
   } = opts;
 
-  if (!frontNode) throw new Error("frontNode is required");
+  if (!frontNode) throw new Error("لا يوجد عنصر تصميم للتصدير (frontNode)");
+  if (!frontNode.isConnected) throw new Error("عنصر التصميم غير مرفق بالـ DOM");
+
+  console.info("[print-pdf] starting export", { pageSize, colorMode, finish, hasBack: !!backNode, marginCompensation });
+  await waitForFonts();
+
   const baseLayout = computeLayout(pageSize);
   // Apply printer margin compensation by shrinking the printable area uniformly.
   const layout: PrintLayoutInfo = marginCompensation > 0
