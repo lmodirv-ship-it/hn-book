@@ -106,6 +106,12 @@ const OrderConfirmation = () => {
               )}
 
               <div className="flex flex-col gap-2 pt-2">
+                <Button onClick={sendWhatsApp} className="w-full rounded-xl gap-2 bg-green-600 hover:bg-green-700 text-white">
+                  <MessageCircle className="w-4 h-4" /> إرسال إلى المطبعة (واتساب)
+                </Button>
+                <Button onClick={sendEmail} variant="secondary" className="w-full rounded-xl gap-2">
+                  <Mail className="w-4 h-4" /> إرسال بالبريد الإلكتروني
+                </Button>
                 {order?.orderNumber && (
                   <Button asChild variant="secondary" className="w-full rounded-xl gap-2">
                     <Link to={`/track-order?code=${encodeURIComponent(order.orderNumber)}`}>
