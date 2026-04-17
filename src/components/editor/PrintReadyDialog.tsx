@@ -90,7 +90,11 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
 
   const generate = async () => {
     if (!frontNode) {
-      toast({ title: "لا يمكن العثور على الوجه الأمامي", variant: "destructive" });
+      toast({ title: "لم يتم العثور على عنصر التصميم", description: "تأكد من أن البطاقة مرئية في المحرر قبل التصدير.", variant: "destructive" });
+      return;
+    }
+    if (!frontNode.isConnected) {
+      toast({ title: "عنصر التصميم غير جاهز", description: "أعد فتح هذا الحوار بعد ظهور المعاينة بالكامل.", variant: "destructive" });
       return;
     }
     setGenerating(true);
@@ -110,9 +114,28 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
       setResult(r);
       toast({ title: "تم توليد ملف الطباعة ✅", description: `${r.totalCards} بطاقة • ${pageSize} • ${colorMode === "CMYK_SIM" ? "CMYK" : "RGB"} • نزيف 3mm` });
     } catch (e: any) {
-      toast({ title: "فشل توليد PDF", description: e?.message ?? "خطأ غير معروف", variant: "destructive" });
+      const detail = e?.message || (typeof e === "string" ? e : JSON.stringify(e));
+      console.error("[PrintReadyDialog] PDF generation failed", e);
+      toast({ title: "فشل توليد PDF", description: detail || "خطأ غير معروف. راجع وحدة التحكم لمزيد من التفاصيل.", variant: "destructive" });
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const downloadPng = async () => {
+    if (!frontNode) {
+      toast({ title: "لا يوجد عنصر للتصدير", variant: "destructive" });
+      return;
+    }
+    try {
+      const { url, fileName } = await exportCardAsPng(frontNode, `${cardName || "carte"}.png`);
+      const a = document.createElement("a");
+      a.href = url; a.download = fileName; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      toast({ title: "تم تحميل صورة PNG ✅" });
+    } catch (e: any) {
+      console.error("[PrintReadyDialog] PNG export failed", e);
+      toast({ title: "فشل تصدير PNG", description: e?.message ?? "خطأ غير معروف", variant: "destructive" });
     }
   };
 
