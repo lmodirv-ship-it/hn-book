@@ -2,6 +2,20 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type IntegrationStatus = "not_configured" | "connected" | "error";
 
+export interface IntegrationLog {
+  id: string;
+  integration_id: string | null;
+  provider: string;
+  action: string;
+  success: boolean;
+  status_code: number | null;
+  duration_ms: number | null;
+  message: string | null;
+  metadata: Record<string, unknown>;
+  triggered_by: string | null;
+  created_at: string;
+}
+
 export interface ApiIntegration {
   id: string;
   name: string;
