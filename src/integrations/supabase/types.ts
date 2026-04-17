@@ -2227,6 +2227,7 @@ export type Database = {
     }
     Functions: {
       asset_category_for_type: { Args: { _type: string }; Returns: string }
+      classify_asset_folder: { Args: { _name: string }; Returns: string }
       consume_export_credit: {
         Args: { _export_type: string; _template_id?: string; _user_id: string }
         Returns: Json
