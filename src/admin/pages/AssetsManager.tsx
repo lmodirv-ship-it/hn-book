@@ -288,7 +288,7 @@ export default function AssetsManager() {
                       {a.is_active ? "نشط" : "معطّل"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-end">
+                  <TableCell className="text-end" onClick={(e) => e.stopPropagation()}>
                     <div className="flex justify-end gap-1">
                       {a.asset_type === "CRD" && templateMap[a.id] && (
                         <Link to={`/editor/${templateMap[a.id]}`}>
@@ -311,6 +311,8 @@ export default function AssetsManager() {
           </Table>
         )}
       </Card>
+
+      <AssetDetailDialog asset={detailAsset} open={!!detailAsset} onOpenChange={(o) => !o && setDetailAsset(null)} />
     </div>
   );
 }
