@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Globe, Plus, RefreshCw, Loader2, Trash2, Edit3, Save, X,
-  CheckCircle2, XCircle, KeyRound, Eye, EyeOff, Shield,
+  CheckCircle2, XCircle, KeyRound, Eye, EyeOff, Shield, Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
