@@ -1,7 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type AssetType = "CRD" | "TPL" | "LOG" | "FLY" | "PST" | "IMG" | "ART" | "DOC" | "PRE" | "LST" | "OTH";
-export type AssetCategory = "DSN" | "MED" | "DOC" | "OTH";
+export type AssetType =
+  | "CRD" | "TPL" | "LOG" | "FLY" | "PST"
+  | "TSH" | "RES" | "THM" | "ICN"
+  | "IMG" | "ART" | "VFX" | "PRE"
+  | "FNT"
+  | "DOC" | "LST" | "OTH";
+export type AssetCategory = "DSN" | "MED" | "FNT" | "DOC" | "OTH";
 
 export interface Asset {
   id: string;
@@ -27,22 +32,34 @@ export interface CreateAssetInput {
 }
 
 export const ASSET_TYPE_META: Record<AssetType, { label: string; category: AssetCategory; emoji: string }> = {
+  // تصميم
   CRD: { label: "بطاقات", category: "DSN", emoji: "💳" },
   TPL: { label: "قوالب", category: "DSN", emoji: "📐" },
   LOG: { label: "شعارات", category: "DSN", emoji: "🎯" },
   FLY: { label: "فلاير", category: "DSN", emoji: "📰" },
   PST: { label: "ملصقات", category: "DSN", emoji: "🖼️" },
-  IMG: { label: "صور", category: "MED", emoji: "🖼️" },
+  TSH: { label: "تيشرتات", category: "DSN", emoji: "👕" },
+  RES: { label: "سير ذاتية", category: "DSN", emoji: "📋" },
+  THM: { label: "ثيمات/مواقع", category: "DSN", emoji: "🌐" },
+  ICN: { label: "أيقونات", category: "DSN", emoji: "✨" },
+  // وسائط
+  IMG: { label: "صور ستوك", category: "MED", emoji: "📷" },
   ART: { label: "أعمال فنية", category: "MED", emoji: "🎨" },
+  VFX: { label: "مؤثرات فيديو", category: "MED", emoji: "🎬" },
+  PRE: { label: "بريسيتات", category: "MED", emoji: "🎞️" },
+  // خطوط
+  FNT: { label: "خطوط", category: "FNT", emoji: "🔤" },
+  // وثائق
   DOC: { label: "وثائق", category: "DOC", emoji: "📄" },
-  PRE: { label: "عروض", category: "DOC", emoji: "📊" },
   LST: { label: "قوائم", category: "DOC", emoji: "📋" },
+  // أخرى
   OTH: { label: "أخرى", category: "OTH", emoji: "📦" },
 };
 
 export const ASSET_CATEGORIES: Record<AssetCategory, string> = {
   DSN: "تصميم",
   MED: "وسائط",
+  FNT: "خطوط",
   DOC: "وثائق",
   OTH: "أخرى",
 };
