@@ -179,6 +179,12 @@ export default function TrackOrder() {
                   <p className="text-muted-foreground">المقاس</p>
                   <p className="font-medium text-foreground">{order.paper_size}</p>
                 </div>
+                {Number(order.total_price) > 0 && (
+                  <div className="col-span-2 rounded-lg border-2 border-primary/30 bg-primary/5 p-3 flex justify-between items-baseline">
+                    <span className="font-bold text-foreground">المبلغ الإجمالي</span>
+                    <span className="text-xl font-bold text-primary">{order.total_price} <span className="text-xs">د.م</span></span>
+                  </div>
+                )}
                 {order.pdf_url && (
                   <div className="col-span-2">
                     <a

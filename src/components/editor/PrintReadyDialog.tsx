@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Loader2, Download, MessageCircle, Printer, FileText, Eye, Copy, CheckCircle2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { buildPrintReadyPdf, type PageSize, type BuildPrintPdfResult } from "@/lib/print-pdf";
-import { printService, DELIVERY_OPTIONS, getShippingFee } from "@/services/printService";
+import { printService, DELIVERY_OPTIONS, getShippingFee, calculatePrice } from "@/services/printService";
 
 interface PrintReadyDialogProps {
   open: boolean;
@@ -45,6 +45,9 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
   const [orderPdfUrl, setOrderPdfUrl] = useState<string | null>(null);
 
   const shippingFee = getShippingFee(deliveryOption);
+  const printType = backNode ? "double_side" : "one_side";
+  const printSubtotal = calculatePrice(quantity, "standard", printType, pageSize);
+  const grandTotal = printSubtotal + shippingFee;
 
   const generate = async () => {
     if (!frontNode) {
@@ -117,6 +120,7 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
         city: city.trim(),
         delivery_option: deliveryOption,
         shipping_fee: shippingFee,
+        total_price: grandTotal,
         pdf_url: pdfUrl,
         template_design: designData ?? {},
         notes: note,
@@ -260,6 +264,7 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">احتفظ برقم الطلب لتتبع حالة الطباعة</p>
+                <p className="text-base font-bold text-primary mt-3">المبلغ الإجمالي: {grandTotal} د.م</p>
               </div>
             </div>
 
@@ -343,6 +348,23 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
               <div className="sm:col-span-2">
                 <Label className="text-sm">ملاحظات (اختياري)</Label>
                 <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="نوع الورق، تاريخ التسليم..." rows={2} maxLength={500} className="mt-1" />
+              </div>
+            </div>
+
+            {/* Price summary */}
+            <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-3 space-y-1.5 text-sm">
+              <div className="flex justify-between text-muted-foreground">
+                <span>الطباعة ({quantity} × {pageSize} · {printType === "double_side" ? "وجهين" : "وجه واحد"})</span>
+                <span className="font-medium text-foreground">{printSubtotal} د.م</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>الشحن ({deliveryOption === "express" ? "سريع" : "عادي"})</span>
+                <span className="font-medium text-foreground">{shippingFee} د.م</span>
+              </div>
+              <div className="h-px bg-border my-1" />
+              <div className="flex justify-between items-baseline">
+                <span className="font-bold text-foreground">المجموع الكلي</span>
+                <span className="text-xl font-bold text-primary">{grandTotal} <span className="text-xs">د.م</span></span>
               </div>
             </div>
 
