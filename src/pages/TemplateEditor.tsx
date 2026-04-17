@@ -298,6 +298,14 @@ const TemplateEditor = () => {
           </p>
         </div>
       </div>
+
+      <PrintReadyDialog
+        open={printOpen}
+        onOpenChange={setPrintOpen}
+        frontNode={frontRef.current}
+        backNode={hasBack ? backRef.current : null}
+        cardName={template.name}
+      />
     </div>
   );
 };
