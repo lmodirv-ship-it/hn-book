@@ -141,8 +141,11 @@ const TemplateEditor = () => {
           <Button variant="outline" size="sm" onClick={exportPng} disabled={exporting} className="gap-1.5">
             <FileImage className="w-4 h-4" /> PNG
           </Button>
-          <Button size="sm" onClick={exportPdf} disabled={exporting} className="gap-1.5">
+          <Button variant="outline" size="sm" onClick={exportPdf} disabled={exporting} className="gap-1.5">
             {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} PDF
+          </Button>
+          <Button size="sm" onClick={() => setPrintOpen(true)} className="gap-1.5">
+            <Printer className="w-4 h-4" /> طباعة
           </Button>
         </div>
       </header>
