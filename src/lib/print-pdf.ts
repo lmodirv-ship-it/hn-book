@@ -433,9 +433,14 @@ export async function exportCardAsPng(
 ): Promise<{ blob: Blob; url: string; fileName: string }> {
   if (!node) throw new Error("لا يوجد عنصر تصميم للتصدير");
   await waitForFonts();
-  const dataUrl = await toPng(node, { pixelRatio: 6, cacheBust: true, backgroundColor: "#ffffff" });
-  const res = await fetch(dataUrl);
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  return { blob, url, fileName };
+  const { target, cleanup } = ensureHtmlWrapper(node);
+  try {
+    const dataUrl = await toPng(target, { pixelRatio: 6, cacheBust: true, backgroundColor: "#ffffff" });
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    return { blob, url, fileName };
+  } finally {
+    cleanup();
+  }
 }
