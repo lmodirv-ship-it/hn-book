@@ -191,6 +191,50 @@ export default function TrackOrder() {
                     </a>
                   </div>
                 )}
+
+                {/* Shipping address */}
+                {order.address && order.address !== "—" && (
+                  <div className="col-span-2 rounded-lg border border-border bg-muted/20 p-3 mt-1">
+                    <p className="text-muted-foreground flex items-center gap-1.5 mb-2 text-xs">
+                      <MapPin className="w-3.5 h-3.5" /> عنوان التوصيل
+                    </p>
+                    <p className="font-medium text-foreground text-sm">{order.address}</p>
+                    {order.city && <p className="text-xs text-muted-foreground mt-0.5">{order.city}</p>}
+                    <div className="flex items-center justify-between mt-2 text-xs">
+                      <span className="text-muted-foreground">
+                        {order.delivery_option === "express" ? "🚀 توصيل سريع" : "🚚 توصيل عادي"}
+                      </span>
+                      {Number(order.shipping_fee) > 0 && (
+                        <span className="font-bold text-primary">+{order.shipping_fee} د.م</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Tracking info — visible once shipped */}
+                {(order.tracking_carrier || order.tracking_number || order.tracking_note || order.shipped_at) && (
+                  <div className="col-span-2 rounded-lg border border-cyan-500/30 bg-cyan-500/5 p-3">
+                    <p className="text-cyan-600 flex items-center gap-1.5 mb-2 text-xs font-semibold">
+                      <Truck className="w-3.5 h-3.5" /> معلومات الشحن
+                    </p>
+                    {order.tracking_carrier && (
+                      <p className="text-sm"><span className="text-muted-foreground">الشركة: </span><span className="font-medium text-foreground">{order.tracking_carrier}</span></p>
+                    )}
+                    {order.tracking_number && (
+                      <p className="text-sm"><span className="text-muted-foreground">رقم التتبع: </span><span className="font-mono font-medium text-foreground" dir="ltr">{order.tracking_number}</span></p>
+                    )}
+                    {order.tracking_note && (
+                      <p className="text-sm mt-1 text-foreground">{order.tracking_note}</p>
+                    )}
+                    {order.shipped_at && (
+                      <p className="text-[11px] text-muted-foreground mt-1">شُحن: {new Date(order.shipped_at).toLocaleString("ar")}</p>
+                    )}
+                    {order.delivered_at && (
+                      <p className="text-[11px] text-emerald-500 mt-0.5">سُلِّم: {new Date(order.delivered_at).toLocaleString("ar")}</p>
+                    )}
+                  </div>
+                )}
+
                 <div className="col-span-2">
                   <p className="text-muted-foreground">تاريخ الطلب</p>
                   <p className="font-medium text-foreground">
