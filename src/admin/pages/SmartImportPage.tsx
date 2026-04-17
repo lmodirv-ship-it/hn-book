@@ -308,21 +308,28 @@ const SmartImportPage = () => {
     });
   };
 
-  // ── Upload helper ──
+  // ── Upload helper (with timeout + descriptive errors) ──
   const uploadToBucket = async (file: File, prefix: string): Promise<string> => {
     const ext = fileExt(file.name) || "bin";
+    if (UNSUPPORTED_DIRECT_EXTS.has(ext)) {
+      throw new Error(`الصيغة .${ext} لا تُدعم للرفع المباشر. حوّل الملف إلى SVG/PDF أولاً.`);
+    }
     const safeKey = `${prefix}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-    const { error: upErr } = await supabase.storage
-      .from(BUCKET)
-      .upload(safeKey, file, { cacheControl: "3600", upsert: false });
-    if (upErr) throw upErr;
+    try {
+      const { error: upErr } = await supabase.storage
+        .from(BUCKET)
+        .upload(safeKey, file, { cacheControl: "3600", upsert: false });
+      if (upErr) throw upErr;
+    } catch (e) {
+      throw new Error(describeUploadError(e, file));
+    }
     const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(safeKey);
     return pub.publicUrl;
   };
 
   // ── Save single file asset ──
   const saveFileAsset = async (item: PendingFileItem) => {
-    updatePending(item.id, { uploading: true, progress: 10 } as Partial<PendingFileItem>);
+    updatePending(item.id, { uploading: true, progress: 10, status: "uploading", error: null } as Partial<PendingFileItem>);
     try {
       updatePending(item.id, { progress: 40 } as Partial<PendingFileItem>);
       const fileUrl = await uploadToBucket(item.file, `assets/${item.type}`);
@@ -336,23 +343,33 @@ const SmartImportPage = () => {
         file_url: fileUrl,
       });
 
-      updatePending(item.id, { progress: 100 } as Partial<PendingFileItem>);
+      updatePending(item.id, { progress: 100, status: "success" } as Partial<PendingFileItem>);
       toast.success(`✅ ${created.code}`);
-      removePending(item.id);
+      // Keep success card briefly then remove
+      setTimeout(() => removePending(item.id), 800);
       setSavedAssets((prev) => [created, ...prev]);
     } catch (e: any) {
-      toast.error(`❌ فشل الحفظ: ${e.message}`);
-      updatePending(item.id, { uploading: false, progress: 0 } as Partial<PendingFileItem>);
+      const msg = e?.message || "خطأ غير معروف";
+      toast.error(`❌ ${item.file.name}: ${msg}`, { duration: 6000 });
+      updatePending(item.id, {
+        uploading: false,
+        progress: 0,
+        status: "error",
+        error: msg,
+      } as Partial<PendingFileItem>);
+      throw e;
     }
   };
 
   // ── Save folder asset (CRD) ──
   const saveFolderAsset = async (item: PendingFolderItem) => {
     if (!item.previewFile) {
-      toast.error("لا توجد صورة معاينة");
+      const msg = "لا توجد صورة معاينة في المجلد";
+      toast.error(msg);
+      updatePending(item.id, { status: "error", error: msg } as Partial<PendingFolderItem>);
       return;
     }
-    updatePending(item.id, { uploading: true, progress: 5 } as Partial<PendingFolderItem>);
+    updatePending(item.id, { uploading: true, progress: 5, status: "uploading", error: null } as Partial<PendingFolderItem>);
     try {
       // Upload front (preview) image
       updatePending(item.id, { progress: 20 } as Partial<PendingFolderItem>);
@@ -365,7 +382,7 @@ const SmartImportPage = () => {
         backUrl = await uploadToBucket(item.backFile, `assets/CRD/back`);
       }
 
-      // Upload source file if available
+      // Upload source file if available (skipped automatically for unsupported formats)
       let fileUrl: string | null = null;
       if (item.sourceFile) {
         updatePending(item.id, { progress: 70 } as Partial<PendingFolderItem>);
@@ -387,13 +404,20 @@ const SmartImportPage = () => {
         },
       });
 
-      updatePending(item.id, { progress: 100 } as Partial<PendingFolderItem>);
+      updatePending(item.id, { progress: 100, status: "success" } as Partial<PendingFolderItem>);
       toast.success(`✅ ${created.code} (${item.folderName})`);
-      removePending(item.id);
+      setTimeout(() => removePending(item.id), 800);
       setSavedAssets((prev) => [created, ...prev]);
     } catch (e: any) {
-      toast.error(`❌ ${item.folderName}: ${e.message}`);
-      updatePending(item.id, { uploading: false, progress: 0 } as Partial<PendingFolderItem>);
+      const msg = e?.message || "خطأ غير معروف";
+      toast.error(`❌ ${item.folderName}: ${msg}`, { duration: 6000 });
+      updatePending(item.id, {
+        uploading: false,
+        progress: 0,
+        status: "error",
+        error: msg,
+      } as Partial<PendingFolderItem>);
+      throw e;
     }
   };
 
