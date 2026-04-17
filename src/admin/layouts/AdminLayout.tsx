@@ -6,7 +6,7 @@ import {
   Menu, X, Shield, BookOpen, Tag, LayoutDashboard,
   ShoppingCart, FileText, LogOut, Ticket, Activity, ShieldCheck, FolderUp, Globe, ScanText, DollarSign, KeyRound,
   Bell, AlertTriangle, XCircle, Database, Crown, CreditCard, Printer, Image, Frame, Brain,
-  ToggleRight, MonitorDot, Sparkles, ListChecks,
+  ToggleRight, MonitorDot, Sparkles, ListChecks, Rocket,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +45,7 @@ const navItems = [
   { path: "/admin/monitoring", icon: MonitorDot, label: "مراقبة النظام" },
   { path: "/admin/queue", icon: ListChecks, label: "قائمة الانتظار" },
   { path: "/admin/auto-heal", icon: MonitorDot, label: "الإصلاح التلقائي" },
+  { path: "/admin/deploy", icon: Rocket, label: "مراقبة النشر" },
   { path: "/admin/api-integrations", icon: Globe, label: "تكاملات API" },
   { path: "/admin/cms", icon: FileText, label: "إدارة المحتوى (CMS)" },
   { path: "/admin/users", icon: Users, label: "المستخدمون والأدوار" },
