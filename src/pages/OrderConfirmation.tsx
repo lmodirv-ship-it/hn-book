@@ -1,6 +1,6 @@
 import { useLocation, useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { CheckCircle2, Package, ArrowLeft, BookOpen, Copy, Search } from "lucide-react";
+import { CheckCircle2, Package, ArrowLeft, BookOpen, Copy, Search, MessageCircle, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import Navbar from "@/components/Navbar";
@@ -12,11 +12,36 @@ const OrderConfirmation = () => {
   const location = useLocation();
   const order = (location.state as any)?.order;
 
+  const PRINT_SHOP_PHONE = "212668546358";
+  const PRINT_SHOP_EMAIL = "lmodirv@gmail.com";
+  const pdfUrl = order?.pdfUrl || order?.pdf_url || "";
+
   const copyOrderNumber = () => {
     if (order?.orderNumber) {
       navigator.clipboard.writeText(order.orderNumber);
       toast.success("تم نسخ رقم الطلب");
     }
+  };
+
+  const buildMessage = () => {
+    const lines = [
+      `🖨️ طلب طباعة جديد`,
+      `رقم الطلب: ${order?.orderNumber || "-"}`,
+      `المبلغ: ${order?.totalAmount || 0} د.م`,
+    ];
+    if (pdfUrl) lines.push(`ملف PDF: ${pdfUrl}`);
+    return lines.join("\n");
+  };
+
+  const sendWhatsApp = () => {
+    const url = `https://wa.me/${PRINT_SHOP_PHONE}?text=${encodeURIComponent(buildMessage())}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const sendEmail = () => {
+    const subject = `طلب طباعة - ${order?.orderNumber || ""}`;
+    const url = `mailto:${PRINT_SHOP_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(buildMessage())}`;
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -81,6 +106,12 @@ const OrderConfirmation = () => {
               )}
 
               <div className="flex flex-col gap-2 pt-2">
+                <Button onClick={sendWhatsApp} className="w-full rounded-xl gap-2 bg-green-600 hover:bg-green-700 text-white">
+                  <MessageCircle className="w-4 h-4" /> إرسال إلى المطبعة (واتساب)
+                </Button>
+                <Button onClick={sendEmail} variant="secondary" className="w-full rounded-xl gap-2">
+                  <Mail className="w-4 h-4" /> إرسال بالبريد الإلكتروني
+                </Button>
                 {order?.orderNumber && (
                   <Button asChild variant="secondary" className="w-full rounded-xl gap-2">
                     <Link to={`/track-order?code=${encodeURIComponent(order.orderNumber)}`}>
