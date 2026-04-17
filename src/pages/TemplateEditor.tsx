@@ -51,6 +51,12 @@ const TemplateEditor = () => {
     return { front, back };
   }, [template]);
 
+  // When a logo image is uploaded, hide the monogram fallback so they don't overlap.
+  const renderValues = useMemo(
+    () => (values.logo ? { ...values, monogram: "" } : values),
+    [values]
+  );
+
   const flip = () => {
     if (!template?.back_svg_content) return;
     setFlipping(true);
@@ -118,12 +124,7 @@ const TemplateEditor = () => {
   }
 
   const currentFields = side === "front" ? fieldsBySide.front : fieldsBySide.back;
-  const hasBack = !!template.back_svg_content;
-  // When a logo image is uploaded, hide the monogram fallback so they don't overlap.
-  const renderValues = useMemo(
-    () => (values.logo ? { ...values, monogram: "" } : values),
-    [values]
-  );
+  const hasBack = !!template?.back_svg_content;
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
