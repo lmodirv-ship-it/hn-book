@@ -65,6 +65,7 @@ export const assetService = {
         image_url: input.image_url,
         file_url: input.file_url ?? null,
         description: input.description ?? "",
+        metadata: input.metadata ?? {},
       } as never)
       .select()
       .single();
