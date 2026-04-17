@@ -33,6 +33,9 @@ const SAFE = 3;           // mm inner safe area
 const GAP = 5;            // mm between cards (room for crop marks)
 const MIN_PAGE_MARGIN = 8; // mm minimum outer margin
 
+export type ColorMode = "RGB" | "CMYK_SIM";
+export type PaperFinish = "none" | "glossy" | "matte";
+
 const PAGES: Record<PageSize, { w: number; h: number }> = {
   A4: { w: 210, h: 297 },
   A3: { w: 297, h: 420 },
