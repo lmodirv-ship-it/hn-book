@@ -50,6 +50,78 @@ export type Database = {
         }
         Relationships: []
       }
+      asset_counters: {
+        Row: {
+          asset_type: string
+          current_value: number
+          id: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          asset_type: string
+          current_value?: number
+          id?: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          asset_type?: string
+          current_value?: number
+          id?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      assets: {
+        Row: {
+          asset_type: string
+          category: string
+          code: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          file_url: string | null
+          id: string
+          image_url: string
+          is_active: boolean
+          metadata: Json
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          asset_type: string
+          category: string
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          file_url?: string | null
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          metadata?: Json
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          asset_type?: string
+          category?: string
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          file_url?: string | null
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          metadata?: Json
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       card_templates: {
         Row: {
           category: string
@@ -1249,6 +1321,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      asset_category_for_type: { Args: { _type: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
