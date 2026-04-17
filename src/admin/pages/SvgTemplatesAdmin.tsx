@@ -56,6 +56,11 @@ const SvgTemplatesAdmin = () => {
     const txt = f ? await f.text() : "";
     setFrontContent(txt);
     setDetectedFields(buildFieldsFromSvg(txt, backContent));
+    if (f && txt) {
+      const guessed = suggestTemplateType(f.name, txt);
+      setTemplateType(guessed);
+      setTypeAutoDetected(true);
+    }
   };
 
   const onBackFile = async (f: File | null) => {
@@ -73,6 +78,8 @@ const SvgTemplatesAdmin = () => {
     setFrontContent("");
     setBackContent("");
     setDetectedFields([]);
+    setTemplateType("CRD");
+    setTypeAutoDetected(false);
   };
 
   const submit = async () => {
@@ -82,20 +89,21 @@ const SvgTemplatesAdmin = () => {
     }
     setSaving(true);
     try {
-      const front = await svgTemplateService.uploadSvg(frontFile, `${name}-front`);
+      const front = await svgTemplateService.uploadSvg(frontFile, `${name}-front`, templateType);
       let back: { url: string; content: string } | null = null;
-      if (backFile) back = await svgTemplateService.uploadSvg(backFile, `${name}-back`);
+      if (backFile) back = await svgTemplateService.uploadSvg(backFile, `${name}-back`, templateType);
 
       await svgTemplateService.create({
         name,
         category,
+        template_type: templateType,
         front_svg_url: front.url,
         front_svg_content: front.content,
         back_svg_url: back?.url ?? null,
         back_svg_content: back?.content ?? null,
         fields: detectedFields,
       });
-      toast({ title: "تم إنشاء القالب ✅" });
+      toast({ title: "تم إنشاء القالب ✅", description: `النوع: ${SVG_TEMPLATE_TYPES.find(t => t.value === templateType)?.label}` });
       setOpen(false);
       reset();
       load();
