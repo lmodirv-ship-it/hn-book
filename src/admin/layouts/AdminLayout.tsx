@@ -43,6 +43,9 @@ const navItems = [
   { path: "/admin/features", icon: ToggleRight, label: "مدير الميزات" },
   { path: "/admin/monitoring", icon: MonitorDot, label: "مراقبة النظام" },
   { path: "/admin/api-integrations", icon: Globe, label: "تكاملات API" },
+  { path: "/admin/cms", icon: FileText, label: "إدارة المحتوى (CMS)" },
+  { path: "/admin/users", icon: Users, label: "المستخدمون والأدوار" },
+  { path: "/admin/permissions", icon: Shield, label: "الصلاحيات" },
   { path: "/admin/settings", icon: Settings, label: "الإعدادات" },
 ];
 
