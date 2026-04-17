@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -29,6 +30,7 @@ const STEPS = [
 ];
 
 const CarteVisite = () => {
+  const navigate = useNavigate();
   const [templates, setTemplates] = useState<CardTemplate[]>([]);
   const [logos, setLogos] = useState<Logo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -251,7 +253,7 @@ const CarteVisite = () => {
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {filteredTemplates.map(t => (
                     <motion.button key={t.id} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                      onClick={() => { window.location.href = `/template-editor/${t.id}?from=studio`; }}
+                      onClick={() => navigate(`/studio/editor/${t.id}?from=studio`)}
                       className="relative rounded-xl overflow-hidden border-2 border-border hover:border-primary/40 transition-all text-right">
                       <div className="aspect-[1.8/1] bg-muted/10"><img src={t.image_url} alt={t.name} className="w-full h-full object-cover" /></div>
                       <div className="p-2 bg-card flex items-center justify-between">
