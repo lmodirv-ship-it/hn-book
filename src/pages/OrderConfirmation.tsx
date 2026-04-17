@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useLocation, useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { CheckCircle2, Package, ArrowLeft, BookOpen, Copy, Search, MessageCircle, Mail } from "lucide-react";
@@ -6,15 +7,32 @@ import { Separator } from "@/components/ui/separator";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { toast } from "sonner";
+import {
+  communicationsService,
+  applyTemplate,
+  type WhatsAppConfig,
+  type EmailConfig,
+} from "@/services/communicationsService";
 
 const OrderConfirmation = () => {
   const { id } = useParams();
   const location = useLocation();
   const order = (location.state as any)?.order;
-
-  const PRINT_SHOP_PHONE = "212668546358";
-  const PRINT_SHOP_EMAIL = "lmodirv@gmail.com";
   const pdfUrl = order?.pdfUrl || order?.pdf_url || "";
+
+  const [wa, setWa] = useState<WhatsAppConfig | null>(null);
+  const [em, setEm] = useState<EmailConfig | null>(null);
+
+  useEffect(() => {
+    communicationsService.getWhatsApp().then(setWa).catch(() => setWa(null));
+    communicationsService.getEmail().then(setEm).catch(() => setEm(null));
+  }, []);
+
+  const vars = {
+    orderNumber: order?.orderNumber ?? "-",
+    totalAmount: order?.totalAmount ?? 0,
+    pdfUrl: pdfUrl || "",
+  };
 
   const copyOrderNumber = () => {
     if (order?.orderNumber) {
@@ -23,24 +41,21 @@ const OrderConfirmation = () => {
     }
   };
 
-  const buildMessage = () => {
-    const lines = [
-      `🖨️ طلب طباعة جديد`,
-      `رقم الطلب: ${order?.orderNumber || "-"}`,
-      `المبلغ: ${order?.totalAmount || 0} د.م`,
-    ];
-    if (pdfUrl) lines.push(`ملف PDF: ${pdfUrl}`);
-    return lines.join("\n");
-  };
+  const waReady = !!(wa?.enabled && wa.phone_number);
+  const emailReady = !!(em?.enabled && em.email_address);
 
   const sendWhatsApp = () => {
-    const url = `https://wa.me/${PRINT_SHOP_PHONE}?text=${encodeURIComponent(buildMessage())}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+    if (!waReady || !wa) return;
+    const msg = applyTemplate(wa.default_message || "", vars);
+    const phone = wa.phone_number.replace(/[^\d]/g, "");
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer");
   };
 
   const sendEmail = () => {
-    const subject = `طلب طباعة - ${order?.orderNumber || ""}`;
-    const url = `mailto:${PRINT_SHOP_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(buildMessage())}`;
+    if (!emailReady || !em) return;
+    const subject = applyTemplate(em.subject_template || "", vars);
+    const body = applyTemplate(em.body_template || "", vars);
+    const url = `mailto:${em.email_address}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
@@ -57,7 +72,6 @@ const OrderConfirmation = () => {
               transition={{ type: "spring", duration: 0.6 }}
               className="rounded-2xl border border-border/30 bg-card/60 backdrop-blur-sm p-8 text-center space-y-6"
             >
-              {/* Success icon */}
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
@@ -106,10 +120,21 @@ const OrderConfirmation = () => {
               )}
 
               <div className="flex flex-col gap-2 pt-2">
-                <Button onClick={sendWhatsApp} className="w-full rounded-xl gap-2 bg-green-600 hover:bg-green-700 text-white">
+                <Button
+                  onClick={sendWhatsApp}
+                  disabled={!waReady}
+                  className="w-full rounded-xl gap-2 bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
+                  title={waReady ? "" : "الإعداد غير مفعّل"}
+                >
                   <MessageCircle className="w-4 h-4" /> إرسال إلى المطبعة (واتساب)
                 </Button>
-                <Button onClick={sendEmail} variant="secondary" className="w-full rounded-xl gap-2">
+                <Button
+                  onClick={sendEmail}
+                  disabled={!emailReady}
+                  variant="secondary"
+                  className="w-full rounded-xl gap-2 disabled:opacity-50"
+                  title={emailReady ? "" : "الإعداد غير مفعّل"}
+                >
                   <Mail className="w-4 h-4" /> إرسال بالبريد الإلكتروني
                 </Button>
                 {order?.orderNumber && (

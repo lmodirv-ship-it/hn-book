@@ -14,6 +14,7 @@ import {
   maskKey,
 } from "@/services/integrationsService";
 import IntegrationLogsPanel from "@/admin/components/IntegrationLogsPanel";
+import CommunicationsSettings from "@/admin/components/CommunicationsSettings";
 
 type Provider = "stripe" | "whatsapp" | "analytics";
 
@@ -428,6 +429,11 @@ export default function ApiSettings() {
             </Card>
           );
         })}
+      </div>
+
+      <div className="mt-8">
+        <h2 className="text-xl font-bold mb-4">قنوات التواصل مع المطبعة</h2>
+        <CommunicationsSettings />
       </div>
 
       <IntegrationLogsPanel />
