@@ -14,7 +14,21 @@ const ASSET_TYPES = [
   { value: "PST", label: "🖼️ ملصق (PST)" },
   { value: "LOG", label: "🎨 شعار (LOG)" },
   { value: "TPL", label: "🧩 قالب عام (TPL)" },
+  { value: "TSH", label: "👕 تيشيرت (TSH)" },
+  { value: "RES", label: "📋 سيرة ذاتية (RES)" },
+  { value: "THM", label: "🌐 ثيم/موقع (THM)" },
+  { value: "ICN", label: "✨ أيقونات (ICN)" },
+  { value: "FNT", label: "🔤 خطوط (FNT)" },
+  { value: "PRE", label: "🎞️ بريسيت (PRE)" },
+  { value: "VFX", label: "🎬 مؤثرات فيديو (VFX)" },
+  { value: "IMG", label: "📷 صور ستوك (IMG)" },
   { value: "DOC", label: "📄 وثيقة (DOC)" },
+];
+
+const MODES = [
+  { value: "auto", label: "🧠 تلقائي (يكتشف النوع)" },
+  { value: "single", label: "📦 عنصر واحد (مجلد واحد = أصل)" },
+  { value: "mega", label: "🗂️ أرشيف ضخم (يقسّم لعدة أصول)" },
 ];
 
 interface Props {
@@ -26,6 +40,7 @@ export function AssetPackageUpload({ onUploaded }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [assetType, setAssetType] = useState("");
+  const [mode, setMode] = useState("auto");
   const [uploading, setUploading] = useState(false);
 
   const handleFile = (f: File | null) => {
@@ -33,7 +48,6 @@ export function AssetPackageUpload({ onUploaded }: Props) {
     if (f && !title) {
       const stem = f.name.replace(/\.zip$/i, "").replace(/[-_]/g, " ");
       setTitle(stem);
-      // auto-suggest type
       const lower = stem.toLowerCase();
       if (lower.includes("card")) setAssetType("CRD");
       else if (lower.includes("flyer")) setAssetType("FLY");
@@ -53,6 +67,7 @@ export function AssetPackageUpload({ onUploaded }: Props) {
       formData.append("file", file);
       if (title) formData.append("title", title);
       if (assetType) formData.append("asset_type", assetType);
+      formData.append("mode", mode);
 
       const { data, error } = await supabase.functions.invoke("process-asset-package", {
         body: formData,
@@ -61,11 +76,19 @@ export function AssetPackageUpload({ onUploaded }: Props) {
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || "فشل المعالجة");
 
-      toast.success(`✅ تم إنشاء ${data.asset.code} مع ${data.files_count} ملف`);
+      if (data.mode === "mega") {
+        toast.success(`✅ تم إنشاء ${data.assets_created} أصل من الأرشيف الضخم`);
+        if (data.errors?.length) {
+          toast.warning(`تحذير: ${data.errors.length} أصل فشل في المعالجة`);
+        }
+      } else {
+        toast.success(`✅ تم إنشاء ${data.asset.code} مع ${data.files_count} ملف`);
+      }
       setOpen(false);
       setFile(null);
       setTitle("");
       setAssetType("");
+      setMode("auto");
       onUploaded?.();
     } catch (e: any) {
       toast.error(e.message || "فشل الرفع");
@@ -87,8 +110,9 @@ export function AssetPackageUpload({ onUploaded }: Props) {
           <DialogTitle>رفع مجلد أصل (ZIP)</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
-            ارفع مجلد مضغوط يحوي: صور المعاينة (JPG/PNG) + الملفات المصدر (AI/EPS/PSD) + الخطوط + ملف الترخيص. سيتم تنظيمها تلقائياً وإعطاؤها كوداً فريداً.
+          <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
+            <p>📦 <strong>عنصر واحد:</strong> ZIP يحوي مجلداً واحداً → أصل واحد.</p>
+            <p>🗂️ <strong>أرشيف ضخم:</strong> ZIP يحوي عدة فئات (Canva, Lightroom, Fonts...) → عدة أصول دفعة واحدة.</p>
           </div>
 
           <div>
@@ -102,21 +126,37 @@ export function AssetPackageUpload({ onUploaded }: Props) {
           </div>
 
           <div>
-            <Label>العنوان</Label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="عنوان الأصل" />
-          </div>
-
-          <div>
-            <Label>النوع (اختياري — كشف تلقائي)</Label>
-            <Select value={assetType} onValueChange={setAssetType}>
-              <SelectTrigger><SelectValue placeholder="كشف تلقائي" /></SelectTrigger>
+            <Label>وضع المعالجة</Label>
+            <Select value={mode} onValueChange={setMode}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {ASSET_TYPES.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                {MODES.map((m) => (
+                  <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+
+          {mode !== "mega" && (
+            <>
+              <div>
+                <Label>العنوان</Label>
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="عنوان الأصل" />
+              </div>
+
+              <div>
+                <Label>النوع (اختياري — كشف تلقائي)</Label>
+                <Select value={assetType} onValueChange={setAssetType}>
+                  <SelectTrigger><SelectValue placeholder="كشف تلقائي" /></SelectTrigger>
+                  <SelectContent>
+                    {ASSET_TYPES.map((t) => (
+                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)} disabled={uploading}>إلغاء</Button>
