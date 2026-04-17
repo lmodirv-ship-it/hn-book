@@ -235,7 +235,10 @@ const PremiumCard = ({ asset }: { asset: Asset }) => {
           </div>
 
           {/* Hover overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 gap-2">
+          <div
+            className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 gap-2"
+            onClick={(e) => e.stopPropagation()}
+          >
             <Button asChild size="sm" className="w-full gap-1.5 shadow-lg shadow-primary/30">
               <Link to={editHref}>
                 <Edit3 className="w-3.5 h-3.5" /> تعديل التصميم
