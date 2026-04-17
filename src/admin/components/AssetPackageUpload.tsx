@@ -110,8 +110,9 @@ export function AssetPackageUpload({ onUploaded }: Props) {
           <DialogTitle>رفع مجلد أصل (ZIP)</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
-            ارفع مجلد مضغوط يحوي: صور المعاينة (JPG/PNG) + الملفات المصدر (AI/EPS/PSD) + الخطوط + ملف الترخيص. سيتم تنظيمها تلقائياً وإعطاؤها كوداً فريداً.
+          <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
+            <p>📦 <strong>عنصر واحد:</strong> ZIP يحوي مجلداً واحداً → أصل واحد.</p>
+            <p>🗂️ <strong>أرشيف ضخم:</strong> ZIP يحوي عدة فئات (Canva, Lightroom, Fonts...) → عدة أصول دفعة واحدة.</p>
           </div>
 
           <div>
@@ -125,21 +126,37 @@ export function AssetPackageUpload({ onUploaded }: Props) {
           </div>
 
           <div>
-            <Label>العنوان</Label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="عنوان الأصل" />
-          </div>
-
-          <div>
-            <Label>النوع (اختياري — كشف تلقائي)</Label>
-            <Select value={assetType} onValueChange={setAssetType}>
-              <SelectTrigger><SelectValue placeholder="كشف تلقائي" /></SelectTrigger>
+            <Label>وضع المعالجة</Label>
+            <Select value={mode} onValueChange={setMode}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {ASSET_TYPES.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                {MODES.map((m) => (
+                  <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+
+          {mode !== "mega" && (
+            <>
+              <div>
+                <Label>العنوان</Label>
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="عنوان الأصل" />
+              </div>
+
+              <div>
+                <Label>النوع (اختياري — كشف تلقائي)</Label>
+                <Select value={assetType} onValueChange={setAssetType}>
+                  <SelectTrigger><SelectValue placeholder="كشف تلقائي" /></SelectTrigger>
+                  <SelectContent>
+                    {ASSET_TYPES.map((t) => (
+                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)} disabled={uploading}>إلغاء</Button>
