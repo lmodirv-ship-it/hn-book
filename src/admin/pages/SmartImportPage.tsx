@@ -101,6 +101,8 @@ interface PendingFileItem {
   isImage: boolean;
   uploading: boolean;
   progress: number;
+  error: string | null;
+  status: "idle" | "uploading" | "success" | "error";
 }
 
 interface PendingFolderItem {
@@ -117,6 +119,8 @@ interface PendingFolderItem {
   warning: string | null;
   uploading: boolean;
   progress: number;
+  error: string | null;
+  status: "idle" | "uploading" | "success" | "error";
 }
 
 type PendingItem = PendingFileItem | PendingFolderItem;
