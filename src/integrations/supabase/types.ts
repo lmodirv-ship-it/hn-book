@@ -1542,7 +1542,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "manager" | "editor"
       file_type: "image" | "pdf" | "other"
       order_status: "pending" | "processing" | "completed" | "cancelled"
       subscription_status: "active" | "expired" | "cancelled"
@@ -1673,7 +1673,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "manager", "editor"],
       file_type: ["image", "pdf", "other"],
       order_status: ["pending", "processing", "completed", "cancelled"],
       subscription_status: ["active", "expired", "cancelled"],
