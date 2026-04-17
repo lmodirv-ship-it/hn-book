@@ -50,6 +50,20 @@ export default function AssetsManager() {
         search: search || undefined,
       });
       setAssets(data);
+
+      // Map asset_id -> template_id for CRD assets that have an editable SVG template
+      const crdIds = data.filter((a) => a.asset_type === "CRD").map((a) => a.id);
+      if (crdIds.length) {
+        const { data: tpls } = await supabase
+          .from("svg_templates" as never)
+          .select("id, asset_id")
+          .in("asset_id", crdIds);
+        const map: Record<string, string> = {};
+        (tpls as any[] | null)?.forEach((t) => { if (t.asset_id) map[t.asset_id] = t.id; });
+        setTemplateMap(map);
+      } else {
+        setTemplateMap({});
+      }
     } catch (e: any) {
       toast.error(e.message ?? "فشل التحميل");
     } finally {
