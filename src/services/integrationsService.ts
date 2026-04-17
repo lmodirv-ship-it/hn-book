@@ -74,6 +74,34 @@ export const integrationsService = {
       integration: ApiIntegration & { secret_present: boolean };
     };
   },
+
+  /** Test a connection. Pass either { id } / { name } or an ad-hoc payload. */
+  async testConnection(payload: {
+    id?: string;
+    name?: string;
+    base_url?: string;
+    secret_ref?: string;
+    api_key_name?: string;
+  }): Promise<TestConnectionResult> {
+    const { data, error } = await supabase.functions.invoke("test-integration-connection", {
+      body: payload,
+    });
+    if (error) {
+      return { ok: false, stage: "request", error: error.message };
+    }
+    return data as TestConnectionResult;
+  },
+};
+
+export type TestConnectionResult = {
+  ok: boolean;
+  stage?: "validation" | "secret" | "request";
+  name?: string;
+  status?: number;
+  snippet?: string;
+  tested_url?: string;
+  auth_header?: string | null;
+  error?: string;
 };
 
 /** Mask any sensitive string for display (keeps last 4 chars). */
