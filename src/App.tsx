@@ -58,6 +58,7 @@ import AssetsManager from "./admin/pages/AssetsManager.tsx";
 import SmartImportPage from "./admin/pages/SmartImportPage.tsx";
 import SvgTemplatesAdmin from "./admin/pages/SvgTemplatesAdmin.tsx";
 import TemplateEditor from "./pages/TemplateEditor.tsx";
+import TrackOrder from "./pages/TrackOrder.tsx";
 
 const queryClient = new QueryClient();
 
@@ -81,6 +82,7 @@ const App = () => (
             <Route path="/cart" element={<CartPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/order-confirmation/:id" element={<OrderConfirmation />} />
+            <Route path="/track-order" element={<TrackOrder />} />
             <Route path="/category/:category" element={<CategoryPage />} />
             <Route path="/product/:id" element={<ProductRedirect />} />
             <Route path="/book/:id" element={<ProductDetail />} />

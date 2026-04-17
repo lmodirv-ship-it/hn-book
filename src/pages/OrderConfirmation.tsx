@@ -1,6 +1,6 @@
 import { useLocation, useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { CheckCircle2, Package, ArrowLeft, BookOpen, Copy } from "lucide-react";
+import { CheckCircle2, Package, ArrowLeft, BookOpen, Copy, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import Navbar from "@/components/Navbar";
@@ -81,6 +81,13 @@ const OrderConfirmation = () => {
               )}
 
               <div className="flex flex-col gap-2 pt-2">
+                {order?.orderNumber && (
+                  <Button asChild variant="secondary" className="w-full rounded-xl gap-2">
+                    <Link to={`/track-order?code=${encodeURIComponent(order.orderNumber)}`}>
+                      <Search className="w-4 h-4" /> تتبع الطلب
+                    </Link>
+                  </Button>
+                )}
                 <Button asChild className="w-full rounded-xl gap-2">
                   <Link to="/books">
                     <BookOpen className="w-4 h-4" /> متابعة التسوق
