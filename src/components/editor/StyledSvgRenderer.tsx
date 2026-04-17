@@ -30,7 +30,7 @@ interface Props {
  * the resolved field value. Adds drag, hover and selection.
  */
 const StyledSvgRenderer = forwardRef<HTMLDivElement, Props>(function StyledSvgRenderer(
-  { svg, fields, values, styles, selectedKey, onSelect, onDragEnd, className },
+  { svg, fields, values, styles, selectedKey, onSelect, onDragEnd, onEdit, className },
   ref
 ) {
   const wrapperRef = useRef<HTMLDivElement>(null);
