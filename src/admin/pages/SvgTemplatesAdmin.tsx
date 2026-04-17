@@ -34,6 +34,8 @@ const SvgTemplatesAdmin = () => {
   const [frontContent, setFrontContent] = useState("");
   const [backContent, setBackContent] = useState("");
   const [detectedFields, setDetectedFields] = useState<SvgField[]>([]);
+  const [templateType, setTemplateType] = useState<SvgTemplateType>("CRD");
+  const [typeAutoDetected, setTypeAutoDetected] = useState(false);
 
   const load = async () => {
     setLoading(true);
