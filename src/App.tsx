@@ -169,6 +169,7 @@ const App = () => (
               <Route path="users" element={<UsersAdmin />} />
               <Route path="permissions" element={<PermissionsAdmin />} />
               <Route path="cms" element={<CmsAdmin />} />
+              <Route path="user-permissions" element={<UserPermissionsAdmin />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />
