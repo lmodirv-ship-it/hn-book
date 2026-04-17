@@ -204,10 +204,19 @@ const PremiumCard = ({ asset }: { asset: Asset }) => {
   const location = useLocation();
   // Inside Studio, always route to the studio editor; elsewhere fall back
   // to the asset-type-specific route (book reader, tablou page, etc.).
+  // Editable design types always open in the Studio editor.
+  // Non-editable assets (books, tablou) fall back to their dedicated route.
+  const editableTypes = new Set(["CRD", "TPL", "LOG", "FLY", "PST", "IMG", "ART"]);
+  const isEditable = editableTypes.has(asset.asset_type);
   const inStudio = location.pathname.startsWith("/studio");
-  const editHref = inStudio ? `/studio/editor/${asset.id}?from=studio` : getRouteFor(asset.asset_type, asset.id);
+  const editHref = inStudio || isEditable
+    ? `/studio/editor/${asset.id}?from=${inStudio ? "studio" : "templates"}`
+    : getRouteFor(asset.asset_type, asset.id);
 
-  const goToEditor = () => navigate(editHref);
+  const goToEditor = () => {
+    console.log("[TemplateCard] navigate →", editHref, { id: asset.id, type: asset.asset_type });
+    navigate(editHref);
+  };
 
   return (
     <div
@@ -215,7 +224,7 @@ const PremiumCard = ({ asset }: { asset: Asset }) => {
       tabIndex={0}
       onClick={goToEditor}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goToEditor(); } }}
-      className="group relative cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded-xl"
+      className="group relative cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded-xl transition-transform duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-primary/20"
     >
       {/* Subtle gold glow on hover */}
       <div className="absolute -inset-px rounded-xl bg-gradient-to-br from-primary/0 via-primary/0 to-primary/0 group-hover:from-primary/40 group-hover:to-primary/10 transition-all duration-500 blur-sm" />
