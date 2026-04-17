@@ -40,6 +40,7 @@ export function AssetPackageUpload({ onUploaded }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [assetType, setAssetType] = useState("");
+  const [mode, setMode] = useState("auto");
   const [uploading, setUploading] = useState(false);
 
   const handleFile = (f: File | null) => {
@@ -47,7 +48,6 @@ export function AssetPackageUpload({ onUploaded }: Props) {
     if (f && !title) {
       const stem = f.name.replace(/\.zip$/i, "").replace(/[-_]/g, " ");
       setTitle(stem);
-      // auto-suggest type
       const lower = stem.toLowerCase();
       if (lower.includes("card")) setAssetType("CRD");
       else if (lower.includes("flyer")) setAssetType("FLY");
@@ -67,6 +67,7 @@ export function AssetPackageUpload({ onUploaded }: Props) {
       formData.append("file", file);
       if (title) formData.append("title", title);
       if (assetType) formData.append("asset_type", assetType);
+      formData.append("mode", mode);
 
       const { data, error } = await supabase.functions.invoke("process-asset-package", {
         body: formData,
@@ -75,11 +76,19 @@ export function AssetPackageUpload({ onUploaded }: Props) {
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || "فشل المعالجة");
 
-      toast.success(`✅ تم إنشاء ${data.asset.code} مع ${data.files_count} ملف`);
+      if (data.mode === "mega") {
+        toast.success(`✅ تم إنشاء ${data.assets_created} أصل من الأرشيف الضخم`);
+        if (data.errors?.length) {
+          toast.warning(`تحذير: ${data.errors.length} أصل فشل في المعالجة`);
+        }
+      } else {
+        toast.success(`✅ تم إنشاء ${data.asset.code} مع ${data.files_count} ملف`);
+      }
       setOpen(false);
       setFile(null);
       setTitle("");
       setAssetType("");
+      setMode("auto");
       onUploaded?.();
     } catch (e: any) {
       toast.error(e.message || "فشل الرفع");
