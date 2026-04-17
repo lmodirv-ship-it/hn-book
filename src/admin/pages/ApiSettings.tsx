@@ -13,6 +13,7 @@ import {
   type IntegrationStatus,
   maskKey,
 } from "@/services/integrationsService";
+import IntegrationLogsPanel from "@/admin/components/IntegrationLogsPanel";
 
 type Provider = "stripe" | "whatsapp" | "analytics";
 
@@ -428,6 +429,8 @@ export default function ApiSettings() {
           );
         })}
       </div>
+
+      <IntegrationLogsPanel />
     </div>
   );
 }

@@ -490,6 +490,56 @@ export type Database = {
         }
         Relationships: []
       }
+      integration_logs: {
+        Row: {
+          action: string
+          created_at: string
+          duration_ms: number | null
+          id: string
+          integration_id: string | null
+          message: string | null
+          metadata: Json
+          provider: string
+          status_code: number | null
+          success: boolean
+          triggered_by: string | null
+        }
+        Insert: {
+          action?: string
+          created_at?: string
+          duration_ms?: number | null
+          id?: string
+          integration_id?: string | null
+          message?: string | null
+          metadata?: Json
+          provider: string
+          status_code?: number | null
+          success?: boolean
+          triggered_by?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          duration_ms?: number | null
+          id?: string
+          integration_id?: string | null
+          message?: string | null
+          metadata?: Json
+          provider?: string
+          status_code?: number | null
+          success?: boolean
+          triggered_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_logs_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "api_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       logos: {
         Row: {
           category: string

@@ -115,6 +115,7 @@ Deno.serve(async (req) => {
       }
     }
 
+    const startedAt = Date.now();
     let result: { ok: boolean; status: number; snippet: string };
 
     if (payload.provider === "analytics") {
@@ -136,6 +137,8 @@ Deno.serve(async (req) => {
       }
     }
 
+    const durationMs = Date.now() - startedAt;
+
     // Persist status if integration_id given
     if (payload.integration_id) {
       await admin
@@ -148,6 +151,19 @@ Deno.serve(async (req) => {
         .eq("id", payload.integration_id);
     }
 
+    // Log every call
+    await admin.from("integration_logs").insert({
+      integration_id: payload.integration_id ?? null,
+      provider: payload.provider,
+      action: payload.provider === "whatsapp" && payload.test_to ? "send_test_message" : "test_connection",
+      success: result.ok,
+      status_code: result.status || null,
+      duration_ms: durationMs,
+      message: result.snippet?.slice(0, 1000) ?? null,
+      metadata: { config_keys: Object.keys(config), secret_ref: secret_ref || null },
+      triggered_by: userData.user.id,
+    });
+
     return json(200, {
       ok: result.ok,
       provider: payload.provider,
@@ -158,3 +174,4 @@ Deno.serve(async (req) => {
     return json(500, { ok: false, error: String(err) });
   }
 });
+

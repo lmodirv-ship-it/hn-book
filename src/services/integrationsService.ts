@@ -2,6 +2,20 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type IntegrationStatus = "not_configured" | "connected" | "error";
 
+export interface IntegrationLog {
+  id: string;
+  integration_id: string | null;
+  provider: string;
+  action: string;
+  success: boolean;
+  status_code: number | null;
+  duration_ms: number | null;
+  message: string | null;
+  metadata: Record<string, unknown>;
+  triggered_by: string | null;
+  created_at: string;
+}
+
 export interface ApiIntegration {
   id: string;
   name: string;
@@ -98,6 +112,28 @@ export const integrationsService = {
     const { error } = await supabase.from("api_integrations").delete().eq("id", id);
     if (error) throw error;
   },
+
+  async listLogs(opts?: { provider?: string; integration_id?: string; limit?: number }): Promise<IntegrationLog[]> {
+    let q = supabase
+      .from("integration_logs" as never)
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(opts?.limit ?? 100);
+    if (opts?.provider) q = q.eq("provider" as never, opts.provider as never);
+    if (opts?.integration_id) q = q.eq("integration_id" as never, opts.integration_id as never);
+    const { data, error } = await q;
+    if (error) throw error;
+    return (data ?? []) as unknown as IntegrationLog[];
+  },
+
+  async clearLogs(opts?: { provider?: string }) {
+    let q = supabase.from("integration_logs" as never).delete();
+    if (opts?.provider) q = q.eq("provider" as never, opts.provider as never);
+    else q = q.gt("created_at" as never, "1970-01-01" as never);
+    const { error } = await q;
+    if (error) throw error;
+  },
+
 
   async resolveSecure(name: string) {
     const { data, error } = await supabase.functions.invoke("get-integration-config", {
