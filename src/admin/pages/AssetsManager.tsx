@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Plus, Search, Trash2, Eye, EyeOff, Loader2, Upload } from "lucide-react";
+import { Plus, Search, Trash2, Eye, EyeOff, Loader2, Upload, Pencil } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   assetService,
   ASSET_TYPE_META,
