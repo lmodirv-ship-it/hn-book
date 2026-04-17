@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Loader2, Download, MessageCircle, Printer, FileText, Eye, Copy, CheckCircle2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { buildPrintReadyPdf, type PageSize, type BuildPrintPdfResult } from "@/lib/print-pdf";
-import { printService, DELIVERY_OPTIONS, getShippingFee } from "@/services/printService";
+import { printService, DELIVERY_OPTIONS, getShippingFee, calculatePrice } from "@/services/printService";
 
 interface PrintReadyDialogProps {
   open: boolean;
