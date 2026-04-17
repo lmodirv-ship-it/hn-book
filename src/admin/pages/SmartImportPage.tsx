@@ -454,6 +454,7 @@ const SmartImportPage = () => {
                 <Button size="sm" variant="ghost" onClick={() => {
                   pending.forEach((p) => {
                     if ("previewUrl" in p && p.previewUrl) URL.revokeObjectURL(p.previewUrl);
+                    if (p.kind === "folder" && p.backUrl) URL.revokeObjectURL(p.backUrl);
                   });
                   setPending([]);
                 }}>
