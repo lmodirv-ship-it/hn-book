@@ -196,23 +196,30 @@ const BulkPdfUpload = () => {
   const cfg = TYPE_CONFIG[importType];
 
   const addFiles = (selected: File[]) => {
+    if (!selected.length) return;
     if (isBooks) {
       const pdfs = selected.filter(
         (f) => f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf")
       );
-      if (!pdfs.length) { toast.error("يرجى اختيار ملفات PDF فقط"); return; }
-      booksQ.enqueue(
-        pdfs.map((file) => {
-          const title = cleanFilename(file.name);
-          const { category } = detectCategory(title);
-          return { file, title, category };
-        })
-      );
+      const others = selected.filter((f) => !pdfs.includes(f));
+      if (pdfs.length) {
+        booksQ.enqueue(
+          pdfs.map((file) => {
+            const title = cleanFilename(file.name);
+            const { category } = detectCategory(title);
+            return { file, title, category };
+          })
+        );
+      }
+      if (others.length) {
+        toast.info(`${others.length} ملف غير PDF — سيُرفع كأصل عام`);
+        assetsQ.enqueue(
+          others.map((file) => ({ file, title: cleanFilename(file.name), type: "cards" as ImportType }))
+        );
+      }
     } else {
-      const imgs = selected.filter((f) => f.type.startsWith("image/") || f.name.toLowerCase().endsWith(".svg"));
-      if (!imgs.length) { toast.error("يرجى اختيار صور فقط"); return; }
       assetsQ.enqueue(
-        imgs.map((file) => ({ file, title: cleanFilename(file.name), type: importType }))
+        selected.map((file) => ({ file, title: cleanFilename(file.name), type: importType }))
       );
     }
   };
