@@ -7,6 +7,13 @@ import {
 } from "lucide-react";
 import { toPng } from "html-to-image";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useBilling } from "@/hooks/useBilling";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import { Sparkles, Coins } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import jsPDF from "jspdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +58,9 @@ const TemplateEditor = () => {
   const { has: hasPermission, loading: permsLoading } = usePermissions();
   const canExportPng = !permsLoading && hasPermission("export_png");
   const canExportPdf = !permsLoading && hasPermission("export_pdf");
+  const billing = useBilling();
+  const navigate = useNavigate();
+  const [paywallOpen, setPaywallOpen] = useState<null | "pdf" | "png">(null);
   const [template, setTemplate] = useState<SvgTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -201,8 +211,20 @@ const TemplateEditor = () => {
       toast({ title: "🔒 غير مسموح لك بتحميل الملفات", description: "تحتاج إذن export_png من المدير.", variant: "destructive" });
       return;
     }
+    if (!billing.canExport("png")) {
+      setPaywallOpen("png");
+      return;
+    }
     setExporting(true);
     try {
+      // Server-validated deduction first — only generate if allowed
+      const r = await billing.consume("png", id ?? null);
+      if (!r.allowed) {
+        setExporting(false);
+        if (r.reason === "insufficient_credits") setPaywallOpen("png");
+        else toast({ title: "تعذر التصدير", description: r.reason, variant: "destructive" });
+        return;
+      }
       const sides: Array<{ ref: HTMLDivElement | null; label: string }> = [
         { ref: frontRef.current, label: "front" },
       ];
@@ -215,7 +237,7 @@ const TemplateEditor = () => {
         a.download = `${template?.name ?? "card"}-${s.label}.png`;
         a.click();
       }
-      toast({ title: "تم تصدير PNG ✅" });
+      toast({ title: "تم تصدير PNG ✅", description: billing.plan?.is_unlimited ? "خطة Pro" : `تم خصم 1 نقطة • الرصيد: ${billing.credits?.balance ?? 0}` });
     } catch (e: any) {
       toast({ title: "فشل التصدير", description: e.message, variant: "destructive" });
     }
@@ -227,8 +249,19 @@ const TemplateEditor = () => {
       toast({ title: "🔒 غير مسموح لك بتحميل الملفات", description: "تحتاج إذن export_pdf من المدير.", variant: "destructive" });
       return;
     }
+    if (!billing.canExport("pdf")) {
+      setPaywallOpen("pdf");
+      return;
+    }
     setExporting(true);
     try {
+      const r = await billing.consume("pdf", id ?? null);
+      if (!r.allowed) {
+        setExporting(false);
+        if (r.reason === "insufficient_credits") setPaywallOpen("pdf");
+        else toast({ title: "تعذر التصدير", description: r.reason, variant: "destructive" });
+        return;
+      }
       const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [90, 50] });
       const front = frontRef.current
         ? await toPng(frontRef.current, { pixelRatio: 3, cacheBust: true })
@@ -240,7 +273,7 @@ const TemplateEditor = () => {
         pdf.addImage(back, "PNG", 0, 0, 90, 50);
       }
       pdf.save(`${template?.name ?? "card"}.pdf`);
-      toast({ title: "تم تصدير PDF ✅" });
+      toast({ title: "تم تصدير PDF ✅", description: billing.plan?.is_unlimited ? "خطة Pro" : `تم خصم 2 نقطة • الرصيد: ${billing.credits?.balance ?? 0}` });
     } catch (e: any) {
       toast({ title: "فشل التصدير", description: e.message, variant: "destructive" });
     }
@@ -381,6 +414,18 @@ const TemplateEditor = () => {
             </Button>
           </Link>
           <h1 className="font-bold text-sm flex-1 truncate">{template.name}</h1>
+          {billing.authed && (
+            <div className="hidden md:flex items-center gap-1.5">
+              <Badge variant={billing.plan?.is_unlimited ? "default" : "secondary"} className="gap-1 text-[10px]">
+                <Sparkles className="w-3 h-3" /> {billing.plan?.name ?? "Free"}
+              </Badge>
+              {!billing.plan?.is_unlimited && (
+                <Badge variant="outline" className="gap-1 text-[10px]">
+                  <Coins className="w-3 h-3" /> {billing.credits?.balance ?? 0}
+                </Badge>
+              )}
+            </div>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -755,6 +800,38 @@ const TemplateEditor = () => {
         templateId={template.id}
         designData={{ values, styles }}
       />
+
+      <Dialog open={paywallOpen !== null} onOpenChange={(o) => !o && setPaywallOpen(null)}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-destructive" /> يرجى الاشتراك أو شراء نقاط
+            </DialogTitle>
+            <DialogDescription>
+              تصدير {paywallOpen === "pdf" ? "PDF يكلف 2 نقطة" : "PNG يكلف 1 نقطة"}.
+              رصيدك الحالي: <strong>{billing.credits?.balance ?? 0}</strong> نقطة •
+              خطتك: <strong>{billing.plan?.name ?? "Free"}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-2 py-2 text-sm">
+            <div className="rounded-lg border border-border p-3 bg-muted/30">
+              💎 <strong>Pro</strong> — تصدير غير محدود
+            </div>
+            <div className="rounded-lg border border-border p-3 bg-muted/30">
+              🪙 <strong>نقاط</strong> — اشتر دفعة نقاط لاستخدامها متى شئت
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setPaywallOpen(null)}>إلغاء</Button>
+            <Button variant="secondary" onClick={() => { setPaywallOpen(null); navigate("/billing?tab=credits"); }}>
+              <Coins className="w-4 h-4 ml-1" /> شراء نقاط
+            </Button>
+            <Button onClick={() => { setPaywallOpen(null); navigate("/billing?tab=plans"); }}>
+              <Sparkles className="w-4 h-4 ml-1" /> ترقية الخطة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

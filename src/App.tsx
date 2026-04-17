@@ -76,6 +76,8 @@ import StudioEditor from "./pages/studio/StudioEditor.tsx";
 import StudioAdmin from "./admin/pages/StudioAdmin.tsx";
 import QueueManager from "./admin/pages/QueueManager.tsx";
 import AutoHealCenter from "./admin/pages/AutoHealCenter.tsx";
+import SubscriptionsAdmin from "./admin/pages/SubscriptionsAdmin.tsx";
+import BillingPage from "./pages/BillingPage.tsx";
 import { useAutoDeploy } from "@/hooks/useAutoDeploy";
 
 // Lazy-load the heavy editor and viewer so non-editable assets never pull
@@ -147,6 +149,8 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/my-orders" element={<MyOrders />} />
+            <Route path="/billing" element={<BillingPage />} />
+            
             
             {/* Admin Login */}
             <Route path="/admin/login" element={<AdminLogin />} />
@@ -192,6 +196,7 @@ const App = () => (
               <Route path="studio" element={<StudioAdmin />} />
               <Route path="queue" element={<QueueManager />} />
               <Route path="auto-heal" element={<AutoHealCenter />} />
+              <Route path="subscriptions" element={<SubscriptionsAdmin />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />

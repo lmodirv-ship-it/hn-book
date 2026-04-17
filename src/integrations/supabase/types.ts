@@ -514,6 +514,36 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_transactions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          delta: number
+          id: string
+          metadata: Json
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          delta: number
+          id?: string
+          metadata?: Json
+          reason: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          delta?: number
+          id?: string
+          metadata?: Json
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           created_at: string
@@ -580,6 +610,42 @@ export type Database = {
           is_active?: boolean
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      export_logs: {
+        Row: {
+          allowed: boolean
+          cost: number
+          created_at: string
+          export_type: string
+          id: string
+          metadata: Json
+          reason: string | null
+          template_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          allowed?: boolean
+          cost?: number
+          created_at?: string
+          export_type: string
+          id?: string
+          metadata?: Json
+          reason?: string | null
+          template_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          allowed?: boolean
+          cost?: number
+          created_at?: string
+          export_type?: string
+          id?: string
+          metadata?: Json
+          reason?: string | null
+          template_id?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -1527,6 +1593,51 @@ export type Database = {
           },
         ]
       }
+      subscription_plans: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          features: Json
+          id: string
+          is_active: boolean
+          is_unlimited: boolean
+          monthly_credits: number
+          name: string
+          price_monthly: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          features?: Json
+          id?: string
+          is_active?: boolean
+          is_unlimited?: boolean
+          monthly_credits?: number
+          name: string
+          price_monthly?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          features?: Json
+          id?: string
+          is_active?: boolean
+          is_unlimited?: boolean
+          monthly_credits?: number
+          name?: string
+          price_monthly?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           created_at: string
@@ -1843,6 +1954,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_credits: {
+        Row: {
+          balance: number
+          total_earned: number
+          total_spent: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          total_earned?: number
+          total_spent?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          total_earned?: number
+          total_spent?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_permissions: {
         Row: {
           created_at: string
@@ -1899,6 +2034,50 @@ export type Database = {
         }
         Relationships: []
       }
+      user_subscriptions: {
+        Row: {
+          created_at: string
+          end_date: string | null
+          id: string
+          is_active: boolean
+          plan_code: string
+          start_date: string
+          stripe_subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          plan_code: string
+          start_date?: string
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          plan_code?: string
+          start_date?: string
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_plan_code_fkey"
+            columns: ["plan_code"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       visitors: {
         Row: {
           id: string
@@ -1932,6 +2111,14 @@ export type Database = {
     }
     Functions: {
       asset_category_for_type: { Args: { _type: string }; Returns: string }
+      consume_export_credit: {
+        Args: { _export_type: string; _template_id?: string; _user_id: string }
+        Returns: Json
+      }
+      grant_credits: {
+        Args: { _amount: number; _reason?: string; _user_id: string }
+        Returns: number
+      }
       has_permission: {
         Args: { _permission: string; _user_id: string }
         Returns: boolean
