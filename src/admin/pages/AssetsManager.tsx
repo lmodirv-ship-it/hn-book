@@ -20,6 +20,8 @@ import {
   type AssetCategory,
 } from "@/services/assetService";
 import { supabase } from "@/integrations/supabase/client";
+import { AssetPackageUpload } from "@/admin/components/AssetPackageUpload";
+import { AssetDetailDialog } from "@/admin/components/AssetDetailDialog";
 
 const ALL_TYPES = Object.keys(ASSET_TYPE_META) as AssetType[];
 
@@ -32,6 +34,7 @@ export default function AssetsManager() {
   const [filterType, setFilterType] = useState<AssetType | "all">("all");
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [detailAsset, setDetailAsset] = useState<Asset | null>(null);
 
   const [form, setForm] = useState({
     title: "",
@@ -145,13 +148,15 @@ export default function AssetsManager() {
             نظام موحّد للبطاقات، القوالب، الشعارات، الفلاير، الصور، الوثائق وغيرها — مع كود مرجعي تلقائي
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 me-2" />
-              إضافة أصل
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <AssetPackageUpload onUploaded={load} />
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 me-2" />
+                إضافة أصل
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>إنشاء أصل جديد</DialogTitle>
