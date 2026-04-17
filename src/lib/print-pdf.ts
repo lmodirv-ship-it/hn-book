@@ -261,6 +261,12 @@ export interface BuildPrintPdfOptions {
   registrationMarks?: boolean;
   /** Mirror columns on back page for long-edge duplex printing. Default true. */
   mirrorBack?: boolean;
+  /** Color mode — RGB (default, vector) or CMYK_SIM (raster + gamut clamp). */
+  colorMode?: ColorMode;
+  /** Paper finish simulation overlaid on each card. */
+  finish?: PaperFinish;
+  /** Extra inner page margin (mm) to compensate for printers that crop edges. */
+  marginCompensation?: number;
   fileName?: string;
 }
 
@@ -280,10 +286,17 @@ export async function buildPrintReadyPdf(opts: BuildPrintPdfOptions): Promise<Bu
     cutMarks = true,
     registrationMarks = true,
     mirrorBack = true,
+    colorMode = "RGB",
+    finish = "none",
+    marginCompensation = 0,
   } = opts;
 
   if (!frontNode) throw new Error("frontNode is required");
-  const layout = computeLayout(pageSize);
+  const baseLayout = computeLayout(pageSize);
+  // Apply printer margin compensation by shrinking the printable area uniformly.
+  const layout: PrintLayoutInfo = marginCompensation > 0
+    ? { ...baseLayout, marginX: baseLayout.marginX + marginCompensation, marginY: baseLayout.marginY + marginCompensation }
+    : baseLayout;
 
   const pdf = new jsPDF({
     orientation: "portrait",
@@ -292,13 +305,11 @@ export async function buildPrintReadyPdf(opts: BuildPrintPdfOptions): Promise<Bu
     compress: true,
   });
 
-  // ── Page 1: fronts ──
-  await renderPage(pdf, frontNode, layout, { mirror: false, cutMarks, registrationMarks });
+  await renderPage(pdf, frontNode, layout, { mirror: false, cutMarks, registrationMarks, colorMode, finish });
 
-  // ── Page 2: backs ──
   if (backNode) {
     pdf.addPage(pageSize.toLowerCase() as "a4" | "a3", "portrait");
-    await renderPage(pdf, backNode, layout, { mirror: mirrorBack, cutMarks, registrationMarks });
+    await renderPage(pdf, backNode, layout, { mirror: mirrorBack, cutMarks, registrationMarks, colorMode, finish });
   }
 
   const blob = pdf.output("blob");
@@ -311,13 +322,15 @@ interface RenderPageOpts {
   mirror: boolean;
   cutMarks: boolean;
   registrationMarks: boolean;
+  colorMode: ColorMode;
+  finish: PaperFinish;
 }
 
 async function renderPage(
   pdf: jsPDF,
   node: HTMLElement,
   layout: PrintLayoutInfo,
-  { mirror, cutMarks, registrationMarks }: RenderPageOpts,
+  { mirror, cutMarks, registrationMarks, colorMode, finish }: RenderPageOpts,
 ): Promise<void> {
   const { cols, rows, bleedWidth, bleedHeight, marginX, marginY, gapX, gapY } = layout;
   for (let r = 0; r < rows; r++) {
@@ -326,7 +339,8 @@ async function renderPage(
       const x = marginX + col * (bleedWidth + gapX);
       const y = marginY + r * (bleedHeight + gapY);
       try {
-        await drawCard(pdf, node, x, y, layout);
+        await drawCard(pdf, node, x, y, layout, colorMode);
+        drawFinishOverlay(pdf, x, y, layout, finish);
       } catch (err) {
         console.error("[print-pdf] failed to draw card, skipping", err);
       }
