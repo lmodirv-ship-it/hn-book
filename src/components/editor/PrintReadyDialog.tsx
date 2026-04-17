@@ -48,12 +48,25 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
   const printType = backNode ? "double_side" : "one_side";
 
   // Dynamic pricing — try DB rules first, fall back to hardcoded calculatePrice
-  const [dynamicPrice, setDynamicPrice] = useState<{ base: number; ship: number } | null>(null);
+  const [dynamicPrice, setDynamicPrice] = useState<{
+    base: number; original: number; discount: number; ship: number;
+    promo: string | null; featured: boolean;
+  } | null>(null);
   useEffect(() => {
     let cancelled = false;
     printPricingService
       .resolvePrice("CRD", quantity, pageSize)
-      .then((r) => { if (!cancelled) setDynamicPrice(r ? { base: r.base_price, ship: r.shipping_price } : null); })
+      .then((r) => {
+        if (cancelled) return;
+        setDynamicPrice(r ? {
+          base: r.base_price,
+          original: r.original_price,
+          discount: r.discount_percent,
+          ship: r.shipping_price,
+          promo: r.promo_label,
+          featured: r.is_featured,
+        } : null);
+      })
       .catch(() => { if (!cancelled) setDynamicPrice(null); });
     return () => { cancelled = true; };
   }, [quantity, pageSize]);
