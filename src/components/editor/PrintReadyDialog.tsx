@@ -371,8 +371,11 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
               <p className="flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> {colorMode === "CMYK_SIM" ? "Raster 600 DPI مع محاكاة CMYK" : "SVG Vector عند الإمكان • Raster احتياطي 600 DPI"} • قص 85×55mm</p>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button variant="ghost" onClick={() => handleClose(false)} disabled={generating}>إلغاء</Button>
+              <Button variant="outline" onClick={downloadPng} disabled={generating} className="gap-1.5">
+                <Download className="w-4 h-4" /> تحميل PNG
+              </Button>
               <Button onClick={generate} disabled={generating} className="gap-1.5">
                 {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
                 توليد PDF للطباعة
