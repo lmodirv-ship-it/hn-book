@@ -214,8 +214,14 @@ async function drawCard(
 ): Promise<void> {
   const svg = findSvg(node);
   if (svg && colorMode !== "CMYK_SIM") {
+    let holder: HTMLDivElement | null = null;
     try {
       const clone = buildExportableSvg(svg);
+      // svg2pdf needs the element attached to the DOM to read computed layout.
+      holder = document.createElement("div");
+      holder.style.cssText = "position:fixed;left:-99999px;top:0;opacity:0;pointer-events:none;";
+      holder.appendChild(clone);
+      document.body.appendChild(holder);
       await svg2pdf(clone, pdf, {
         x: x + layout.bleed,
         y: y + layout.bleed,
@@ -225,6 +231,8 @@ async function drawCard(
       return;
     } catch (err) {
       console.warn("[print-pdf] vector export failed at", { x, y }, err);
+    } finally {
+      holder?.remove();
     }
   }
   // Hybrid fallback — high-res raster from the live DOM node.
