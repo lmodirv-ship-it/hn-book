@@ -45,15 +45,12 @@ export function useAutoDeploy() {
         const isFirstRun = previous === null;
         localStorage.setItem(STORAGE_KEY, hash);
         if (isFirstRun) return;
+        if (cancelled) return;
 
-        const { data: cfg } = await supabase
-          .from("system_config")
-          .select("value")
-          .eq("key", "deploy_auto_enabled")
-          .maybeSingle();
-        if (cancelled || cfg?.value !== true) return;
-
-        const tid = toast.loading("⏳ نشر تلقائي جارٍ...");
+        // External deploy webhook is the primary deployment path.
+        // Fire immediately on every detected build change — no internal
+        // upload/R2 dependency, no auto-enabled flag required.
+        const tid = toast.loading("⏳ نشر تلقائي جارٍ عبر السيرفر الخاص...");
         const { ok, data, error } = await invokeWithRetry(hash);
         toast.dismiss(tid);
 
