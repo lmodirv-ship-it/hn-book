@@ -7,6 +7,13 @@ import {
 } from "lucide-react";
 import { toPng } from "html-to-image";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useBilling } from "@/hooks/useBilling";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import { Sparkles, Coins } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import jsPDF from "jspdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +58,9 @@ const TemplateEditor = () => {
   const { has: hasPermission, loading: permsLoading } = usePermissions();
   const canExportPng = !permsLoading && hasPermission("export_png");
   const canExportPdf = !permsLoading && hasPermission("export_pdf");
+  const billing = useBilling();
+  const navigate = useNavigate();
+  const [paywallOpen, setPaywallOpen] = useState<null | "pdf" | "png">(null);
   const [template, setTemplate] = useState<SvgTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
