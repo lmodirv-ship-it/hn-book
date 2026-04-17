@@ -173,6 +173,7 @@ export const svgTemplateService = {
   async create(input: {
     name: string;
     category: string;
+    template_type?: SvgTemplateType;
     front_svg_url: string;
     front_svg_content: string;
     back_svg_url?: string | null;
@@ -183,7 +184,7 @@ export const svgTemplateService = {
   }): Promise<SvgTemplate> {
     const { data, error } = await supabase
       .from("svg_templates" as never)
-      .insert(input as never)
+      .insert({ template_type: "CRD", ...input } as never)
       .select()
       .single();
     if (error) throw error;
@@ -203,9 +204,15 @@ export const svgTemplateService = {
     if (error) throw error;
   },
 
-  async uploadSvg(file: File, name: string): Promise<{ url: string; content: string }> {
+  /** Upload SVG into a folder organised by template type. */
+  async uploadSvg(
+    file: File,
+    name: string,
+    templateType: SvgTemplateType = "CRD"
+  ): Promise<{ url: string; content: string; path: string }> {
     const safeName = name.replace(/[^a-zA-Z0-9_-]/g, "_");
-    const path = `${Date.now()}-${safeName}.svg`;
+    const folder = TYPE_FOLDER[templateType] ?? "other";
+    const path = `${folder}/${Date.now()}-${safeName}.svg`;
     const content = await file.text();
     const { error } = await supabase.storage.from("svg-templates").upload(path, file, {
       contentType: "image/svg+xml",
@@ -213,6 +220,6 @@ export const svgTemplateService = {
     });
     if (error) throw error;
     const { data } = supabase.storage.from("svg-templates").getPublicUrl(path);
-    return { url: data.publicUrl, content };
+    return { url: data.publicUrl, content, path };
   },
 };
