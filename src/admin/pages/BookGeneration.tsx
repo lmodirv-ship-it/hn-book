@@ -185,8 +185,8 @@ const BookGeneration = () => {
       description: `ملف ${file.name}\nالحجم: ${formatSize(file.size)}\nالنوع: ${category}`,
       category,
       price: 0,
-      image: coverUrl,
-      pdf_url: ext === "pdf" ? fileUrl : null,
+      image: coverUrl || "/placeholder.svg",
+      pdf_url: ext === "pdf" ? fileUrl : "",
       badge: itemCode,
       is_active: true,
       features: [
