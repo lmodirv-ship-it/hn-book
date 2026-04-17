@@ -84,27 +84,57 @@ export function computeLayout(pageSize: PageSize): PrintLayoutInfo {
 
 // ── Rendering helpers ────────────────────────────────────────
 
+/** Wait for all webfonts to be loaded so text renders correctly in exports. */
+async function waitForFonts(): Promise<void> {
+  try {
+    if (typeof document !== "undefined" && (document as any).fonts?.ready) {
+      await (document as any).fonts.ready;
+    }
+  } catch (e) {
+    console.warn("[print-pdf] fonts.ready failed (non-fatal)", e);
+  }
+}
+
 /** Find the first <svg> element inside a node (the rendered card). */
 function findSvg(node: HTMLElement): SVGSVGElement | null {
-  if (node.tagName === "svg") return node as unknown as SVGSVGElement;
+  if (!node) return null;
+  if (node.tagName?.toLowerCase() === "svg") return node as unknown as SVGSVGElement;
   return node.querySelector("svg");
 }
 
-/** Clone an SVG and inline computed font styles so embedded text renders correctly. */
-function cloneSvgForExport(svg: SVGSVGElement): SVGSVGElement {
-  const clone = svg.cloneNode(true) as SVGSVGElement;
-  // Inline computed font styles for text nodes (best-effort font preservation).
+/**
+ * Parse a fresh SVG clone from the live DOM with computed text styles inlined.
+ * svg2pdf can mutate / consume the node it receives, so we always parse a fresh
+ * copy from a serialized string instead of reusing the same DOM clone.
+ */
+function buildExportableSvg(svg: SVGSVGElement): SVGSVGElement {
+  // Inline computed font + fill styles on text first (read from the live node).
   const sourceTexts = svg.querySelectorAll<SVGElement>("text, tspan");
-  const cloneTexts = clone.querySelectorAll<SVGElement>("text, tspan");
-  sourceTexts.forEach((src, i) => {
-    const dst = cloneTexts[i];
-    if (!dst) return;
+  const styles: string[] = [];
+  sourceTexts.forEach((src) => {
     const cs = window.getComputedStyle(src);
-    dst.setAttribute(
-      "style",
-      `font-family:${cs.fontFamily};font-size:${cs.fontSize};font-weight:${cs.fontWeight};font-style:${cs.fontStyle};fill:${cs.fill || "currentColor"};`,
+    styles.push(
+      `font-family:${cs.fontFamily};font-size:${cs.fontSize};font-weight:${cs.fontWeight};font-style:${cs.fontStyle};fill:${cs.fill || "#000"};`
     );
   });
+  // Serialize → re-parse for an isolated, mutable clone.
+  const serializer = new XMLSerializer();
+  const xml = serializer.serializeToString(svg);
+  const doc = new DOMParser().parseFromString(xml, "image/svg+xml");
+  const parserError = doc.querySelector("parsererror");
+  if (parserError) throw new Error("SVG parse error: " + parserError.textContent);
+  const clone = doc.documentElement as unknown as SVGSVGElement;
+  // Re-apply inline styles in the same order.
+  clone.querySelectorAll<SVGElement>("text, tspan").forEach((dst, i) => {
+    if (styles[i]) dst.setAttribute("style", styles[i]);
+  });
+  // Ensure width/height present so svg2pdf has a viewport.
+  if (!clone.getAttribute("width") && svg.viewBox?.baseVal) {
+    clone.setAttribute("width", String(svg.viewBox.baseVal.width || 850));
+  }
+  if (!clone.getAttribute("height") && svg.viewBox?.baseVal) {
+    clone.setAttribute("height", String(svg.viewBox.baseVal.height || 550));
+  }
   return clone;
 }
 
@@ -112,6 +142,7 @@ function cloneSvgForExport(svg: SVGSVGElement): SVGSVGElement {
  *  Optionally simulates CMYK gamut by clamping out-of-gamut sRGB values. */
 async function nodeToHiResPng(node: HTMLElement, colorMode: ColorMode): Promise<string> {
   const dataUrl = await toPng(node, { pixelRatio: 6, cacheBust: true, backgroundColor: "#ffffff" });
+  if (!dataUrl?.startsWith("data:image")) throw new Error("Raster export returned empty data URL");
   if (colorMode !== "CMYK_SIM") return dataUrl;
   return simulateCmykOnPng(dataUrl);
 }
@@ -132,7 +163,6 @@ async function simulateCmykOnPng(dataUrl: string): Promise<string> {
         for (let i = 0; i < d.length; i += 4) {
           const r = d[i], g = d[i + 1], b = d[i + 2];
           const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-          // 12% desaturate toward luminance — common print-gamut approximation
           d[i]     = Math.round(r * 0.88 + gray * 0.12);
           d[i + 1] = Math.round(g * 0.88 + gray * 0.12);
           d[i + 2] = Math.round(b * 0.88 + gray * 0.12);
@@ -141,7 +171,7 @@ async function simulateCmykOnPng(dataUrl: string): Promise<string> {
         resolve(c.toDataURL("image/png", 1.0));
       } catch (e) { reject(e); }
     };
-    img.onerror = reject;
+    img.onerror = () => reject(new Error("Failed to load PNG for CMYK simulation"));
     img.src = dataUrl;
   });
 }
