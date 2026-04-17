@@ -666,6 +666,74 @@ export type Database = {
           },
         ]
       }
+      job_attempts: {
+        Row: {
+          attempt: number
+          created_at: string
+          duration_ms: number | null
+          error: string | null
+          id: number
+          job_id: string
+          status: string
+        }
+        Insert: {
+          attempt: number
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: number
+          job_id: string
+          status: string
+        }
+        Update: {
+          attempt?: number
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: number
+          job_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_attempts_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_retry_policies: {
+        Row: {
+          backoff_seconds: number
+          created_at: string
+          enabled: boolean
+          id: string
+          job_type: string
+          max_attempts: number
+          updated_at: string
+        }
+        Insert: {
+          backoff_seconds?: number
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          job_type: string
+          max_attempts?: number
+          updated_at?: string
+        }
+        Update: {
+          backoff_seconds?: number
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          job_type?: string
+          max_attempts?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       jobs: {
         Row: {
           attempts: number
@@ -675,6 +743,7 @@ export type Database = {
           data: Json
           error: string | null
           id: string
+          last_notified_at: string | null
           max_attempts: number
           priority: number
           result: Json | null
@@ -692,6 +761,7 @@ export type Database = {
           data?: Json
           error?: string | null
           id?: string
+          last_notified_at?: string | null
           max_attempts?: number
           priority?: number
           result?: Json | null
@@ -709,6 +779,7 @@ export type Database = {
           data?: Json
           error?: string | null
           id?: string
+          last_notified_at?: string | null
           max_attempts?: number
           priority?: number
           result?: Json | null
