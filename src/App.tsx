@@ -1,5 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate, useParams } from "react-router-dom";
+import { Suspense, lazy } from "react";
+import { Loader2 } from "lucide-react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -57,8 +59,19 @@ import ApiIntegrationsAdmin from "./admin/pages/ApiIntegrationsAdmin.tsx";
 import AssetsManager from "./admin/pages/AssetsManager.tsx";
 import SmartImportPage from "./admin/pages/SmartImportPage.tsx";
 import SvgTemplatesAdmin from "./admin/pages/SvgTemplatesAdmin.tsx";
-import TemplateEditor from "./pages/TemplateEditor.tsx";
 import TrackOrder from "./pages/TrackOrder.tsx";
+import TemplatesGallery from "./pages/TemplatesGallery.tsx";
+
+// Lazy-load the heavy editor and viewer so non-editable assets never pull
+// the full editor bundle (and vice versa).
+const TemplateEditor = lazy(() => import("./pages/TemplateEditor.tsx"));
+const AssetViewer = lazy(() => import("./pages/AssetViewer.tsx"));
+
+const PageFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+  </div>
+);
 
 const queryClient = new QueryClient();
 
@@ -91,7 +104,15 @@ const App = () => (
             <Route path="/tablou/:id" element={<TablouDetail />} />
             <Route path="/read/:id" element={<BookReader />} />
             <Route path="/document-processing" element={<DocumentProcessing />} />
-            <Route path="/editor/:id" element={<TemplateEditor />} />
+            <Route path="/templates" element={<TemplatesGallery />} />
+            <Route
+              path="/editor/:id"
+              element={<Suspense fallback={<PageFallback />}><TemplateEditor /></Suspense>}
+            />
+            <Route
+              path="/viewer/:id"
+              element={<Suspense fallback={<PageFallback />}><AssetViewer /></Suspense>}
+            />
             <Route path="/auth" element={<CustomerAuth />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
