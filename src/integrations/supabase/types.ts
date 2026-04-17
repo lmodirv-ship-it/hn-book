@@ -763,11 +763,15 @@ export type Database = {
           job_title: string
           logo_id: string | null
           notes: string | null
+          order_code: string
+          paper_size: string
           paper_type: string
+          pdf_url: string | null
           phone: string
           print_type: string
           quantity: number
           status: string
+          template_design: Json
           template_id: string
           total_price: number
           updated_at: string
@@ -785,11 +789,15 @@ export type Database = {
           job_title?: string
           logo_id?: string | null
           notes?: string | null
+          order_code: string
+          paper_size?: string
           paper_type?: string
+          pdf_url?: string | null
           phone: string
           print_type?: string
           quantity?: number
           status?: string
+          template_design?: Json
           template_id: string
           total_price?: number
           updated_at?: string
@@ -807,11 +815,15 @@ export type Database = {
           job_title?: string
           logo_id?: string | null
           notes?: string | null
+          order_code?: string
+          paper_size?: string
           paper_type?: string
+          pdf_url?: string | null
           phone?: string
           print_type?: string
           quantity?: number
           status?: string
+          template_design?: Json
           template_id?: string
           total_price?: number
           updated_at?: string
