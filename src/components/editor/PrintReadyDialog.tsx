@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, Download, MessageCircle, Printer, FileText, Eye, Copy, CheckCircle2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { buildPrintReadyPdf, type PageSize, type BuildPrintPdfResult, type ColorMode, type PaperFinish } from "@/lib/print-pdf";
+import { buildPrintReadyPdf, exportCardAsPng, type PageSize, type BuildPrintPdfResult, type ColorMode, type PaperFinish } from "@/lib/print-pdf";
 import { printService, DELIVERY_OPTIONS, getShippingFee, calculatePrice } from "@/services/printService";
 import { printPricingService } from "@/services/printPricingService";
 import CardPrintPreview from "@/components/editor/CardPrintPreview";
@@ -90,7 +90,11 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
 
   const generate = async () => {
     if (!frontNode) {
-      toast({ title: "لا يمكن العثور على الوجه الأمامي", variant: "destructive" });
+      toast({ title: "لم يتم العثور على عنصر التصميم", description: "تأكد من أن البطاقة مرئية في المحرر قبل التصدير.", variant: "destructive" });
+      return;
+    }
+    if (!frontNode.isConnected) {
+      toast({ title: "عنصر التصميم غير جاهز", description: "أعد فتح هذا الحوار بعد ظهور المعاينة بالكامل.", variant: "destructive" });
       return;
     }
     setGenerating(true);
@@ -110,9 +114,28 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
       setResult(r);
       toast({ title: "تم توليد ملف الطباعة ✅", description: `${r.totalCards} بطاقة • ${pageSize} • ${colorMode === "CMYK_SIM" ? "CMYK" : "RGB"} • نزيف 3mm` });
     } catch (e: any) {
-      toast({ title: "فشل توليد PDF", description: e?.message ?? "خطأ غير معروف", variant: "destructive" });
+      const detail = e?.message || (typeof e === "string" ? e : JSON.stringify(e));
+      console.error("[PrintReadyDialog] PDF generation failed", e);
+      toast({ title: "فشل توليد PDF", description: detail || "خطأ غير معروف. راجع وحدة التحكم لمزيد من التفاصيل.", variant: "destructive" });
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const downloadPng = async () => {
+    if (!frontNode) {
+      toast({ title: "لا يوجد عنصر للتصدير", variant: "destructive" });
+      return;
+    }
+    try {
+      const { url, fileName } = await exportCardAsPng(frontNode, `${cardName || "carte"}.png`);
+      const a = document.createElement("a");
+      a.href = url; a.download = fileName; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      toast({ title: "تم تحميل صورة PNG ✅" });
+    } catch (e: any) {
+      console.error("[PrintReadyDialog] PNG export failed", e);
+      toast({ title: "فشل تصدير PNG", description: e?.message ?? "خطأ غير معروف", variant: "destructive" });
     }
   };
 
@@ -348,8 +371,11 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
               <p className="flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> {colorMode === "CMYK_SIM" ? "Raster 600 DPI مع محاكاة CMYK" : "SVG Vector عند الإمكان • Raster احتياطي 600 DPI"} • قص 85×55mm</p>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button variant="ghost" onClick={() => handleClose(false)} disabled={generating}>إلغاء</Button>
+              <Button variant="outline" onClick={downloadPng} disabled={generating} className="gap-1.5">
+                <Download className="w-4 h-4" /> تحميل PNG
+              </Button>
               <Button onClick={generate} disabled={generating} className="gap-1.5">
                 {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
                 توليد PDF للطباعة
