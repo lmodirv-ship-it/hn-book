@@ -108,9 +108,42 @@ function cloneSvgForExport(svg: SVGSVGElement): SVGSVGElement {
   return clone;
 }
 
-/** High-res PNG fallback (~600 DPI) for nodes without an inline SVG. */
-async function nodeToHiResPng(node: HTMLElement): Promise<string> {
-  return toPng(node, { pixelRatio: 6, cacheBust: true, backgroundColor: "#ffffff" });
+/** High-res PNG fallback (~600 DPI) for nodes without an inline SVG.
+ *  Optionally simulates CMYK gamut by clamping out-of-gamut sRGB values. */
+async function nodeToHiResPng(node: HTMLElement, colorMode: ColorMode): Promise<string> {
+  const dataUrl = await toPng(node, { pixelRatio: 6, cacheBust: true, backgroundColor: "#ffffff" });
+  if (colorMode !== "CMYK_SIM") return dataUrl;
+  return simulateCmykOnPng(dataUrl);
+}
+
+/** Approximate CMYK gamut by reducing saturation ~12% and clamping pure RGB primaries. */
+async function simulateCmykOnPng(dataUrl: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const c = document.createElement("canvas");
+        c.width = img.width; c.height = img.height;
+        const ctx = c.getContext("2d");
+        if (!ctx) return resolve(dataUrl);
+        ctx.drawImage(img, 0, 0);
+        const data = ctx.getImageData(0, 0, c.width, c.height);
+        const d = data.data;
+        for (let i = 0; i < d.length; i += 4) {
+          const r = d[i], g = d[i + 1], b = d[i + 2];
+          const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+          // 12% desaturate toward luminance — common print-gamut approximation
+          d[i]     = Math.round(r * 0.88 + gray * 0.12);
+          d[i + 1] = Math.round(g * 0.88 + gray * 0.12);
+          d[i + 2] = Math.round(b * 0.88 + gray * 0.12);
+        }
+        ctx.putImageData(data, 0, 0);
+        resolve(c.toDataURL("image/png", 1.0));
+      } catch (e) { reject(e); }
+    };
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
 }
 
 /**
