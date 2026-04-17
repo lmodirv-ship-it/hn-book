@@ -10,10 +10,14 @@ import { toast } from "@/hooks/use-toast";
 import {
   svgTemplateService,
   buildFieldsFromSvg,
+  suggestTemplateType,
+  SVG_TEMPLATE_TYPES,
   type SvgTemplate,
+  type SvgTemplateType,
   type SvgField,
 } from "@/services/svgTemplateService";
 import SvgRenderer from "@/components/editor/SvgRenderer";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "react-router-dom";
 
 const SvgTemplatesAdmin = () => {
@@ -30,6 +34,8 @@ const SvgTemplatesAdmin = () => {
   const [frontContent, setFrontContent] = useState("");
   const [backContent, setBackContent] = useState("");
   const [detectedFields, setDetectedFields] = useState<SvgField[]>([]);
+  const [templateType, setTemplateType] = useState<SvgTemplateType>("CRD");
+  const [typeAutoDetected, setTypeAutoDetected] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -50,6 +56,11 @@ const SvgTemplatesAdmin = () => {
     const txt = f ? await f.text() : "";
     setFrontContent(txt);
     setDetectedFields(buildFieldsFromSvg(txt, backContent));
+    if (f && txt) {
+      const guessed = suggestTemplateType(f.name, txt);
+      setTemplateType(guessed);
+      setTypeAutoDetected(true);
+    }
   };
 
   const onBackFile = async (f: File | null) => {
@@ -67,6 +78,8 @@ const SvgTemplatesAdmin = () => {
     setFrontContent("");
     setBackContent("");
     setDetectedFields([]);
+    setTemplateType("CRD");
+    setTypeAutoDetected(false);
   };
 
   const submit = async () => {
@@ -76,20 +89,21 @@ const SvgTemplatesAdmin = () => {
     }
     setSaving(true);
     try {
-      const front = await svgTemplateService.uploadSvg(frontFile, `${name}-front`);
+      const front = await svgTemplateService.uploadSvg(frontFile, `${name}-front`, templateType);
       let back: { url: string; content: string } | null = null;
-      if (backFile) back = await svgTemplateService.uploadSvg(backFile, `${name}-back`);
+      if (backFile) back = await svgTemplateService.uploadSvg(backFile, `${name}-back`, templateType);
 
       await svgTemplateService.create({
         name,
         category,
+        template_type: templateType,
         front_svg_url: front.url,
         front_svg_content: front.content,
         back_svg_url: back?.url ?? null,
         back_svg_content: back?.content ?? null,
         fields: detectedFields,
       });
-      toast({ title: "تم إنشاء القالب ✅" });
+      toast({ title: "تم إنشاء القالب ✅", description: `النوع: ${SVG_TEMPLATE_TYPES.find(t => t.value === templateType)?.label}` });
       setOpen(false);
       reset();
       load();
@@ -164,6 +178,14 @@ const SvgTemplatesAdmin = () => {
                   </Badge>
                 </div>
                 <div className="flex flex-wrap gap-1">
+                  {t.code && (
+                    <Badge className="text-[9px] font-mono bg-primary/15 text-primary hover:bg-primary/20">
+                      {t.code}
+                    </Badge>
+                  )}
+                  <Badge variant="outline" className="text-[9px]">
+                    {SVG_TEMPLATE_TYPES.find((x) => x.value === t.template_type)?.label ?? t.template_type}
+                  </Badge>
                   {t.back_svg_url && <Badge variant="outline" className="text-[9px]">وجهان</Badge>}
                   <Badge variant="outline" className="text-[9px]">{t.category}</Badge>
                 </div>
@@ -197,6 +219,28 @@ const SvgTemplatesAdmin = () => {
             <div>
               <Label>الفئة</Label>
               <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="business" />
+            </div>
+
+            <div>
+              <Label className="flex items-center justify-between">
+                <span>نوع القالب</span>
+                {typeAutoDetected && (
+                  <Badge variant="secondary" className="text-[9px]">مكتشف تلقائياً • قابل للتعديل</Badge>
+                )}
+              </Label>
+              <Select value={templateType} onValueChange={(v) => { setTemplateType(v as SvgTemplateType); setTypeAutoDetected(false); }}>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {SVG_TEMPLATE_TYPES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      <span className="font-mono text-xs me-2 opacity-60">{t.value}</span>{t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                سيتم توليد كود فريد تلقائياً (مثل <code className="font-mono">{templateType.charAt(0)}000001</code>) وحفظ الملف في مجلد <code className="font-mono">{SVG_TEMPLATE_TYPES.find(t=>t.value===templateType)?.folder}/</code>.
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

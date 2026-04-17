@@ -11,11 +11,38 @@ export interface SvgField {
   defaultValue: string;   // default text or color
 }
 
+export type SvgTemplateType =
+  | "CRD"  // Business card
+  | "FLY"  // Flyer
+  | "LOG"  // Logo
+  | "PST"  // Poster
+  | "TPL"  // Generic template
+  | "INV"  // Invitation
+  | "BAN"  // Banner
+  | "OTH"; // Other
+
+export const SVG_TEMPLATE_TYPES: { value: SvgTemplateType; label: string; folder: string }[] = [
+  { value: "CRD", label: "بطاقة عمل", folder: "cards" },
+  { value: "FLY", label: "فلاير", folder: "flyers" },
+  { value: "LOG", label: "شعار", folder: "logos" },
+  { value: "PST", label: "بوستر", folder: "posters" },
+  { value: "INV", label: "دعوة", folder: "invitations" },
+  { value: "BAN", label: "بانر", folder: "banners" },
+  { value: "TPL", label: "قالب عام", folder: "templates" },
+  { value: "OTH", label: "أخرى", folder: "other" },
+];
+
+const TYPE_FOLDER: Record<SvgTemplateType, string> = Object.fromEntries(
+  SVG_TEMPLATE_TYPES.map((t) => [t.value, t.folder])
+) as Record<SvgTemplateType, string>;
+
 export interface SvgTemplate {
   id: string;
   asset_id: string | null;
   name: string;
   category: string;
+  template_type: SvgTemplateType;
+  code: string | null;
   front_svg_url: string;
   front_svg_content: string | null;
   back_svg_url: string | null;
@@ -25,6 +52,32 @@ export interface SvgTemplate {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+}
+
+/** Suggest a template type from filename + SVG dimensions. */
+export function suggestTemplateType(fileName: string, svgContent: string): SvgTemplateType {
+  const n = fileName.toLowerCase();
+  if (/(logo|brand|mark)/.test(n)) return "LOG";
+  if (/(card|carte|visit|business)/.test(n)) return "CRD";
+  if (/(flyer|flayer|leaflet)/.test(n)) return "FLY";
+  if (/(poster|affiche)/.test(n)) return "PST";
+  if (/(invit|invitation|wedding)/.test(n)) return "INV";
+  if (/(banner|bannière|banniere)/.test(n)) return "BAN";
+
+  // Heuristic from viewBox aspect ratio
+  const m = svgContent.match(/viewBox\s*=\s*"([\d.\s\-]+)"/i);
+  if (m) {
+    const parts = m[1].trim().split(/\s+/).map(Number);
+    if (parts.length === 4 && parts[2] > 0 && parts[3] > 0) {
+      const ratio = parts[2] / parts[3];
+      if (ratio > 1.6 && ratio < 1.95) return "CRD";    // ~1.75 business card
+      if (ratio > 0.6 && ratio < 0.85) return "FLY";    // A4 portrait ~0.707
+      if (ratio > 1.3 && ratio < 1.5) return "FLY";     // A4 landscape
+      if (Math.abs(ratio - 1) < 0.15) return "LOG";     // square-ish
+      if (ratio > 2.5) return "BAN";
+    }
+  }
+  return "TPL";
 }
 
 const PLACEHOLDER_RE = /\{\{\s*([a-zA-Z0-9_\-]+)\s*\}\}/g;
@@ -120,6 +173,7 @@ export const svgTemplateService = {
   async create(input: {
     name: string;
     category: string;
+    template_type?: SvgTemplateType;
     front_svg_url: string;
     front_svg_content: string;
     back_svg_url?: string | null;
@@ -130,7 +184,7 @@ export const svgTemplateService = {
   }): Promise<SvgTemplate> {
     const { data, error } = await supabase
       .from("svg_templates" as never)
-      .insert(input as never)
+      .insert({ template_type: "CRD", ...input } as never)
       .select()
       .single();
     if (error) throw error;
@@ -150,9 +204,15 @@ export const svgTemplateService = {
     if (error) throw error;
   },
 
-  async uploadSvg(file: File, name: string): Promise<{ url: string; content: string }> {
+  /** Upload SVG into a folder organised by template type. */
+  async uploadSvg(
+    file: File,
+    name: string,
+    templateType: SvgTemplateType = "CRD"
+  ): Promise<{ url: string; content: string; path: string }> {
     const safeName = name.replace(/[^a-zA-Z0-9_-]/g, "_");
-    const path = `${Date.now()}-${safeName}.svg`;
+    const folder = TYPE_FOLDER[templateType] ?? "other";
+    const path = `${folder}/${Date.now()}-${safeName}.svg`;
     const content = await file.text();
     const { error } = await supabase.storage.from("svg-templates").upload(path, file, {
       contentType: "image/svg+xml",
@@ -160,6 +220,6 @@ export const svgTemplateService = {
     });
     if (error) throw error;
     const { data } = supabase.storage.from("svg-templates").getPublicUrl(path);
-    return { url: data.publicUrl, content };
+    return { url: data.publicUrl, content, path };
   },
 };
