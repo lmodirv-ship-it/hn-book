@@ -1707,12 +1707,31 @@ export type Database = {
         }
         Relationships: []
       }
+      svg_template_counters: {
+        Row: {
+          current_value: number
+          template_type: string
+          updated_at: string
+        }
+        Insert: {
+          current_value?: number
+          template_type: string
+          updated_at?: string
+        }
+        Update: {
+          current_value?: number
+          template_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       svg_templates: {
         Row: {
           asset_id: string | null
           back_svg_content: string | null
           back_svg_url: string | null
           category: string
+          code: string | null
           created_at: string
           created_by: string | null
           fields: Json
@@ -1722,6 +1741,7 @@ export type Database = {
           is_active: boolean
           name: string
           preview_image_url: string | null
+          template_type: string
           updated_at: string
         }
         Insert: {
@@ -1729,6 +1749,7 @@ export type Database = {
           back_svg_content?: string | null
           back_svg_url?: string | null
           category?: string
+          code?: string | null
           created_at?: string
           created_by?: string | null
           fields?: Json
@@ -1738,6 +1759,7 @@ export type Database = {
           is_active?: boolean
           name: string
           preview_image_url?: string | null
+          template_type?: string
           updated_at?: string
         }
         Update: {
@@ -1745,6 +1767,7 @@ export type Database = {
           back_svg_content?: string | null
           back_svg_url?: string | null
           category?: string
+          code?: string | null
           created_at?: string
           created_by?: string | null
           fields?: Json
@@ -1754,6 +1777,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           preview_image_url?: string | null
+          template_type?: string
           updated_at?: string
         }
         Relationships: [
