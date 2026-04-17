@@ -235,7 +235,7 @@ const TemplateEditor = () => {
     setExporting(false);
   };
 
-  /** Generates a print-ready PDF, downloads it, then opens WhatsApp to the configured print shop. */
+  /** Generates print-ready PDF, uploads it, emails the print shop, and opens WhatsApp — all in one click. */
   const sendToPrintShop = async () => {
     if (!frontRef.current) {
       toast({ title: "البطاقة غير جاهزة بعد", variant: "destructive" });
@@ -243,15 +243,20 @@ const TemplateEditor = () => {
     }
     setExporting(true);
     try {
-      const wa = await communicationsService.getWhatsApp();
-      if (!wa.enabled || !wa.phone_number) {
+      const [wa, email] = await Promise.all([
+        communicationsService.getWhatsApp(),
+        communicationsService.getEmail(),
+      ]);
+      if ((!wa.enabled || !wa.phone_number) && (!email.enabled || !email.email_address)) {
         toast({
-          title: "واتساب غير مُكوَّن",
-          description: "اطلب من المسؤول ضبط رقم المطبعة في إعدادات الاتصالات.",
+          title: "لم يتم تكوين قنوات الإرسال",
+          description: "اطلب من المسؤول ضبط واتساب أو البريد في إعدادات الاتصالات.",
           variant: "destructive",
         });
         return;
       }
+
+      // 1) Build the print-ready PDF
       const r = await buildPrintReadyPdf({
         frontNode: frontRef.current,
         backNode: hasBack ? backRef.current : null,
@@ -261,7 +266,18 @@ const TemplateEditor = () => {
         mirrorBack: true,
         fileName: `${template?.name ?? "carte"}-A4.pdf`,
       });
-      // Auto-download so the user can attach it on WhatsApp.
+
+      // 2) Upload to public storage so it can be shared by link
+      const { supabase } = await import("@/integrations/supabase/client");
+      const path = `print-orders/${Date.now()}-${r.fileName}`;
+      const { error: upErr } = await supabase.storage
+        .from("print-pdfs")
+        .upload(path, r.blob, { contentType: "application/pdf", upsert: true });
+      if (upErr) console.warn("[upload pdf]", upErr);
+      const { data: pub } = supabase.storage.from("print-pdfs").getPublicUrl(path);
+      const publicUrl = pub?.publicUrl || r.url;
+
+      // 3) Auto-download a local copy too
       const a = document.createElement("a");
       a.href = r.url;
       a.download = r.fileName;
@@ -269,15 +285,38 @@ const TemplateEditor = () => {
       a.click();
       a.remove();
 
-      const message = applyTemplate(wa.default_message || "🖨️ طلب طباعة بطاقات: {orderNumber}", {
-        orderNumber: template?.name ?? "بطاقة",
-        totalAmount: "",
-        pdfUrl: "",
+      const orderNumber = `${template?.name ?? "بطاقة"}-${Date.now().toString().slice(-6)}`;
+      const vars = { orderNumber, totalAmount: "", pdfUrl: publicUrl };
+
+      // 4) Email the print shop in the background
+      const tasks: Promise<any>[] = [];
+      if (email.enabled && email.email_address) {
+        tasks.push(
+          supabase.functions.invoke("send-print-order", {
+            body: {
+              to: email.email_address,
+              subject: applyTemplate(email.subject_template, vars),
+              body: applyTemplate(email.body_template, vars),
+              pdfUrl: publicUrl,
+              fileName: r.fileName,
+            },
+          }).catch((err) => console.warn("[email]", err))
+        );
+      }
+      await Promise.all(tasks);
+
+      // 5) Open WhatsApp with the link prefilled
+      if (wa.enabled && wa.phone_number) {
+        const message = applyTemplate(wa.default_message, vars);
+        const cleanPhone = wa.phone_number.replace(/\D/g, "");
+        const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+        window.open(url, "_blank", "noopener,noreferrer");
+      }
+
+      toast({
+        title: "تم إرسال الطلب ✅",
+        description: `${email.enabled ? "📧 إيميل" : ""}${email.enabled && wa.enabled ? " + " : ""}${wa.enabled ? "💬 واتساب" : ""} — رقم الطلب: ${orderNumber}`,
       });
-      const cleanPhone = wa.phone_number.replace(/\D/g, "");
-      const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
-      window.open(url, "_blank", "noopener,noreferrer");
-      toast({ title: "تم تجهيز الطلب ✅", description: "أرفق ملف PDF الذي تم تنزيله في محادثة واتساب." });
     } catch (e: any) {
       console.error("[sendToPrintShop]", e);
       toast({ title: "فشل إرسال الطلب", description: e?.message ?? "خطأ غير معروف", variant: "destructive" });
