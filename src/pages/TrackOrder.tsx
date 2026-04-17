@@ -7,15 +7,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { db } from "@/api/client";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Printer, FileText } from "lucide-react";
 
-const STATUS_FLOW = ["pending", "processing", "completed"] as const;
+const STATUS_FLOW = ["pending", "processing", "printing", "completed"] as const;
 
 const STATUS_INFO: Record<string, { label: string; color: string; icon: any; progress: number }> = {
-  pending: { label: "قيد الانتظار", color: "text-yellow-500", icon: Clock, progress: 25 },
-  processing: { label: "قيد المعالجة", color: "text-blue-500", icon: Truck, progress: 65 },
-  completed: { label: "تم التوصيل", color: "text-emerald-500", icon: CheckCircle2, progress: 100 },
-  cancelled: { label: "ملغي", color: "text-red-500", icon: XCircle, progress: 0 },
+  pending:    { label: "قيد الانتظار", color: "text-yellow-500",  icon: Clock,        progress: 20 },
+  processing: { label: "قيد المعالجة", color: "text-blue-500",    icon: Truck,        progress: 50 },
+  printing:   { label: "جاري الطباعة", color: "text-purple-500",  icon: Printer,      progress: 80 },
+  completed:  { label: "مكتمل",         color: "text-emerald-500", icon: CheckCircle2, progress: 100 },
+  cancelled:  { label: "ملغي",          color: "text-red-500",     icon: XCircle,      progress: 0 },
 };
 
 export default function TrackOrder() {
