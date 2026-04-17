@@ -25,6 +25,7 @@ const SystemMonitoring = () => {
   const [busy, setBusy] = useState<string | null>(null);
   const [alerts, setAlerts] = useState<any[]>([]);
   const [metrics, setMetrics] = useState<any[]>([]);
+  const [jobsHealth, setJobsHealth] = useState({ pending: 0, processing: 0, failed: 0, completed: 0, retrying: 0, exhausted: 0 });
   const pollRef = useRef<number | null>(null);
 
   const fetchHealth = useCallback(async () => {
@@ -48,9 +49,23 @@ const SystemMonitoring = () => {
     if (data?.samples) setMetrics(data.samples);
   }, []);
 
+  const fetchJobsHealth = useCallback(async () => {
+    const { data } = await supabase.from("jobs").select("status, attempts, max_attempts");
+    const rows = data ?? [];
+    const failed = rows.filter((r: any) => r.status === "failed");
+    setJobsHealth({
+      pending: rows.filter((r: any) => r.status === "pending").length,
+      processing: rows.filter((r: any) => r.status === "processing").length,
+      failed: failed.length,
+      completed: rows.filter((r: any) => r.status === "completed").length,
+      retrying: rows.filter((r: any) => (r.attempts ?? 0) > 0 && r.status !== "failed" && r.status !== "completed").length,
+      exhausted: failed.filter((r: any) => (r.attempts ?? 0) >= (r.max_attempts ?? 3)).length,
+    });
+  }, []);
+
   useEffect(() => {
-    fetchHealth(); fetchAlerts(); fetchMetrics();
-    pollRef.current = window.setInterval(() => { fetchHealth(); fetchMetrics(); }, 15000);
+    fetchHealth(); fetchAlerts(); fetchMetrics(); fetchJobsHealth();
+    pollRef.current = window.setInterval(() => { fetchHealth(); fetchMetrics(); fetchJobsHealth(); }, 15000);
 
     const channel = supabase
       .channel("system_alerts_stream")
@@ -182,6 +197,32 @@ const SystemMonitoring = () => {
           <QueueBox label="فاشلة" value={health.queue.error} color="bg-red-500/10 text-red-600 border-red-500/30" />
           <QueueBox label="مكتملة" value={health.queue.done} color="bg-green-500/10 text-green-600 border-green-500/30" />
         </div>
+      </div>
+
+      {/* Self-Healing Queue Health */}
+      <div className="rounded-xl border border-border bg-card p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-bold flex items-center gap-2">
+            <Wrench className="w-4 h-4 text-primary" /> صحة طابور الإصلاح الذاتي
+          </h3>
+          <div className="flex gap-2">
+            <Badge variant="outline" className="text-xs">حد المحاولات: 3</Badge>
+            {jobsHealth.exhausted > 0 && (
+              <Badge variant="destructive" className="text-xs">{jobsHealth.exhausted} يحتاج تدخل</Badge>
+            )}
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+          <QueueBox label="بانتظار" value={jobsHealth.pending} color="bg-yellow-500/10 text-yellow-600 border-yellow-500/30" />
+          <QueueBox label="معالجة" value={jobsHealth.processing} color="bg-blue-500/10 text-blue-600 border-blue-500/30" />
+          <QueueBox label="إعادة محاولة" value={jobsHealth.retrying} color="bg-purple-500/10 text-purple-600 border-purple-500/30" />
+          <QueueBox label="فاشلة" value={jobsHealth.failed} color="bg-red-500/10 text-red-600 border-red-500/30" />
+          <QueueBox label="استُنفدت" value={jobsHealth.exhausted} color="bg-orange-500/10 text-orange-600 border-orange-500/30" />
+          <QueueBox label="مكتملة" value={jobsHealth.completed} color="bg-green-500/10 text-green-600 border-green-500/30" />
+        </div>
+        <p className="text-xs text-muted-foreground mt-3">
+          المهام الفاشلة تُعاد تلقائياً حتى 3 محاولات. العمال العالقون أكثر من 10 دقائق يُعاد تشغيلهم تلقائياً عبر محرك الإصلاح الذاتي كل دقيقتين.
+        </p>
       </div>
 
       {/* Alerts */}
