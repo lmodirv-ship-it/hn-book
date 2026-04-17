@@ -123,7 +123,14 @@ export default function TrackOrder() {
               </div>
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground">رقم الطلب</p>
-                <p className="font-bold text-foreground text-lg">{order.order_number}</p>
+                <p className="font-bold text-foreground text-lg font-mono">
+                  {order._kind === "print" ? order.order_code : order.order_number}
+                </p>
+                {order._kind === "print" && (
+                  <p className="text-[11px] text-muted-foreground inline-flex items-center gap-1 mt-0.5">
+                    <Printer className="w-3 h-3" /> طلب طباعة
+                  </p>
+                )}
               </div>
               <div className="text-left">
                 <p className="text-xs text-muted-foreground">الحالة</p>
@@ -152,38 +159,77 @@ export default function TrackOrder() {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3 text-sm pt-2 border-t border-border">
-              <div>
-                <p className="text-muted-foreground">المبلغ الإجمالي</p>
-                <p className="font-bold text-primary text-lg">
-                  {Number(order.total_amount || order.amount)} د.م
-                </p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">طريقة الدفع</p>
-                <p className="font-medium text-foreground">
-                  {order.payment_method === "cod" ? "الدفع عند الاستلام" : order.payment_method}
-                </p>
-              </div>
-              {order.shipping_name && (
-                <div className="col-span-2">
-                  <p className="text-muted-foreground">المستلم</p>
-                  <p className="font-medium text-foreground">{order.shipping_name}</p>
+            {order._kind === "print" ? (
+              <div className="grid grid-cols-2 gap-3 text-sm pt-2 border-t border-border">
+                <div>
+                  <p className="text-muted-foreground">العميل</p>
+                  <p className="font-medium text-foreground">{order.customer_name}</p>
                 </div>
-              )}
-              {order.shipping_address && (
-                <div className="col-span-2">
-                  <p className="text-muted-foreground">العنوان</p>
-                  <p className="font-medium text-foreground">{order.shipping_address}</p>
+                <div>
+                  <p className="text-muted-foreground">الهاتف</p>
+                  <p className="font-medium text-foreground">{order.phone}</p>
                 </div>
-              )}
-              <div className="col-span-2">
-                <p className="text-muted-foreground">تاريخ الطلب</p>
-                <p className="font-medium text-foreground">
-                  {new Date(order.created_at).toLocaleString("ar")}
-                </p>
+                <div>
+                  <p className="text-muted-foreground">الكمية</p>
+                  <p className="font-medium text-foreground">{order.quantity} بطاقة</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">المقاس</p>
+                  <p className="font-medium text-foreground">{order.paper_size}</p>
+                </div>
+                {order.pdf_url && (
+                  <div className="col-span-2">
+                    <a
+                      href={order.pdf_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-primary hover:underline text-sm"
+                    >
+                      <FileText className="w-4 h-4" /> تحميل ملف PDF الجاهز للطباعة
+                    </a>
+                  </div>
+                )}
+                <div className="col-span-2">
+                  <p className="text-muted-foreground">تاريخ الطلب</p>
+                  <p className="font-medium text-foreground">
+                    {new Date(order.created_at).toLocaleString("ar")}
+                  </p>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 text-sm pt-2 border-t border-border">
+                <div>
+                  <p className="text-muted-foreground">المبلغ الإجمالي</p>
+                  <p className="font-bold text-primary text-lg">
+                    {Number(order.total_amount || order.amount)} د.م
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">طريقة الدفع</p>
+                  <p className="font-medium text-foreground">
+                    {order.payment_method === "cod" ? "الدفع عند الاستلام" : order.payment_method}
+                  </p>
+                </div>
+                {order.shipping_name && (
+                  <div className="col-span-2">
+                    <p className="text-muted-foreground">المستلم</p>
+                    <p className="font-medium text-foreground">{order.shipping_name}</p>
+                  </div>
+                )}
+                {order.shipping_address && (
+                  <div className="col-span-2">
+                    <p className="text-muted-foreground">العنوان</p>
+                    <p className="font-medium text-foreground">{order.shipping_address}</p>
+                  </div>
+                )}
+                <div className="col-span-2">
+                  <p className="text-muted-foreground">تاريخ الطلب</p>
+                  <p className="font-medium text-foreground">
+                    {new Date(order.created_at).toLocaleString("ar")}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
