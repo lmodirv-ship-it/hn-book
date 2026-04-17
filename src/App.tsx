@@ -9,6 +9,7 @@ import { I18nProvider } from "@/lib/i18n";
 import { CartProvider } from "@/contexts/CartContext";
 import { ContentProvider } from "@/contexts/ContentContext";
 import ChatBot from "@/components/ChatBot";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import Index from "./pages/Index.tsx";
 import Landing from "./pages/Landing.tsx";
 import ProductDetail from "./pages/ProductDetail.tsx";
@@ -101,6 +102,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <ChatBot />
+            <InstallPrompt />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Landing />} />
