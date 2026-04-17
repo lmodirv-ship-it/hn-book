@@ -130,8 +130,8 @@ export const DeployWebhookCard = () => {
           <div className="rounded-lg border border-border bg-secondary/20 p-3 text-xs">
             <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
               {lastStatus.startsWith("✓")
-                ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
-                : <XCircle className="w-3.5 h-3.5 text-red-500" />}
+                ? <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                : <XCircle className="w-3.5 h-3.5 text-destructive" />}
               آخر نتيجة:
             </div>
             <p className="font-mono break-all">{lastStatus}</p>

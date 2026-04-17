@@ -76,6 +76,7 @@ import StudioEditor from "./pages/studio/StudioEditor.tsx";
 import StudioAdmin from "./admin/pages/StudioAdmin.tsx";
 import QueueManager from "./admin/pages/QueueManager.tsx";
 import AutoHealCenter from "./admin/pages/AutoHealCenter.tsx";
+import { useAutoDeploy } from "@/hooks/useAutoDeploy";
 
 // Lazy-load the heavy editor and viewer so non-editable assets never pull
 // the full editor bundle (and vice versa).
@@ -95,12 +96,18 @@ const ProductRedirect = () => {
   return <Navigate to={`/book/${id}`} replace />;
 };
 
+const AppShell = ({ children }: { children: React.ReactNode }) => {
+  useAutoDeploy();
+  return <>{children}</>;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ContentProvider>
       <I18nProvider>
         <CartProvider>
           <TooltipProvider>
+            <AppShell>
             <Toaster />
             <Sonner />
             <ChatBot />
@@ -190,6 +197,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+            </AppShell>
       </TooltipProvider>
         </CartProvider>
       </I18nProvider>

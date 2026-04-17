@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
-import { Settings, Globe, Palette, Bell, Shield, Store } from "lucide-react";
+import { Globe, Store } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { DeployWebhookCard } from "@/admin/components/DeployWebhookCard";
 
 const AdminSettings = () => (
   <div className="space-y-6 max-w-2xl" dir="rtl">
@@ -50,6 +51,8 @@ const AdminSettings = () => (
     ))}
 
     <Button className="w-full">حفظ الإعدادات</Button>
+
+    <DeployWebhookCard />
   </div>
 );
 
