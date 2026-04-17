@@ -237,7 +237,7 @@ const TemplateEditor = () => {
         a.download = `${template?.name ?? "card"}-${s.label}.png`;
         a.click();
       }
-      toast({ title: "تم تصدير PNG ✅" });
+      toast({ title: "تم تصدير PNG ✅", description: billing.plan?.is_unlimited ? "خطة Pro" : `تم خصم 1 نقطة • الرصيد: ${billing.credits?.balance ?? 0}` });
     } catch (e: any) {
       toast({ title: "فشل التصدير", description: e.message, variant: "destructive" });
     }
@@ -273,7 +273,7 @@ const TemplateEditor = () => {
         pdf.addImage(back, "PNG", 0, 0, 90, 50);
       }
       pdf.save(`${template?.name ?? "card"}.pdf`);
-      toast({ title: "تم تصدير PDF ✅" });
+      toast({ title: "تم تصدير PDF ✅", description: billing.plan?.is_unlimited ? "خطة Pro" : `تم خصم 2 نقطة • الرصيد: ${billing.credits?.balance ?? 0}` });
     } catch (e: any) {
       toast({ title: "فشل التصدير", description: e.message, variant: "destructive" });
     }
@@ -414,6 +414,18 @@ const TemplateEditor = () => {
             </Button>
           </Link>
           <h1 className="font-bold text-sm flex-1 truncate">{template.name}</h1>
+          {billing.authed && (
+            <div className="hidden md:flex items-center gap-1.5">
+              <Badge variant={billing.plan?.is_unlimited ? "default" : "secondary"} className="gap-1 text-[10px]">
+                <Sparkles className="w-3 h-3" /> {billing.plan?.name ?? "Free"}
+              </Badge>
+              {!billing.plan?.is_unlimited && (
+                <Badge variant="outline" className="gap-1 text-[10px]">
+                  <Coins className="w-3 h-3" /> {billing.credits?.balance ?? 0}
+                </Badge>
+              )}
+            </div>
+          )}
           <Button
             variant="outline"
             size="sm"
