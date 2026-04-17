@@ -119,7 +119,6 @@ const StyledSvgRenderer = forwardRef<HTMLDivElement, Props>(function StyledSvgRe
         e.preventDefault();
         if (!onEdit) return;
         onSelect?.(key);
-        // @ts-expect-error contentEditable on SVG works in modern browsers
         el.setAttribute("contenteditable", "true");
         el.style.cursor = "text";
         el.style.outline = "1px solid hsl(var(--primary))";
