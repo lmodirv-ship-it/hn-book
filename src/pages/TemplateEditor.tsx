@@ -259,7 +259,7 @@ const TemplateEditor = () => {
                 <SvgRenderer
                   ref={frontRef}
                   svg={template.front_svg_content ?? ""}
-                  values={values}
+                  values={renderValues}
                   className="w-full rounded-xl border border-border bg-white overflow-hidden [&>svg]:w-full [&>svg]:h-auto"
                 />
               </div>
@@ -268,7 +268,7 @@ const TemplateEditor = () => {
                   <SvgRenderer
                     ref={backRef}
                     svg={template.back_svg_content ?? ""}
-                    values={values}
+                    values={renderValues}
                     className="w-full rounded-xl border border-border bg-white overflow-hidden [&>svg]:w-full [&>svg]:h-auto"
                   />
                 </div>
@@ -282,7 +282,7 @@ const TemplateEditor = () => {
               <SvgRenderer
                 ref={side === "front" ? backRef : frontRef}
                 svg={(side === "front" ? template.back_svg_content : template.front_svg_content) ?? ""}
-                values={values}
+                values={renderValues}
                 className="w-[900px] [&>svg]:w-full [&>svg]:h-auto"
               />
             </div>
