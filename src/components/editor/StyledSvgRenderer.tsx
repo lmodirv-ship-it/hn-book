@@ -113,6 +113,51 @@ const StyledSvgRenderer = forwardRef<HTMLDivElement, Props>(function StyledSvgRe
       el.addEventListener("mouseenter", onOver);
       el.addEventListener("mouseleave", onOut);
 
+      // Double-click → inline edit using contentEditable on the SVG <text>.
+      const dblclick = (e: MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (!onEdit) return;
+        onSelect?.(key);
+        // @ts-expect-error contentEditable on SVG works in modern browsers
+        el.setAttribute("contenteditable", "true");
+        el.style.cursor = "text";
+        el.style.outline = "1px solid hsl(var(--primary))";
+        (el as unknown as HTMLElement).focus();
+
+        // Place caret at end of text.
+        try {
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          range.collapse(false);
+          const sel = window.getSelection();
+          sel?.removeAllRanges();
+          sel?.addRange(range);
+        } catch {}
+      };
+
+      const onInput = () => {
+        if (el.getAttribute("contenteditable") !== "true") return;
+        onEdit?.(key, el.textContent ?? "");
+      };
+      const onBlur = () => {
+        el.removeAttribute("contenteditable");
+        el.style.cursor = "move";
+        el.style.outline = "";
+      };
+      const onKeyDown = (ev: KeyboardEvent) => {
+        if (el.getAttribute("contenteditable") !== "true") return;
+        if (ev.key === "Enter" || ev.key === "Escape") {
+          ev.preventDefault();
+          (el as unknown as HTMLElement).blur();
+        }
+      };
+
+      el.addEventListener("dblclick", dblclick);
+      el.addEventListener("input", onInput);
+      el.addEventListener("blur", onBlur);
+      el.addEventListener("keydown", onKeyDown as EventListener);
+
       // Drag with SVG coordinate conversion.
       let startX = 0;
       let startY = 0;
@@ -129,6 +174,8 @@ const StyledSvgRenderer = forwardRef<HTMLDivElement, Props>(function StyledSvgRe
       };
 
       const onDown = (ev: PointerEvent) => {
+        // Don't start a drag while editing inline.
+        if (el.getAttribute("contenteditable") === "true") return;
         ev.preventDefault();
         ev.stopPropagation();
         dragging = true;
@@ -167,6 +214,10 @@ const StyledSvgRenderer = forwardRef<HTMLDivElement, Props>(function StyledSvgRe
         el.removeEventListener("click", click);
         el.removeEventListener("mouseenter", onOver);
         el.removeEventListener("mouseleave", onOut);
+        el.removeEventListener("dblclick", dblclick);
+        el.removeEventListener("input", onInput);
+        el.removeEventListener("blur", onBlur);
+        el.removeEventListener("keydown", onKeyDown as EventListener);
         el.removeEventListener("pointerdown", onDown);
         el.removeEventListener("pointermove", onMove);
         el.removeEventListener("pointerup", onUp);
