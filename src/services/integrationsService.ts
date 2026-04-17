@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
+export type IntegrationStatus = "not_configured" | "connected" | "error";
+
 export interface ApiIntegration {
   id: string;
   name: string;
@@ -11,13 +13,16 @@ export interface ApiIntegration {
   category: string;
   description: string | null;
   is_active: boolean;
+  status?: IntegrationStatus;
+  last_tested_at?: string | null;
+  last_test_message?: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export type ApiIntegrationInput = {
   name: string;
-  base_url: string;
+  base_url?: string;
   api_key_name?: string | null;
   secret_ref?: string | null;
   key_hint?: string | null;
@@ -25,6 +30,7 @@ export type ApiIntegrationInput = {
   category?: string;
   description?: string | null;
   is_active?: boolean;
+  status?: IntegrationStatus;
 };
 
 export const integrationsService = {
@@ -36,6 +42,35 @@ export const integrationsService = {
       .order("name");
     if (error) throw error;
     return (data ?? []) as unknown as ApiIntegration[];
+  },
+
+  async getByName(name: string): Promise<ApiIntegration | null> {
+    const { data, error } = await supabase
+      .from("api_integrations")
+      .select("*")
+      .ilike("name", name)
+      .maybeSingle();
+    if (error) throw error;
+    return (data as unknown as ApiIntegration) ?? null;
+  },
+
+  async upsertByName(name: string, patch: Partial<ApiIntegrationInput>) {
+    const existing = await this.getByName(name);
+    if (existing) {
+      const { error } = await supabase
+        .from("api_integrations")
+        .update(patch as never)
+        .eq("id", existing.id);
+      if (error) throw error;
+      return existing.id;
+    }
+    const { data, error } = await supabase
+      .from("api_integrations")
+      .insert({ name, base_url: "", ...patch } as never)
+      .select("id")
+      .single();
+    if (error) throw error;
+    return (data as { id: string }).id;
   },
 
   async create(input: ApiIntegrationInput) {
@@ -64,18 +99,14 @@ export const integrationsService = {
     if (error) throw error;
   },
 
-  /** Backend-only: resolves config + secret presence via secure edge function. */
   async resolveSecure(name: string) {
     const { data, error } = await supabase.functions.invoke("get-integration-config", {
       body: { name },
     });
     if (error) throw error;
-    return data as {
-      integration: ApiIntegration & { secret_present: boolean };
-    };
+    return data as { integration: ApiIntegration & { secret_present: boolean } };
   },
 
-  /** Test a connection. Pass either { id } / { name } or an ad-hoc payload. */
   async testConnection(payload: {
     id?: string;
     name?: string;
@@ -86,10 +117,23 @@ export const integrationsService = {
     const { data, error } = await supabase.functions.invoke("test-integration-connection", {
       body: payload,
     });
-    if (error) {
-      return { ok: false, stage: "request", error: error.message };
-    }
+    if (error) return { ok: false, stage: "request", error: error.message };
     return data as TestConnectionResult;
+  },
+
+  /** Provider-specific test (Stripe / WhatsApp / Analytics). */
+  async testProvider(payload: {
+    provider: "stripe" | "whatsapp" | "analytics";
+    integration_id?: string;
+    secret_ref?: string;
+    config?: Record<string, unknown>;
+    test_to?: string;
+  }): Promise<ProviderTestResult> {
+    const { data, error } = await supabase.functions.invoke("test-provider-integration", {
+      body: payload,
+    });
+    if (error) return { ok: false, status: 0, snippet: error.message, provider: payload.provider };
+    return data as ProviderTestResult;
   },
 };
 
@@ -104,7 +148,13 @@ export type TestConnectionResult = {
   error?: string;
 };
 
-/** Mask any sensitive string for display (keeps last 4 chars). */
+export type ProviderTestResult = {
+  ok: boolean;
+  provider: "stripe" | "whatsapp" | "analytics";
+  status: number;
+  snippet: string;
+};
+
 export function maskKey(value?: string | null): string {
   if (!value) return "—";
   const v = String(value);
