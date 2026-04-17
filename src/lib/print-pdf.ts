@@ -192,7 +192,7 @@ async function drawCard(
   const svg = findSvg(node);
   if (svg && colorMode !== "CMYK_SIM") {
     try {
-      const clone = cloneSvgForExport(svg);
+      const clone = buildExportableSvg(svg);
       await svg2pdf(clone, pdf, {
         x: x + layout.bleed,
         y: y + layout.bleed,
@@ -201,21 +201,31 @@ async function drawCard(
       });
       return;
     } catch (err) {
-      console.warn("[print-pdf] vector export failed, using raster fallback", err);
+      console.warn("[print-pdf] vector export failed at", { x, y }, err);
     }
   }
-  // CMYK simulation requires pixel-level color work — forces raster path.
-  const png = await nodeToHiResPng(node, colorMode);
-  pdf.addImage(
-    png,
-    "PNG",
-    x + layout.bleed,
-    y + layout.bleed,
-    layout.cardWidth,
-    layout.cardHeight,
-    undefined,
-    "SLOW",
-  );
+  // Hybrid fallback — high-res raster from the live DOM node.
+  try {
+    const png = await nodeToHiResPng(node, colorMode);
+    pdf.addImage(
+      png,
+      "PNG",
+      x + layout.bleed,
+      y + layout.bleed,
+      layout.cardWidth,
+      layout.cardHeight,
+      undefined,
+      "SLOW",
+    );
+  } catch (err) {
+    console.error("[print-pdf] raster fallback also failed at", { x, y }, err);
+    // Last-resort: draw a placeholder rectangle so the page still renders.
+    pdf.setFillColor(245, 245, 245);
+    pdf.rect(x + layout.bleed, y + layout.bleed, layout.cardWidth, layout.cardHeight, "F");
+    pdf.setTextColor(150);
+    pdf.setFontSize(8);
+    pdf.text("render error", x + layout.bleed + 5, y + layout.bleed + 8);
+  }
 }
 
 /** Subtle finish simulation overlay — gloss = top highlight, matte = soft tint. */
