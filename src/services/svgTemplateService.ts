@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type SvgFieldType = "text" | "color";
+export type SvgFieldType = "text" | "color" | "image";
 export type SvgSide = "front" | "back";
 
 export interface SvgField {

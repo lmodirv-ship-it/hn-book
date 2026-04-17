@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Loader2, Download, FileImage, FileText, RotateCw, ArrowRight, Palette } from "lucide-react";
+import { Loader2, Download, FileImage, FileText, RotateCw, ArrowRight, Palette, Upload, X, Image as ImageIcon } from "lucide-react";
 import { toPng } from "html-to-image";
 import jsPDF from "jspdf";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,12 @@ const TemplateEditor = () => {
     template?.fields.forEach((f) => (f.side === "back" ? back.push(f) : front.push(f)));
     return { front, back };
   }, [template]);
+
+  // When a logo image is uploaded, hide the monogram fallback so they don't overlap.
+  const renderValues = useMemo(
+    () => (values.logo ? { ...values, monogram: "" } : values),
+    [values]
+  );
 
   const flip = () => {
     if (!template?.back_svg_content) return;
@@ -118,7 +124,7 @@ const TemplateEditor = () => {
   }
 
   const currentFields = side === "front" ? fieldsBySide.front : fieldsBySide.back;
-  const hasBack = !!template.back_svg_content;
+  const hasBack = !!template?.back_svg_content;
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
@@ -155,22 +161,79 @@ const TemplateEditor = () => {
             {currentFields.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">لا توجد حقول قابلة للتعديل في هذا الوجه</p>
             ) : (
-              currentFields.map((f) => (
-                <div key={`${f.side}-${f.key}`}>
-                  <Label className="text-sm flex items-center gap-1.5">
-                    {f.type === "color" && <Palette className="w-3.5 h-3.5 text-muted-foreground" />}
-                    {f.label}
-                    <span className="text-[10px] text-muted-foreground">{`{{${f.key}}}`}</span>
-                  </Label>
-                  <Input
-                    type={f.type === "color" ? "color" : "text"}
-                    value={values[f.key] ?? ""}
-                    onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
-                    placeholder={f.label}
-                    className="mt-1"
-                  />
-                </div>
-              ))
+              currentFields.map((f) => {
+                const val = values[f.key] ?? "";
+                if (f.type === "image") {
+                  const onPick = (file?: File | null) => {
+                    if (!file) return;
+                    if (file.size > 2 * 1024 * 1024) {
+                      toast({ title: "الصورة كبيرة", description: "الحد الأقصى 2 ميجابايت", variant: "destructive" });
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = () => setValues((v) => ({ ...v, [f.key]: String(reader.result || "") }));
+                    reader.readAsDataURL(file);
+                  };
+                  return (
+                    <div key={`${f.side}-${f.key}`}>
+                      <Label className="text-sm flex items-center gap-1.5 mb-1.5">
+                        <ImageIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                        {f.label}
+                      </Label>
+                      <div className="flex items-center gap-3 rounded-lg border border-border bg-card/40 p-3">
+                        <div className="w-16 h-16 rounded-md bg-muted/50 border border-border flex items-center justify-center overflow-hidden shrink-0">
+                          {val ? (
+                            <img src={val} alt="logo preview" className="max-w-full max-h-full object-contain" />
+                          ) : (
+                            <ImageIcon className="w-5 h-5 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="flex-1 flex flex-col gap-1.5">
+                          <label className="cursor-pointer">
+                            <input
+                              type="file"
+                              accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                              className="hidden"
+                              onChange={(e) => onPick(e.target.files?.[0])}
+                            />
+                            <Button type="button" size="sm" variant="outline" asChild className="gap-1.5 w-full">
+                              <span><Upload className="w-3.5 h-3.5" /> {val ? "تغيير الشعار" : "ارفع الشعار"}</span>
+                            </Button>
+                          </label>
+                          {val && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="gap-1.5 h-7 text-destructive"
+                              onClick={() => setValues((v) => ({ ...v, [f.key]: "" }))}
+                            >
+                              <X className="w-3 h-3" /> إزالة الشعار
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1">PNG / SVG شفاف يعطي أفضل نتيجة • حتى 2MB</p>
+                    </div>
+                  );
+                }
+                return (
+                  <div key={`${f.side}-${f.key}`}>
+                    <Label className="text-sm flex items-center gap-1.5">
+                      {f.type === "color" && <Palette className="w-3.5 h-3.5 text-muted-foreground" />}
+                      {f.label}
+                      <span className="text-[10px] text-muted-foreground">{`{{${f.key}}}`}</span>
+                    </Label>
+                    <Input
+                      type={f.type === "color" ? "color" : "text"}
+                      value={val}
+                      onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
+                      placeholder={f.label}
+                      className="mt-1"
+                    />
+                  </div>
+                );
+              })
             )}
           </div>
         </div>
@@ -196,7 +259,7 @@ const TemplateEditor = () => {
                 <SvgRenderer
                   ref={frontRef}
                   svg={template.front_svg_content ?? ""}
-                  values={values}
+                  values={renderValues}
                   className="w-full rounded-xl border border-border bg-white overflow-hidden [&>svg]:w-full [&>svg]:h-auto"
                 />
               </div>
@@ -205,7 +268,7 @@ const TemplateEditor = () => {
                   <SvgRenderer
                     ref={backRef}
                     svg={template.back_svg_content ?? ""}
-                    values={values}
+                    values={renderValues}
                     className="w-full rounded-xl border border-border bg-white overflow-hidden [&>svg]:w-full [&>svg]:h-auto"
                   />
                 </div>
@@ -219,7 +282,7 @@ const TemplateEditor = () => {
               <SvgRenderer
                 ref={side === "front" ? backRef : frontRef}
                 svg={(side === "front" ? template.back_svg_content : template.front_svg_content) ?? ""}
-                values={values}
+                values={renderValues}
                 className="w-[900px] [&>svg]:w-full [&>svg]:h-auto"
               />
             </div>
