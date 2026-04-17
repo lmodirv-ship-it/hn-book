@@ -230,7 +230,7 @@ const StyledSvgRenderer = forwardRef<HTMLDivElement, Props>(function StyledSvgRe
     cleanups.push(() => svgEl.removeEventListener("click", bgClick));
 
     return () => cleanups.forEach((c) => c());
-  }, [rendered, fields, values, styles, selectedKey, onSelect, onDragEnd]);
+  }, [rendered, fields, values, styles, selectedKey, onSelect, onDragEnd, onEdit]);
 
   return (
     <div
