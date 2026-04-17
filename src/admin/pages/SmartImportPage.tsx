@@ -482,13 +482,39 @@ const SmartImportPage = () => {
                     <div className="aspect-video bg-muted flex items-center justify-center relative">
                       {isFolder ? (
                         <>
-                          <img
-                            src={(item as PendingFolderItem).previewUrl}
-                            alt={(item as PendingFolderItem).folderName}
-                            className="w-full h-full object-cover"
-                          />
+                          {(item as PendingFolderItem).backFile ? (
+                            <div className="grid grid-cols-2 w-full h-full divide-x divide-border/40">
+                              <div className="relative h-full">
+                                <img
+                                  src={(item as PendingFolderItem).previewUrl}
+                                  alt="front"
+                                  className="w-full h-full object-cover"
+                                />
+                                <Badge className="absolute bottom-1 right-1 text-[9px] py-0 px-1.5 bg-background/80 text-foreground">
+                                  أمام
+                                </Badge>
+                              </div>
+                              <div className="relative h-full">
+                                <img
+                                  src={(item as PendingFolderItem).backUrl}
+                                  alt="back"
+                                  className="w-full h-full object-cover"
+                                />
+                                <Badge className="absolute bottom-1 right-1 text-[9px] py-0 px-1.5 bg-background/80 text-foreground">
+                                  خلف
+                                </Badge>
+                              </div>
+                            </div>
+                          ) : (
+                            <img
+                              src={(item as PendingFolderItem).previewUrl}
+                              alt={(item as PendingFolderItem).folderName}
+                              className="w-full h-full object-cover"
+                            />
+                          )}
                           <Badge className="absolute top-2 right-2 gap-1 bg-primary/90">
-                            <FolderOpen className="w-3 h-3" /> مجلد
+                            <FolderOpen className="w-3 h-3" />
+                            {(item as PendingFolderItem).backFile ? "وجهين" : "مجلد"}
                           </Badge>
                         </>
                       ) : (item as PendingFileItem).isImage ? (
