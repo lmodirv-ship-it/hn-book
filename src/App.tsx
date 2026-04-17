@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate, useParams } from "react-router-dom";
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -96,7 +96,7 @@ const ProductRedirect = () => {
   return <Navigate to={`/book/${id}`} replace />;
 };
 
-const AppShell = ({ children }: { children: React.ReactNode }) => {
+const AppShell = ({ children }: { children: ReactNode }) => {
   useAutoDeploy();
   return <>{children}</>;
 };
