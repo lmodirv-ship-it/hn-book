@@ -297,10 +297,55 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
               </div>
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="rounded-lg border border-border p-3 space-y-2">
+                <Label className="text-xs">وضع الألوان</Label>
+                <RadioGroup value={colorMode} onValueChange={(v) => setColorMode(v as ColorMode)} className="grid grid-cols-2 gap-2">
+                  <label htmlFor="cm-rgb" className={`flex items-center gap-2 rounded border p-2 cursor-pointer text-xs ${colorMode === "RGB" ? "border-primary bg-primary/5" : "border-border"}`}>
+                    <RadioGroupItem id="cm-rgb" value="RGB" /> RGB (Vector)
+                  </label>
+                  <label htmlFor="cm-cmyk" className={`flex items-center gap-2 rounded border p-2 cursor-pointer text-xs ${colorMode === "CMYK_SIM" ? "border-primary bg-primary/5" : "border-border"}`}>
+                    <RadioGroupItem id="cm-cmyk" value="CMYK_SIM" /> CMYK (محاكاة)
+                  </label>
+                </RadioGroup>
+              </div>
+              <div className="rounded-lg border border-border p-3 space-y-2">
+                <Label className="text-xs">محاكاة التشطيب</Label>
+                <RadioGroup value={finish} onValueChange={(v) => setFinish(v as PaperFinish)} className="grid grid-cols-3 gap-2">
+                  <label htmlFor="fn-none" className={`flex items-center gap-1.5 rounded border p-2 cursor-pointer text-xs ${finish === "none" ? "border-primary bg-primary/5" : "border-border"}`}>
+                    <RadioGroupItem id="fn-none" value="none" /> بدون
+                  </label>
+                  <label htmlFor="fn-glossy" className={`flex items-center gap-1.5 rounded border p-2 cursor-pointer text-xs ${finish === "glossy" ? "border-primary bg-primary/5" : "border-border"}`}>
+                    <RadioGroupItem id="fn-glossy" value="glossy" /> لامع
+                  </label>
+                  <label htmlFor="fn-matte" className={`flex items-center gap-1.5 rounded border p-2 cursor-pointer text-xs ${finish === "matte" ? "border-primary bg-primary/5" : "border-border"}`}>
+                    <RadioGroupItem id="fn-matte" value="matte" /> مطفي
+                  </label>
+                </RadioGroup>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-border p-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <Label className="text-xs">تعويض هامش الطابعة</Label>
+                <span className="text-xs font-mono text-muted-foreground">{marginCompensation} mm</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={10}
+                step={1}
+                value={marginCompensation}
+                onChange={(e) => setMarginCompensation(Number(e.target.value))}
+                className="w-full accent-primary"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">يضيف هامش داخلي لتعويض الطابعات التي تقص حواف الورقة.</p>
+            </div>
+
             <div className="rounded-lg bg-muted/30 border border-border p-3 text-xs text-muted-foreground space-y-1">
               <p className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> صفحة 1: الوجه الأمامي • شبكة منتظمة مع نزيف 3mm</p>
-              {backNode && <p className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> صفحة 2: الوجه الخلفي {mirrorBack ? "(معكوس)" : "(بنفس الترتيب)"} للطباعة على الوجهين</p>}
-              <p className="flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> SVG Vector عند الإمكان • Raster احتياطي 600 DPI • قص 85×55mm</p>
+              {backNode && <p className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> صفحة 2: الوجه الخلفي {mirrorBack ? "(معكوس)" : "(بنفس الترتيب)"}</p>}
+              <p className="flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> {colorMode === "CMYK_SIM" ? "Raster 600 DPI مع محاكاة CMYK" : "SVG Vector عند الإمكان • Raster احتياطي 600 DPI"} • قص 85×55mm</p>
             </div>
 
             <DialogFooter>
