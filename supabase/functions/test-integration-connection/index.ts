@@ -133,7 +133,22 @@ Deno.serve(async (req) => {
     }
 
     const headers = secret ? buildAuthHeaders(api_key_name, secret) : {};
+    const startedAt = Date.now();
     const result = await pingUrl(base_url, headers);
+    const durationMs = Date.now() - startedAt;
+
+    // Log the call
+    await admin.from("integration_logs").insert({
+      integration_id: payload.id ?? null,
+      provider: name,
+      action: "test_connection_generic",
+      success: result.ok,
+      status_code: result.status || null,
+      duration_ms: durationMs,
+      message: result.snippet?.slice(0, 1000) ?? null,
+      metadata: { tested_url: base_url, secret_ref: secret_ref || null },
+      triggered_by: userData.user.id,
+    });
 
     return new Response(JSON.stringify({
       ok: result.ok,
