@@ -219,7 +219,26 @@ const SmartImportPage = () => {
   // ── Add individual files ──
   const addFiles = (files: File[]) => {
     if (!files.length) return;
-    const items: PendingFileItem[] = files.map((file) => {
+
+    // Pre-validate: reject unsupported formats and oversize files with a clear message.
+    const accepted: File[] = [];
+    const rejections: string[] = [];
+    for (const file of files) {
+      const ext = fileExt(file.name);
+      if (UNSUPPORTED_DIRECT_EXTS.has(ext)) {
+        rejections.push(`❌ ${file.name}: صيغة .${ext} تتطلب تحويلاً للسيرفر (Inkscape/Ghostscript). ارفع SVG/PDF بدلها أو حوّل الملف أولاً.`);
+        continue;
+      }
+      if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+        rejections.push(`❌ ${file.name}: حجم ${(file.size / 1024 / 1024).toFixed(1)}MB يتجاوز الحد ${MAX_FILE_SIZE_MB}MB.`);
+        continue;
+      }
+      accepted.push(file);
+    }
+    rejections.forEach((m) => toast.error(m, { duration: 6000 }));
+    if (!accepted.length) return;
+
+    const items: PendingFileItem[] = accepted.map((file) => {
       const type = detectType(file);
       const isImage = file.type.startsWith("image/");
       return {
@@ -232,6 +251,8 @@ const SmartImportPage = () => {
         isImage,
         uploading: false,
         progress: 0,
+        error: null,
+        status: "idle",
       };
     });
     setPending((prev) => [...items, ...prev]);
