@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   Printer, Eye, Loader2, Search, Filter, Clock, CheckCircle2, FileText,
-  Download, MessageCircle, Cog,
+  Download, MessageCircle, Cog, Truck, PackageCheck, MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,17 +9,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { printService, PAPER_TYPES, PRINT_TYPES, ORDER_STATUSES, type PrintOrder } from "@/services/printService";
+import { Label } from "@/components/ui/label";
+import {
+  printService, PAPER_TYPES, PRINT_TYPES, ORDER_STATUSES, DELIVERY_OPTIONS,
+  type PrintOrder,
+} from "@/services/printService";
 import { toast } from "@/hooks/use-toast";
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = {
-  pending:    { label: "قيد الانتظار", color: "bg-yellow-500/15 text-yellow-500", icon: Clock },
-  processing: { label: "قيد المعالجة", color: "bg-blue-500/15 text-blue-500",     icon: Cog },
-  printing:   { label: "جاري الطباعة", color: "bg-purple-500/15 text-purple-500", icon: Printer },
-  completed:  { label: "مكتمل",         color: "bg-emerald-500/15 text-emerald-500", icon: CheckCircle2 },
+  pending:    { label: "قيد الانتظار", color: "bg-yellow-500/15 text-yellow-500",   icon: Clock },
+  processing: { label: "قيد المعالجة", color: "bg-blue-500/15 text-blue-500",       icon: Cog },
+  printing:   { label: "جاري الطباعة", color: "bg-purple-500/15 text-purple-500",   icon: Printer },
+  shipped:    { label: "تم الشحن",      color: "bg-cyan-500/15 text-cyan-500",       icon: Truck },
+  delivered:  { label: "تم التسليم",    color: "bg-emerald-500/15 text-emerald-500", icon: PackageCheck },
+  completed:  { label: "مكتمل",          color: "bg-emerald-500/15 text-emerald-500", icon: CheckCircle2 },
 };
 
-const STATUSES = ["pending", "processing", "printing", "completed"];
+const STATUSES = ["pending", "processing", "printing", "shipped", "delivered"];
 
 const PrintOrdersAdmin = () => {
   const [orders, setOrders] = useState<PrintOrder[]>([]);
