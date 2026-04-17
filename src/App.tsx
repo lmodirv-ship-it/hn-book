@@ -58,6 +58,7 @@ import AIClassifier from "./admin/pages/AIClassifier.tsx";
 import FeatureManager from "./admin/pages/FeatureManager.tsx";
 import SystemMonitoring from "./admin/pages/SystemMonitoring.tsx";
 import ApiIntegrationsAdmin from "./admin/pages/ApiIntegrationsAdmin.tsx";
+import ApiSettings from "./admin/pages/ApiSettings.tsx";
 import AssetsManager from "./admin/pages/AssetsManager.tsx";
 import SmartImportPage from "./admin/pages/SmartImportPage.tsx";
 import SvgTemplatesAdmin from "./admin/pages/SvgTemplatesAdmin.tsx";
@@ -155,6 +156,7 @@ const App = () => (
               <Route path="features" element={<FeatureManager />} />
               <Route path="monitoring" element={<SystemMonitoring />} />
               <Route path="api-integrations" element={<ApiIntegrationsAdmin />} />
+              <Route path="api-settings" element={<ApiSettings />} />
               <Route path="assets" element={<AssetsManager />} />
               <Route path="smart-import" element={<SmartImportPage />} />
               <Route path="svg-templates" element={<SvgTemplatesAdmin />} />
