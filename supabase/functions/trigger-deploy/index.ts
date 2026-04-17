@@ -1,7 +1,9 @@
 // Admin-only deploy webhook trigger.
-// Reads deploy_url + deploy_payload_template from system_config,
-// merges runtime fields (timestamp, build.hash), and POSTs to the
-// configured external endpoint with the x-api-key header.
+// - Retries with exponential backoff on transient failures (network/5xx/timeouts).
+// - Emits per-phase status logs (build/upload/deploy) into integration_logs.
+// - Persists last status string in system_config (deploy_last_status).
+// - Reads deploy_url + deploy_payload_template from system_config and merges
+//   runtime fields (timestamp, build.hash) before POSTing with x-api-key.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -10,6 +12,12 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+const MAX_ATTEMPTS = 3;
+const BASE_BACKOFF_MS = 1500; // 1.5s, 3s, 6s
+const REQUEST_TIMEOUT_MS = 25_000;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -61,6 +69,34 @@ Deno.serve(async (req) => {
     const notes: string = body.notes ?? "";
     const trigger: string = body.trigger ?? "manual"; // 'manual' | 'auto'
 
+    // Helper: insert a phase log row
+    const logPhase = async (
+      phase: "build" | "upload" | "deploy",
+      success: boolean,
+      message: string,
+      extra: Record<string, unknown> = {},
+    ) => {
+      await admin.from("integration_logs").insert({
+        provider: "deploy_webhook",
+        action: `${trigger}_${phase}`,
+        success,
+        status_code: (extra.status_code as number) ?? null,
+        duration_ms: (extra.duration_ms as number) ?? null,
+        message: message.slice(0, 500),
+        metadata: {
+          phase,
+          deploy_url: deployUrl,
+          build_hash: buildHash,
+          build_id: buildId,
+          ...extra,
+        },
+        triggered_by: userData.user.id,
+      });
+    };
+
+    // ── Phase 1: build (we don't actually build; we just record the build hash)
+    await logPhase("build", true, `build hash captured: ${buildHash || "n/a"}`);
+
     // Merge template with runtime fields
     const template = (cfg.deploy_payload_template ?? {}) as Record<string, any>;
     const payload = {
@@ -75,52 +111,91 @@ Deno.serve(async (req) => {
       },
     };
 
-    const startedAt = Date.now();
+    // ── Phase 2: upload (POST to deploy URL with retries) ──────────────
+    let attempt = 0;
     let status = 0;
     let snippet = "";
     let success = false;
+    let lastError = "";
+    const totalStart = Date.now();
 
-    try {
-      const res = await fetch(deployUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": deployKey,
-        },
-        body: JSON.stringify(payload),
-      });
-      status = res.status;
-      snippet = (await res.text()).slice(0, 500);
-      success = res.ok;
-    } catch (e) {
-      snippet = String(e).slice(0, 500);
+    while (attempt < MAX_ATTEMPTS) {
+      attempt++;
+      const startedAt = Date.now();
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
+      try {
+        const res = await fetch(deployUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": deployKey,
+          },
+          body: JSON.stringify(payload),
+          signal: ctrl.signal,
+        });
+        clearTimeout(tid);
+        status = res.status;
+        snippet = (await res.text()).slice(0, 500);
+        success = res.ok;
+        const dur = Date.now() - startedAt;
+
+        await logPhase(
+          "upload",
+          success,
+          `attempt ${attempt}/${MAX_ATTEMPTS} → ${status}${success ? " ok" : " fail"}: ${snippet.slice(0, 200)}`,
+          { attempt, status_code: status, duration_ms: dur },
+        );
+
+        // Retry on 5xx; do not retry on 2xx/4xx
+        if (success || (status >= 400 && status < 500)) break;
+        lastError = `HTTP ${status}`;
+      } catch (e) {
+        clearTimeout(tid);
+        const dur = Date.now() - startedAt;
+        lastError = String(e);
+        snippet = lastError.slice(0, 500);
+        await logPhase("upload", false, `attempt ${attempt}/${MAX_ATTEMPTS} threw: ${snippet.slice(0, 200)}`, {
+          attempt,
+          duration_ms: dur,
+          error: lastError,
+        });
+      }
+
+      if (attempt < MAX_ATTEMPTS) {
+        await sleep(BASE_BACKOFF_MS * Math.pow(2, attempt - 1));
+      }
     }
 
-    const durationMs = Date.now() - startedAt;
+    const durationMs = Date.now() - totalStart;
 
-    // Log to integration_logs
-    await admin.from("integration_logs").insert({
-      provider: "deploy_webhook",
-      action: trigger === "auto" ? "auto_deploy" : "manual_deploy",
+    // ── Phase 3: deploy (final outcome) ─────────────────────────────────
+    await logPhase(
+      "deploy",
       success,
-      status_code: status,
-      duration_ms: durationMs,
-      message: snippet,
-      metadata: { deploy_url: deployUrl, build_hash: buildHash, build_id: buildId },
-      triggered_by: userData.user.id,
-    });
+      success
+        ? `deploy completed in ${durationMs}ms (status ${status})`
+        : `deploy FAILED after ${attempt} attempt(s): ${lastError || snippet}`,
+      { status_code: status, duration_ms: durationMs, attempts: attempt },
+    );
 
-    // Persist last status
+    // Persist last status (compact summary)
+    const summary = `${success ? "✓" : "✗"} ${status} @ ${new Date().toISOString()} — ${attempt} try(s), ${durationMs}ms — ${snippet.slice(0, 100)}`;
     await admin
       .from("system_config")
-      .update({
-        value: JSON.stringify(
-          `${success ? "✓" : "✗"} ${status} @ ${new Date().toISOString()} — ${snippet.slice(0, 120)}`,
-        ),
-      })
+      .update({ value: summary as any })
       .eq("key", "deploy_last_status");
 
-    return json({ success, status, duration_ms: durationMs, snippet });
+    return json({
+      success,
+      status,
+      attempts: attempt,
+      duration_ms: durationMs,
+      snippet,
+      message: success
+        ? `Deployment completed (${attempt} attempt${attempt > 1 ? "s" : ""}, ${durationMs}ms)`
+        : `Deployment failed after ${attempt} attempts: ${lastError || snippet}`,
+    }, success ? 200 : 502);
   } catch (err) {
     return json({ error: String(err) }, 500);
   }

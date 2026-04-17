@@ -78,6 +78,7 @@ import QueueManager from "./admin/pages/QueueManager.tsx";
 import AutoHealCenter from "./admin/pages/AutoHealCenter.tsx";
 import SubscriptionsAdmin from "./admin/pages/SubscriptionsAdmin.tsx";
 import BillingPage from "./pages/BillingPage.tsx";
+import DeployMonitor from "./admin/pages/DeployMonitor.tsx";
 import { useAutoDeploy } from "@/hooks/useAutoDeploy";
 
 // Lazy-load the heavy editor and viewer so non-editable assets never pull
@@ -197,6 +198,7 @@ const App = () => (
               <Route path="queue" element={<QueueManager />} />
               <Route path="auto-heal" element={<AutoHealCenter />} />
               <Route path="subscriptions" element={<SubscriptionsAdmin />} />
+              <Route path="deploy" element={<DeployMonitor />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />
