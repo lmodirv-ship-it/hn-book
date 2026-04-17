@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Search, Package, Clock, CheckCircle2, XCircle, Loader2, Truck } from "lucide-react";
+import { Search, Package, Clock, CheckCircle2, XCircle, Loader2, Truck, PackageCheck, MapPin } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -11,13 +11,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Printer, FileText } from "lucide-react";
 
-const STATUS_FLOW = ["pending", "processing", "printing", "completed"] as const;
+const STATUS_FLOW = ["pending", "processing", "printing", "shipped", "delivered"] as const;
 
 const STATUS_INFO: Record<string, { label: string; color: string; icon: any; progress: number }> = {
-  pending:    { label: "قيد الانتظار", color: "text-yellow-500",  icon: Clock,        progress: 20 },
-  processing: { label: "قيد المعالجة", color: "text-blue-500",    icon: Truck,        progress: 50 },
-  printing:   { label: "جاري الطباعة", color: "text-purple-500",  icon: Printer,      progress: 80 },
-  completed:  { label: "مكتمل",         color: "text-emerald-500", icon: CheckCircle2, progress: 100 },
+  pending:    { label: "قيد الانتظار", color: "text-yellow-500",  icon: Clock,        progress: 15 },
+  processing: { label: "قيد المعالجة", color: "text-blue-500",    icon: Cog,          progress: 35 },
+  printing:   { label: "جاري الطباعة", color: "text-purple-500",  icon: Printer,      progress: 60 },
+  shipped:    { label: "تم الشحن",      color: "text-cyan-500",    icon: Truck,        progress: 85 },
+  delivered:  { label: "تم التسليم",    color: "text-emerald-500", icon: PackageCheck, progress: 100 },
+  completed:  { label: "مكتمل",          color: "text-emerald-500", icon: CheckCircle2, progress: 100 },
   cancelled:  { label: "ملغي",          color: "text-red-500",     icon: XCircle,      progress: 0 },
 };
 
