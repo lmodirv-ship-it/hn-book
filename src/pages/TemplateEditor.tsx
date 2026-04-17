@@ -20,6 +20,7 @@ const TemplateEditor = () => {
   const [side, setSide] = useState<"front" | "back">("front");
   const [flipping, setFlipping] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [printOpen, setPrintOpen] = useState(false);
 
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
