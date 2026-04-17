@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import {
   Loader2, Download, FileImage, RotateCw, ArrowRight, Palette, Upload, X,
   Image as ImageIcon, Printer, Type, Bold, Italic, AlignLeft, AlignCenter,
@@ -42,8 +42,12 @@ interface HistoryEntry {
 
 const TemplateEditor = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const fromStudio = searchParams.get("from") === "studio";
+  const backHref = fromStudio ? "/studio/templates" : "/admin/svg-templates";
   const [template, setTemplate] = useState<SvgTemplate | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [values, setValues] = useState<Record<string, string>>({});
   const [styles, setStyles] = useState<Record<string, FieldStyle>>({});
   const [side, setSide] = useState<"front" | "back">("front");
@@ -63,21 +67,25 @@ const TemplateEditor = () => {
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
 
-  // Load template
+  // Load template — accept either a template id or an asset id from the gallery
   useEffect(() => {
     if (!id) return;
+    let cancelled = false;
+    setLoading(true);
+    setNotFound(false);
     (async () => {
       try {
-        const t = await svgTemplateService.get(id);
+        const t = await svgTemplateService.resolve(id);
+        if (cancelled) return;
         if (!t) {
-          toast({ title: "القالب غير موجود", variant: "destructive" });
+          setNotFound(true);
           return;
         }
         setTemplate(t);
         const init: Record<string, string> = {};
         for (const f of t.fields) init[f.key] = f.defaultValue || "";
 
-        // Restore overrides from localStorage
+        // Restore overrides from localStorage (keyed by template id, stable across asset/template entry)
         const saved = localStorage.getItem(`tpl-edit-${t.id}`);
         if (saved) {
           try {
@@ -89,11 +97,15 @@ const TemplateEditor = () => {
         setValues(init);
         skipNextSnapshot.current = true;
       } catch (e: any) {
-        toast({ title: "فشل التحميل", description: e.message, variant: "destructive" });
+        if (!cancelled) {
+          toast({ title: "فشل التحميل", description: e.message, variant: "destructive" });
+          setNotFound(true);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
+    return () => { cancelled = true; };
   }, [id]);
 
   // Persist + history
