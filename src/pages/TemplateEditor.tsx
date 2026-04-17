@@ -800,6 +800,38 @@ const TemplateEditor = () => {
         templateId={template.id}
         designData={{ values, styles }}
       />
+
+      <Dialog open={paywallOpen !== null} onOpenChange={(o) => !o && setPaywallOpen(null)}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-destructive" /> يرجى الاشتراك أو شراء نقاط
+            </DialogTitle>
+            <DialogDescription>
+              تصدير {paywallOpen === "pdf" ? "PDF يكلف 2 نقطة" : "PNG يكلف 1 نقطة"}.
+              رصيدك الحالي: <strong>{billing.credits?.balance ?? 0}</strong> نقطة •
+              خطتك: <strong>{billing.plan?.name ?? "Free"}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-2 py-2 text-sm">
+            <div className="rounded-lg border border-border p-3 bg-muted/30">
+              💎 <strong>Pro</strong> — تصدير غير محدود
+            </div>
+            <div className="rounded-lg border border-border p-3 bg-muted/30">
+              🪙 <strong>نقاط</strong> — اشتر دفعة نقاط لاستخدامها متى شئت
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setPaywallOpen(null)}>إلغاء</Button>
+            <Button variant="secondary" onClick={() => { setPaywallOpen(null); navigate("/billing?tab=credits"); }}>
+              <Coins className="w-4 h-4 ml-1" /> شراء نقاط
+            </Button>
+            <Button onClick={() => { setPaywallOpen(null); navigate("/billing?tab=plans"); }}>
+              <Sparkles className="w-4 h-4 ml-1" /> ترقية الخطة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
