@@ -56,6 +56,8 @@ import SystemMonitoring from "./admin/pages/SystemMonitoring.tsx";
 import ApiIntegrationsAdmin from "./admin/pages/ApiIntegrationsAdmin.tsx";
 import AssetsManager from "./admin/pages/AssetsManager.tsx";
 import SmartImportPage from "./admin/pages/SmartImportPage.tsx";
+import SvgTemplatesAdmin from "./admin/pages/SvgTemplatesAdmin.tsx";
+import TemplateEditor from "./pages/TemplateEditor.tsx";
 
 const queryClient = new QueryClient();
 
@@ -87,6 +89,7 @@ const App = () => (
             <Route path="/tablou/:id" element={<TablouDetail />} />
             <Route path="/read/:id" element={<BookReader />} />
             <Route path="/document-processing" element={<DocumentProcessing />} />
+            <Route path="/editor/:id" element={<TemplateEditor />} />
             <Route path="/auth" element={<CustomerAuth />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
@@ -127,6 +130,7 @@ const App = () => (
               <Route path="api-integrations" element={<ApiIntegrationsAdmin />} />
               <Route path="assets" element={<AssetsManager />} />
               <Route path="smart-import" element={<SmartImportPage />} />
+              <Route path="svg-templates" element={<SvgTemplatesAdmin />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />

@@ -1101,6 +1101,65 @@ export type Database = {
         }
         Relationships: []
       }
+      svg_templates: {
+        Row: {
+          asset_id: string | null
+          back_svg_content: string | null
+          back_svg_url: string | null
+          category: string
+          created_at: string
+          created_by: string | null
+          fields: Json
+          front_svg_content: string | null
+          front_svg_url: string
+          id: string
+          is_active: boolean
+          name: string
+          preview_image_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          asset_id?: string | null
+          back_svg_content?: string | null
+          back_svg_url?: string | null
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          fields?: Json
+          front_svg_content?: string | null
+          front_svg_url: string
+          id?: string
+          is_active?: boolean
+          name: string
+          preview_image_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          asset_id?: string | null
+          back_svg_content?: string | null
+          back_svg_url?: string | null
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          fields?: Json
+          front_svg_content?: string | null
+          front_svg_url?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          preview_image_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "svg_templates_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_config: {
         Row: {
           category: string
