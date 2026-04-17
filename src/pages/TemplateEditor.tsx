@@ -3,9 +3,10 @@ import { useParams, Link, useSearchParams } from "react-router-dom";
 import {
   Loader2, Download, FileImage, RotateCw, ArrowRight, Palette, Upload, X,
   Image as ImageIcon, Printer, Type, Bold, Italic, AlignLeft, AlignCenter,
-  AlignRight, Undo2, Redo2, ZoomIn, ZoomOut, Grid3x3, Minus, Plus, Layers,
+  AlignRight, Undo2, Redo2, ZoomIn, ZoomOut, Grid3x3, Minus, Plus, Layers, Lock,
 } from "lucide-react";
 import { toPng } from "html-to-image";
+import { usePermissions } from "@/hooks/usePermissions";
 import jsPDF from "jspdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +48,9 @@ const TemplateEditor = () => {
   const [searchParams] = useSearchParams();
   const fromStudio = searchParams.get("from") === "studio";
   const backHref = fromStudio ? "/studio/templates" : "/admin/svg-templates";
+  const { has: hasPermission, loading: permsLoading } = usePermissions();
+  const canExportPng = !permsLoading && hasPermission("export_png");
+  const canExportPdf = !permsLoading && hasPermission("export_pdf");
   const [template, setTemplate] = useState<SvgTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -193,6 +197,10 @@ const TemplateEditor = () => {
 
   // Exports
   const exportPng = async () => {
+    if (!canExportPng) {
+      toast({ title: "🔒 غير مسموح لك بتحميل الملفات", description: "تحتاج إذن export_png من المدير.", variant: "destructive" });
+      return;
+    }
     setExporting(true);
     try {
       const sides: Array<{ ref: HTMLDivElement | null; label: string }> = [
@@ -215,6 +223,10 @@ const TemplateEditor = () => {
   };
 
   const exportPdf = async () => {
+    if (!canExportPdf) {
+      toast({ title: "🔒 غير مسموح لك بتحميل الملفات", description: "تحتاج إذن export_pdf من المدير.", variant: "destructive" });
+      return;
+    }
     setExporting(true);
     try {
       const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [90, 50] });
@@ -369,11 +381,25 @@ const TemplateEditor = () => {
             </Button>
           </Link>
           <h1 className="font-bold text-sm flex-1 truncate">{template.name}</h1>
-          <Button variant="outline" size="sm" onClick={exportPng} disabled={exporting} className="gap-1.5">
-            <FileImage className="w-4 h-4" /> PNG
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportPng}
+            disabled={exporting || !canExportPng}
+            title={canExportPng ? "تحميل PNG" : "غير مسموح لك بتحميل الملفات"}
+            className="gap-1.5"
+          >
+            {canExportPng ? <FileImage className="w-4 h-4" /> : <Lock className="w-4 h-4" />} PNG
           </Button>
-          <Button variant="outline" size="sm" onClick={exportPdf} disabled={exporting} className="gap-1.5">
-            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} PDF
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportPdf}
+            disabled={exporting || !canExportPdf}
+            title={canExportPdf ? "تحميل PDF" : "غير مسموح لك بتحميل الملفات"}
+            className="gap-1.5"
+          >
+            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : canExportPdf ? <Download className="w-4 h-4" /> : <Lock className="w-4 h-4" />} PDF
           </Button>
           <Button size="sm" onClick={sendToPrintShop} disabled={exporting} className="gap-1.5">
             {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />} طباعة
