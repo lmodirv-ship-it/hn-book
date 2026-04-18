@@ -95,6 +95,7 @@ export default function DatabaseMigrationManager() {
     setMigrateResult(r);
     setMigrating(false);
     if (r.ok) { toast.success("تمت عملية النقل بنجاح"); refreshTables(); refreshLogs(); }
+    else if ((r as any).vps_disabled) toast.info("ميزة النقل إلى VPS غير مفعّلة — أضف VPS_BACKUP_URL و VPS_BACKUP_TOKEN");
     else toast.error(r.error || "فشلت عملية النقل");
   };
 
@@ -103,6 +104,7 @@ export default function DatabaseMigrationManager() {
     const r = await call("cloud-snapshot", { tables: Array.from(selected), limit });
     setSyncing(false);
     if (r.ok) { toast.success("تمت المزامنة"); refreshLogs(); }
+    else if ((r as any).vps_disabled) toast.info("ميزة المزامنة إلى VPS غير مفعّلة");
     else toast.error(r.error || "فشلت المزامنة");
   };
 
