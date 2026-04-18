@@ -9,7 +9,9 @@ import { Switch } from "@/components/ui/switch";
 import { Loader2, Download, MessageCircle, Printer, FileText, Eye, Copy, CheckCircle2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { buildPrintReadyPdf, exportCardAsPng, type PageSize, type BuildPrintPdfResult, type ColorMode, type PaperFinish } from "@/lib/print-pdf";
-import { printService, DELIVERY_OPTIONS, getShippingFee, calculatePrice } from "@/services/printService";
+import { printService, DELIVERY_OPTIONS, getShippingFee, calculatePrice, walletCostFor } from "@/services/printService";
+import { supabase } from "@/integrations/supabase/client";
+import { Banknote, CreditCard, Wallet } from "lucide-react";
 import { printPricingService } from "@/services/printPricingService";
 import CardPrintPreview from "@/components/editor/CardPrintPreview";
 
