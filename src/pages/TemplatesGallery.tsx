@@ -229,6 +229,13 @@ const TemplatesGallery = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            <label className="flex items-center gap-2 ps-1 cursor-pointer select-none">
+              <Switch checked={editableOnly} onCheckedChange={setEditableOnly} id="editable-only" />
+              <span className="text-sm text-foreground inline-flex items-center gap-1">
+                <Filter className="w-3.5 h-3.5 text-primary" /> قابل للتعديل فقط
+              </span>
+            </label>
           </div>
         </section>
 
@@ -244,13 +251,15 @@ const TemplatesGallery = () => {
           </Card>
         ) : (
           <div className="container mx-auto px-4 py-10 space-y-14">
-            <SectionRow title="القوالب المميزة" icon={Sparkles} items={featured} editableIds={editableAssetIds} />
-            <SectionRow title="جديدنا" icon={Clock} items={newItems} editableIds={editableAssetIds} />
-            <SectionRow title="الأكثر طلبًا" icon={Flame} items={popular} editableIds={editableAssetIds} />
-            <SectionRow title="تصاميم مقترحة" icon={Sparkles} items={suggested} editableIds={editableAssetIds} />
+            <SectionRow title="القوالب المميزة" icon={Sparkles} items={featured} isEditable={isAssetEditable} onLocked={setLockedAsset} />
+            <SectionRow title="جديدنا" icon={Clock} items={newItems} isEditable={isAssetEditable} onLocked={setLockedAsset} />
+            <SectionRow title="الأكثر طلبًا" icon={Flame} items={popular} isEditable={isAssetEditable} onLocked={setLockedAsset} />
+            <SectionRow title="تصاميم مقترحة" icon={Sparkles} items={suggested} isEditable={isAssetEditable} onLocked={setLockedAsset} />
           </div>
         )}
       </main>
+
+      <LockedTemplateDialog asset={lockedAsset} onClose={() => setLockedAsset(null)} />
 
       <Footer />
     </div>
