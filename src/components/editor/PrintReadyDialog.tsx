@@ -474,6 +474,19 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">احتفظ برقم الطلب لتتبع حالة الطباعة</p>
                 <p className="text-base font-bold text-primary mt-3">المبلغ الإجمالي: {grandTotal} د.م</p>
+                <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border"
+                  style={{
+                    background: orderPaymentStatus === "paid" ? "hsl(var(--primary) / 0.1)" : "hsl(var(--muted))",
+                    borderColor: orderPaymentStatus === "paid" ? "hsl(var(--primary) / 0.3)" : "hsl(var(--border))",
+                  }}>
+                  {orderPaymentStatus === "paid" ? (
+                    <><CheckCircle2 className="w-3.5 h-3.5 text-primary" /> مدفوع</>
+                  ) : orderPaymentStatus === "failed" ? (
+                    <>⚠️ فشل الدفع — تواصل مع الدعم</>
+                  ) : (
+                    <><Banknote className="w-3.5 h-3.5" /> الدفع عند الاستلام</>
+                  )}
+                </div>
               </div>
             </div>
 
