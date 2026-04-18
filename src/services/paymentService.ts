@@ -55,7 +55,7 @@ export const paymentService = {
     const { data: auth } = await supabase.auth.getUser();
     if (!auth.user) throw new Error("Not authenticated");
 
-    const { data, error } = await supabase
+    const { data, error } = await sb
       .from("payments")
       .insert({
         user_id: auth.user.id,
@@ -93,7 +93,7 @@ export const paymentService = {
       .createSignedUrl(path, 60 * 60 * 24);
     if (signErr) throw signErr;
 
-    const { data, error } = await supabase
+    const { data, error } = await sb
       .from("payment_proofs")
       .insert({
         payment_id: paymentId,
@@ -110,7 +110,7 @@ export const paymentService = {
   },
 
   async getMyPayments(): Promise<Payment[]> {
-    const { data, error } = await supabase
+    const { data, error } = await sb
       .from("payments")
       .select("*")
       .order("created_at", { ascending: false });
@@ -120,7 +120,7 @@ export const paymentService = {
 
   // Admin
   async listAllPending(): Promise<(Payment & { proofs: PaymentProof[] })[]> {
-    const { data: payments, error } = await supabase
+    const { data: payments, error } = await sb
       .from("payments")
       .select("*")
       .eq("status", "pending")
@@ -131,7 +131,7 @@ export const paymentService = {
     const ids = (payments ?? []).map((p) => p.id);
     if (ids.length === 0) return [];
 
-    const { data: proofs } = await supabase
+    const { data: proofs } = await sb
       .from("payment_proofs")
       .select("*")
       .in("payment_id", ids);
