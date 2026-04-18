@@ -51,7 +51,8 @@ interface HistoryEntry {
 }
 
 const TemplateEditor = () => {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
+  const idOrSlug = slug;
   const [searchParams] = useSearchParams();
   const fromStudio = searchParams.get("from") === "studio";
   const backHref = fromStudio ? "/studio/templates" : "/admin/svg-templates";
@@ -83,20 +84,30 @@ const TemplateEditor = () => {
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
 
-  // Load template — accept either a template id or an asset id from the gallery
+  // Load template — accepts slug, template id, or asset id (with redirect to slug URL)
   useEffect(() => {
-    if (!id) return;
+    if (!idOrSlug) return;
     let cancelled = false;
     setLoading(true);
     setNotFound(false);
     (async () => {
       try {
-        const t = await svgTemplateService.resolve(id);
+        const t = await svgTemplateService.resolve(idOrSlug);
         if (cancelled) return;
         if (!t) {
           setNotFound(true);
           return;
         }
+
+        // Backward compat: if accessed via UUID and template has a slug, redirect to slug URL
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
+        if (isUuid && t.slug && t.slug !== idOrSlug) {
+          const base = fromStudio ? "/studio/editor" : "/editor";
+          const qs = fromStudio ? "?from=studio" : "";
+          navigate(`${base}/${t.slug}${qs}`, { replace: true });
+          return;
+        }
+
         setTemplate(t);
         const init: Record<string, string> = {};
         for (const f of t.fields) init[f.key] = f.defaultValue || "";
@@ -122,7 +133,15 @@ const TemplateEditor = () => {
       }
     })();
     return () => { cancelled = true; };
-  }, [id]);
+  }, [idOrSlug, fromStudio, navigate]);
+
+  // Dynamic SEO title
+  useEffect(() => {
+    if (!template) return;
+    const prev = document.title;
+    document.title = `${template.name} — محرر القوالب`;
+    return () => { document.title = prev; };
+  }, [template]);
 
   // Persist + history
   useEffect(() => {
