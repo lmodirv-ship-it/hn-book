@@ -638,6 +638,58 @@ const TemplateEditor = () => {
             </Toggle>
           </div>
 
+          <Separator orientation="vertical" className="h-6" />
+
+          {/* Card size selector */}
+          <Select
+            value={cardSize.id}
+            onValueChange={(v) => {
+              if (v === "custom") {
+                setCardSize({ id: "custom", label: "مخصص", widthMm: customWidth, heightMm: customHeight });
+              } else {
+                const preset = CARD_SIZE_PRESETS.find((p) => p.id === v);
+                if (preset) setCardSize(preset);
+              }
+            }}
+          >
+            <SelectTrigger className="w-[170px] h-8" title="مقاس البطاقة">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {CARD_SIZE_PRESETS.map((p) => (
+                <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+              ))}
+              <SelectItem value="custom">مخصص…</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {cardSize.id === "custom" && (
+            <div className="flex items-center gap-1">
+              <Input
+                type="number" min={40} max={150} value={customWidth}
+                onChange={(e) => {
+                  const w = Number(e.target.value) || 85;
+                  setCustomWidth(w);
+                  setCardSize({ id: "custom", label: "مخصص", widthMm: w, heightMm: customHeight });
+                }}
+                className="w-14 h-8 text-xs text-center" title="العرض (مم)"
+              />
+              <span className="text-xs text-muted-foreground">×</span>
+              <Input
+                type="number" min={30} max={120} value={customHeight}
+                onChange={(e) => {
+                  const h = Number(e.target.value) || 55;
+                  setCustomHeight(h);
+                  setCardSize({ id: "custom", label: "مخصص", widthMm: customWidth, heightMm: h });
+                }}
+                className="w-14 h-8 text-xs text-center" title="الارتفاع (مم)"
+              />
+              <span className="text-[10px] text-muted-foreground">mm</span>
+            </div>
+          )}
+
+          <GuideTogglesBar guides={guides} onChange={setGuides} />
+
           <div className="flex-1" />
 
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setZoom((z) => Math.max(0.5, z - 0.1))}>
