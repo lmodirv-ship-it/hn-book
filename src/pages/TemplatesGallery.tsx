@@ -223,6 +223,7 @@ const TemplatesGallery = () => {
             <SectionRow title="القوالب المميزة" icon={Sparkles} items={featured} />
             <SectionRow title="جديدنا" icon={Clock} items={newItems} />
             <SectionRow title="الأكثر طلبًا" icon={Flame} items={popular} />
+            <SectionRow title="تصاميم مقترحة" icon={Sparkles} items={suggested} />
           </div>
         )}
       </main>
