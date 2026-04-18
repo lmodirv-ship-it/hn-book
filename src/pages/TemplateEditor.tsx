@@ -26,10 +26,11 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import {
-  svgTemplateService, type SvgTemplate, type SvgField,
+  svgTemplateService, SVG_TEMPLATE_TYPES, type SvgTemplate, type SvgField, type SvgTemplateType,
 } from "@/services/svgTemplateService";
 import StyledSvgRenderer, { type FieldStyle } from "@/components/editor/StyledSvgRenderer";
 import PrintReadyDialog from "@/components/editor/PrintReadyDialog";
+import EditorSeo from "@/components/editor/EditorSeo";
 import { buildPrintReadyPdf } from "@/lib/print-pdf";
 import { communicationsService, applyTemplate } from "@/services/communicationsService";
 
@@ -50,8 +51,17 @@ interface HistoryEntry {
   styles: Record<string, FieldStyle>;
 }
 
+const TYPE_SLUGS: Record<string, SvgTemplateType> = {
+  cards: "CRD", flyers: "FLY", logos: "LOG", posters: "PST",
+  invitations: "INV", banners: "BAN", templates: "TPL", other: "OTH",
+};
+const TYPE_TO_SLUG: Record<SvgTemplateType, string> = {
+  CRD: "cards", FLY: "flyers", LOG: "logos", PST: "posters",
+  INV: "invitations", BAN: "banners", TPL: "templates", OTH: "other",
+};
+
 const TemplateEditor = () => {
-  const { slug } = useParams<{ slug: string }>();
+  const { slug, type: typeParam } = useParams<{ slug: string; type?: string }>();
   const idOrSlug = slug;
   const [searchParams] = useSearchParams();
   const fromStudio = searchParams.get("from") === "studio";
@@ -84,7 +94,7 @@ const TemplateEditor = () => {
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
 
-  // Load template — accepts slug, template id, or asset id (with redirect to slug URL)
+  // Load template — accepts slug, template id, or asset id (with redirect to typed slug URL)
   useEffect(() => {
     if (!idOrSlug) return;
     let cancelled = false;
@@ -99,12 +109,16 @@ const TemplateEditor = () => {
           return;
         }
 
-        // Backward compat: if accessed via UUID and template has a slug, redirect to slug URL
+        // Canonical URL is /editor/{type}/{slug} — redirect when missing or wrong
+        const expectedTypeSlug = TYPE_TO_SLUG[t.template_type] ?? "templates";
+        const expectedIdSlug = t.slug ?? t.id;
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
-        if (isUuid && t.slug && t.slug !== idOrSlug) {
+        const wrongType = typeParam !== expectedTypeSlug;
+        const wrongSlug = isUuid && t.slug && t.slug !== idOrSlug;
+        if (wrongType || wrongSlug) {
           const base = fromStudio ? "/studio/editor" : "/editor";
           const qs = fromStudio ? "?from=studio" : "";
-          navigate(`${base}/${t.slug}${qs}`, { replace: true });
+          navigate(`${base}/${expectedTypeSlug}/${expectedIdSlug}${qs}`, { replace: true });
           return;
         }
 
@@ -112,7 +126,6 @@ const TemplateEditor = () => {
         const init: Record<string, string> = {};
         for (const f of t.fields) init[f.key] = f.defaultValue || "";
 
-        // Restore overrides from localStorage (keyed by template id, stable across asset/template entry)
         const saved = localStorage.getItem(`tpl-edit-${t.id}`);
         if (saved) {
           try {
@@ -133,15 +146,8 @@ const TemplateEditor = () => {
       }
     })();
     return () => { cancelled = true; };
-  }, [idOrSlug, fromStudio, navigate]);
+  }, [idOrSlug, typeParam, fromStudio, navigate]);
 
-  // Dynamic SEO title
-  useEffect(() => {
-    if (!template) return;
-    const prev = document.title;
-    document.title = `${template.name} — محرر القوالب`;
-    return () => { document.title = prev; };
-  }, [template]);
 
   // Persist + history
   useEffect(() => {
@@ -422,8 +428,19 @@ const TemplateEditor = () => {
   const selectedStyle = selectedKey ? styles[selectedKey] || {} : {};
   const logoFields = template.fields.filter((f) => f.type === "image");
 
+  // SEO data — auto-generated from template
+  const typeSlug = TYPE_TO_SLUG[template.template_type] ?? "templates";
+  const typeLabel = SVG_TEMPLATE_TYPES.find((x) => x.value === template.template_type)?.label ?? "قالب";
+  const seoTitle = `${template.name} — ${typeLabel} قابل للتعديل | محرر القوالب`;
+  const seoDescription = `صمّم وعدّل ${typeLabel.toLowerCase()} «${template.name}» مباشرة من المتصفح: تخصيص النصوص والألوان والشعار، ثم تنزيل PNG/PDF أو إرسال للطباعة.`;
+  const seoImage = template.preview_image_url || null;
+  const canonicalUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/editor/${typeSlug}/${template.slug ?? template.id}`
+    : `/editor/${typeSlug}/${template.slug ?? template.id}`;
+
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden" dir="rtl">
+      <EditorSeo title={seoTitle} description={seoDescription} image={seoImage} canonical={canonicalUrl} />
       {/* TOP BAR */}
       <header className="border-b border-border bg-card/40 backdrop-blur shrink-0">
         <div className="px-4 py-2 flex items-center gap-3">
@@ -432,7 +449,17 @@ const TemplateEditor = () => {
               <ArrowRight className="w-4 h-4" /> عودة
             </Button>
           </Link>
-          <h1 className="font-bold text-sm flex-1 truncate">{template.name}</h1>
+          <nav aria-label="Breadcrumb" className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
+            <Link to="/" className="hover:text-foreground transition-colors">الرئيسية</Link>
+            <span className="opacity-50">/</span>
+            <Link to="/templates" className="hover:text-foreground transition-colors">القوالب</Link>
+            <span className="opacity-50">/</span>
+            <Link to={`/templates?type=${typeSlug}`} className="hover:text-foreground transition-colors">{typeLabel}</Link>
+            <span className="opacity-50">/</span>
+            <span className="text-foreground font-medium truncate max-w-[180px]" aria-current="page">{template.name}</span>
+          </nav>
+          <h1 className="font-bold text-sm flex-1 md:hidden truncate">{template.name}</h1>
+          <div className="flex-1 hidden md:block" />
           {billing.authed && (
             <div className="hidden md:flex items-center gap-1.5">
               <Badge variant={billing.plan?.is_unlimited ? "default" : "secondary"} className="gap-1 text-[10px]">

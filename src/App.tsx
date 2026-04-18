@@ -138,7 +138,12 @@ const App = () => (
             {/* Studio (same domain, shared auth/db/admin) */}
             <Route path="/studio" element={<StudioHome />} />
             <Route path="/studio/templates" element={<StudioTemplates />} />
+            <Route path="/studio/editor/:type/:slug" element={<StudioEditor />} />
             <Route path="/studio/editor/:slug" element={<StudioEditor />} />
+            <Route
+              path="/editor/:type/:slug"
+              element={<Suspense fallback={<PageFallback />}><TemplateEditor /></Suspense>}
+            />
             <Route
               path="/editor/:slug"
               element={<Suspense fallback={<PageFallback />}><TemplateEditor /></Suspense>}
