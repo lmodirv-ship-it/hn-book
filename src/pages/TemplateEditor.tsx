@@ -31,6 +31,14 @@ import {
 import StyledSvgRenderer, { type FieldStyle } from "@/components/editor/StyledSvgRenderer";
 import PrintReadyDialog from "@/components/editor/PrintReadyDialog";
 import EditorSeo from "@/components/editor/EditorSeo";
+import {
+  CardCanvasOverlay,
+  GuideTogglesBar,
+  CARD_SIZE_PRESETS,
+  DEFAULT_GUIDES,
+  type CardSize,
+  type PrintGuideToggles,
+} from "@/components/editor/CardCanvasOverlay";
 import { buildPrintReadyPdf } from "@/lib/print-pdf";
 import { communicationsService, applyTemplate } from "@/services/communicationsService";
 
