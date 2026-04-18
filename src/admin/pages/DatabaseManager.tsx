@@ -3,7 +3,9 @@ import { motion } from "framer-motion";
 import {
   Database, Search, Edit, Trash2, Eye, EyeOff, Save, X, RefreshCw,
   ChevronLeft, ChevronRight, BookOpen, FileText, AlertTriangle,
+  Download, Server, Loader2, HardDrive,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
