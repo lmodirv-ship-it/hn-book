@@ -81,6 +81,8 @@ import AutoHealCenter from "./admin/pages/AutoHealCenter.tsx";
 import SubscriptionsAdmin from "./admin/pages/SubscriptionsAdmin.tsx";
 import BillingPage from "./pages/BillingPage.tsx";
 import DeployMonitor from "./admin/pages/DeployMonitor.tsx";
+import PaymentsAdmin from "./admin/pages/PaymentsAdmin.tsx";
+import ManualPayment from "./pages/ManualPayment.tsx";
 import { useAutoDeploy } from "@/hooks/useAutoDeploy";
 
 // Lazy-load the heavy editor and viewer so non-editable assets never pull
@@ -158,6 +160,7 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/my-orders" element={<MyOrders />} />
             <Route path="/billing" element={<BillingPage />} />
+            <Route path="/pay/manual" element={<ManualPayment />} />
             
             
             {/* Admin Login */}
@@ -208,6 +211,7 @@ const App = () => (
               <Route path="auto-heal" element={<AutoHealCenter />} />
               <Route path="subscriptions" element={<SubscriptionsAdmin />} />
               <Route path="deploy" element={<DeployMonitor />} />
+              <Route path="payments" element={<PaymentsAdmin />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />
