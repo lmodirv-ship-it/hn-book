@@ -46,6 +46,8 @@ type TypeFilter = AssetType | "all";
 
 const TemplatesGallery = () => {
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [editableAssetIds, setEditableAssetIds] = useState<Set<string>>(new Set());
+  const [editableTemplateIds, setEditableTemplateIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
