@@ -5,10 +5,26 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { Search, Loader2, Edit3, Printer, Sparkles, Flame, Clock } from "lucide-react";
+import { Search, Edit3, Printer, Sparkles, Flame, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+
+/** Heuristic style inference from a template's name/description. */
+type StyleFilter = "all" | "modern" | "classic" | "luxury";
+const STYLE_HINTS: Record<Exclude<StyleFilter, "all">, RegExp> = {
+  modern: /(modern|minimal|clean|flat|عصري|حديث|بسيط)/i,
+  classic: /(classic|vintage|retro|كلاسيك|تراث|قديم)/i,
+  luxury: /(luxury|premium|gold|elegant|royal|فاخر|ذهب|راقي)/i,
+};
+const inferStyle = (a: { title: string; description?: string | null }): Exclude<StyleFilter, "all"> | null => {
+  const hay = `${a.title} ${a.description ?? ""}`;
+  for (const [style, re] of Object.entries(STYLE_HINTS)) {
+    if (re.test(hay)) return style as Exclude<StyleFilter, "all">;
+  }
+  return null;
+};
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
