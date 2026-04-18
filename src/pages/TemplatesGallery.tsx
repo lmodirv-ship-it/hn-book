@@ -261,35 +261,26 @@ const SectionRow = ({
   );
 };
 
-const PremiumCard = ({ asset }: { asset: Asset }) => {
+const PremiumCard = ({ asset, editable }: { asset: Asset; editable: boolean }) => {
   const meta = ASSET_TYPE_META[asset.asset_type];
   const navigate = useNavigate();
   const location = useLocation();
-  // Inside Studio, always route to the studio editor; elsewhere fall back
-  // to the asset-type-specific route (book reader, tablou page, etc.).
-  // Editable design types always open in the Studio editor.
-  // Non-editable assets (books, tablou) fall back to their dedicated route.
-  const editableTypes = new Set(["CRD", "TPL", "LOG", "FLY", "PST", "IMG", "ART"]);
-  const isEditable = editableTypes.has(asset.asset_type);
   const inStudio = location.pathname.startsWith("/studio");
-  const editHref = inStudio || isEditable
+  // Only assets that have a linked svg_template can open in the editor.
+  const editHref = editable
     ? `/studio/editor/${asset.id}?from=${inStudio ? "studio" : "templates"}`
     : getRouteFor(asset.asset_type, asset.id);
 
-  const goToEditor = () => {
-    console.log("[TemplateCard] navigate →", editHref, { id: asset.id, type: asset.asset_type });
-    navigate(editHref);
-  };
+  const goToPrimary = () => navigate(editHref);
 
   return (
     <div
       role="button"
       tabIndex={0}
-      onClick={goToEditor}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goToEditor(); } }}
+      onClick={goToPrimary}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goToPrimary(); } }}
       className="group relative cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded-xl transition-transform duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-primary/20"
     >
-      {/* Subtle gold glow on hover */}
       <div className="absolute -inset-px rounded-xl bg-gradient-to-br from-primary/0 via-primary/0 to-primary/0 group-hover:from-primary/40 group-hover:to-primary/10 transition-all duration-500 blur-sm" />
 
       <div className="relative rounded-xl overflow-hidden bg-card border border-border/60 group-hover:border-primary/50 transition-all duration-300">
@@ -301,25 +292,37 @@ const PremiumCard = ({ asset }: { asset: Asset }) => {
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
           />
 
-          {/* Type chip */}
           <div className="absolute top-3 right-3 px-2 py-1 rounded-md bg-background/80 backdrop-blur text-[10px] font-medium text-foreground border border-border/60">
             <span className="me-1">{meta.emoji}</span>{meta.label}
           </div>
 
-          {/* Hover overlay */}
-          <div
-            className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 gap-2"
-          >
-            <Button asChild size="sm" className="w-full gap-1.5 shadow-lg shadow-primary/30">
-              <Link to={editHref}>
-                <Edit3 className="w-3.5 h-3.5" /> تعديل التصميم
-              </Link>
-            </Button>
-            <Button asChild size="sm" variant="outline" className="w-full gap-1.5 border-primary/40 text-foreground hover:bg-primary/10">
-              <Link to={editHref}>
-                <Printer className="w-3.5 h-3.5" /> اطلب الطباعة
-              </Link>
-            </Button>
+          {editable && (
+            <div className="absolute top-3 left-3 px-2 py-1 rounded-md bg-primary/90 text-primary-foreground text-[10px] font-semibold backdrop-blur">
+              ✨ قابل للتعديل
+            </div>
+          )}
+
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 gap-2">
+            {editable ? (
+              <>
+                <Button asChild size="sm" className="w-full gap-1.5 shadow-lg shadow-primary/30">
+                  <Link to={editHref}>
+                    <Edit3 className="w-3.5 h-3.5" /> تعديل التصميم
+                  </Link>
+                </Button>
+                <Button asChild size="sm" variant="outline" className="w-full gap-1.5 border-primary/40 text-foreground hover:bg-primary/10">
+                  <Link to={editHref}>
+                    <Printer className="w-3.5 h-3.5" /> اطلب الطباعة
+                  </Link>
+                </Button>
+              </>
+            ) : (
+              <Button asChild size="sm" variant="outline" className="w-full gap-1.5 border-primary/40 text-foreground hover:bg-primary/10">
+                <Link to={editHref}>
+                  <Printer className="w-3.5 h-3.5" /> عرض / تنزيل
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
 
