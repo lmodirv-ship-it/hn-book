@@ -61,9 +61,12 @@ const TemplatesGallery = () => {
   const urlType = (searchParams.get("type") as TypeFilter) || "all";
   const urlCat = (searchParams.get("category") as CategoryFilter) || "all";
   const urlStyle = (searchParams.get("style") as StyleFilter) || "all";
+  const urlEditable = searchParams.get("editable") === "1";
   const [category, setCategory] = useState<CategoryFilter>(urlCat);
   const [type, setType] = useState<TypeFilter>(urlType);
   const [style, setStyle] = useState<StyleFilter>(urlStyle);
+  const [editableOnly, setEditableOnly] = useState<boolean>(urlEditable);
+  const [lockedAsset, setLockedAsset] = useState<Asset | null>(null);
 
   // Keep URL in sync so links/share work.
   useEffect(() => {
@@ -71,8 +74,9 @@ const TemplatesGallery = () => {
     if (category !== "all") next.set("category", category);
     if (type !== "all") next.set("type", type);
     if (style !== "all") next.set("style", style);
+    if (editableOnly) next.set("editable", "1");
     setSearchParams(next, { replace: true });
-  }, [category, type, style, setSearchParams]);
+  }, [category, type, style, editableOnly, setSearchParams]);
 
   useEffect(() => {
     let cancelled = false;
