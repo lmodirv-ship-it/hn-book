@@ -95,7 +95,7 @@ export default function DatabaseMigrationManager() {
     setMigrateResult(r);
     setMigrating(false);
     if (r.ok) { toast.success("تمت عملية النقل بنجاح"); refreshTables(); refreshLogs(); }
-    else if (r.vps_disabled) toast.info("ميزة النقل إلى VPS غير مفعّلة — أضف VPS_BACKUP_URL و VPS_BACKUP_TOKEN");
+    else if ((r as any).vps_disabled) toast.info("ميزة النقل إلى VPS غير مفعّلة — أضف VPS_BACKUP_URL و VPS_BACKUP_TOKEN");
     else toast.error(r.error || "فشلت عملية النقل");
   };
 
