@@ -40,6 +40,26 @@ Deno.serve(async (req) => {
   const action = body.action ?? "schema";
   const base = VPS_URL.replace(/\/backup\/?$/, "").replace(/\/$/, "");
 
+  // Special action: read tables from Supabase and push to VPS as a backup payload.
+  if (action === "cloud-snapshot") {
+    return await cloudSnapshot(body, admin, base, VPS_TOKEN!, userRes.user.email ?? userRes.user.id);
+  }
+  // Special action: list public tables in Supabase (the "source" side).
+  if (action === "cloud-tables") {
+    const { data, error } = await admin.rpc("pg_catalog_tables" as any).catch(() => ({ data: null, error: null }));
+    // Fallback: query information_schema via REST is not allowed, so we use a known list.
+    // Instead, ask Postgres directly through a lightweight SQL helper if it exists,
+    // otherwise return the curated list of project tables.
+    const fallback = [
+      "products","categories","assets","asset_files","customers","orders","order_items",
+      "purchases","cart_items","profiles","print_orders","card_templates","svg_templates",
+      "logos","coupons","cms_content","page_customizations","feature_flags",
+      "pricing_rules","print_pricing_rules","manual_recommendations","subscription_plans",
+      "subscriptions","credit_transactions","api_integrations","integration_logs",
+    ];
+    return j({ ok: true, tables: data ?? fallback });
+  }
+
   // GET endpoints (no body)
   const getMap: Record<string, string> = {
     "schema":        "/schema",
