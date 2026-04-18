@@ -53,8 +53,14 @@ export interface PrintOrder {
   shipped_at: string | null;
   delivered_at: string | null;
   created_at: string;
+  payment_method: "cash" | "card" | "wallet";
+  payment_status: "unpaid" | "paid" | "failed" | "refunded";
   template?: CardTemplate;
 }
+
+/** Compute wallet credit cost for a given quantity. 1 credit per 100 cards, min 1. */
+export const walletCostFor = (quantity: number): number =>
+  Math.max(1, Math.ceil((quantity || 0) / 100));
 
 // Shipping options (flat fees in MAD)
 export const DELIVERY_OPTIONS = [
@@ -231,7 +237,26 @@ export const printService = {
     return data as any;
   },
 
-  /** Upload a generated print PDF blob to public storage and return its URL. */
+  /** Pay a print order using wallet credits (atomic deduct + status update). */
+  async payOrderWithWallet(orderId: string, quantity: number): Promise<{
+    ok: boolean; reason: string; balance?: number; cost?: number;
+  }> {
+    const { data, error } = await (supabase.rpc as any)("pay_print_order_with_wallet", {
+      _order_id: orderId,
+      _quantity: quantity,
+    });
+    if (error) return { ok: false, reason: error.message };
+    return data as any;
+  },
+
+  /** Mark an order as paid by card (simulated — replace with provider webhook later). */
+  async markOrderPaidByCard(orderId: string): Promise<void> {
+    const { error } = await supabase
+      .from("print_orders")
+      .update({ payment_method: "card", payment_status: "paid", status: "processing" } as any)
+      .eq("id", orderId);
+    if (error) throw new Error(error.message);
+  },
   async uploadPrintPdf(blob: Blob, fileName: string): Promise<string> {
     const safe = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
     const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`;

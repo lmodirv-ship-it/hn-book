@@ -9,7 +9,9 @@ import { Switch } from "@/components/ui/switch";
 import { Loader2, Download, MessageCircle, Printer, FileText, Eye, Copy, CheckCircle2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { buildPrintReadyPdf, exportCardAsPng, type PageSize, type BuildPrintPdfResult, type ColorMode, type PaperFinish } from "@/lib/print-pdf";
-import { printService, DELIVERY_OPTIONS, getShippingFee, calculatePrice } from "@/services/printService";
+import { printService, DELIVERY_OPTIONS, getShippingFee, calculatePrice, walletCostFor } from "@/services/printService";
+import { supabase } from "@/integrations/supabase/client";
+import { Banknote, CreditCard, Wallet } from "lucide-react";
 import { printPricingService } from "@/services/printPricingService";
 import CardPrintPreview from "@/components/editor/CardPrintPreview";
 
@@ -50,9 +52,31 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [deliveryOption, setDeliveryOption] = useState<"standard" | "express">("standard");
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "wallet">("cash");
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [submittingOrder, setSubmittingOrder] = useState(false);
   const [orderCode, setOrderCode] = useState<string | null>(null);
   const [orderPdfUrl, setOrderPdfUrl] = useState<string | null>(null);
+  const [orderPaymentStatus, setOrderPaymentStatus] = useState<"unpaid" | "paid" | "failed">("unpaid");
+
+  const walletCost = walletCostFor(quantity);
+
+  // Load wallet balance when dialog opens
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setWalletBalance(null); return; }
+      const { data } = await supabase
+        .from("user_credits")
+        .select("balance")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!cancelled) setWalletBalance(data?.balance ?? 0);
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
 
   const printType = backNode ? "double_side" : "one_side";
 
@@ -179,6 +203,21 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
       toast({ title: "أدخل المدينة", variant: "destructive" });
       return;
     }
+    // Validate wallet upfront so user gets clear feedback
+    if (paymentMethod === "wallet") {
+      if (walletBalance === null) {
+        toast({ title: "سجّل الدخول لاستخدام المحفظة", variant: "destructive" });
+        return;
+      }
+      if (walletBalance < walletCost) {
+        toast({
+          title: "رصيد غير كافٍ",
+          description: `يلزمك ${walletCost} نقطة، رصيدك ${walletBalance}.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
     setSubmittingOrder(true);
     try {
       const pdfUrl = await printService.uploadPrintPdf(result.blob, result.fileName);
@@ -199,11 +238,40 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
         template_design: designData ?? {},
         notes: note,
         status: "pending",
-      });
+        payment_method: paymentMethod,
+        payment_status: "unpaid",
+      } as any);
       if (!created) throw new Error("No data returned");
+
+      // Process payment
+      let payStatus: "unpaid" | "paid" | "failed" = "unpaid";
+      if (paymentMethod === "wallet") {
+        const r = await printService.payOrderWithWallet(created.id, quantity);
+        if (!r.ok) {
+          payStatus = "failed";
+          toast({
+            title: "فشل الدفع من المحفظة",
+            description: r.reason === "insufficient_credits"
+              ? `رصيد غير كافٍ (${r.balance}/${r.cost})`
+              : r.reason,
+            variant: "destructive",
+          });
+        } else {
+          payStatus = "paid";
+          setWalletBalance(r.balance ?? null);
+          toast({ title: "تم الدفع من المحفظة ✅", description: `خُصمت ${r.cost} نقطة.` });
+        }
+      } else if (paymentMethod === "card") {
+        // Simulated card payment — replace with real provider later
+        await printService.markOrderPaidByCard(created.id);
+        payStatus = "paid";
+        toast({ title: "تم الدفع بالبطاقة ✅ (محاكاة)", description: "سيتم استبدالها بمزوّد حقيقي قريباً." });
+      } else {
+        toast({ title: "تم إنشاء الطلب ✅", description: `الدفع عند الاستلام • ${created.order_code}` });
+      }
+      setOrderPaymentStatus(payStatus);
       setOrderCode(created.order_code);
       setOrderPdfUrl(pdfUrl);
-      toast({ title: "تم إنشاء الطلب ✅", description: `رقم الطلب: ${created.order_code}` });
     } catch (e: any) {
       toast({ title: "فشل إنشاء الطلب", description: e.message, variant: "destructive" });
     } finally {
@@ -406,6 +474,19 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">احتفظ برقم الطلب لتتبع حالة الطباعة</p>
                 <p className="text-base font-bold text-primary mt-3">المبلغ الإجمالي: {grandTotal} د.م</p>
+                <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border"
+                  style={{
+                    background: orderPaymentStatus === "paid" ? "hsl(var(--primary) / 0.1)" : "hsl(var(--muted))",
+                    borderColor: orderPaymentStatus === "paid" ? "hsl(var(--primary) / 0.3)" : "hsl(var(--border))",
+                  }}>
+                  {orderPaymentStatus === "paid" ? (
+                    <><CheckCircle2 className="w-3.5 h-3.5 text-primary" /> مدفوع</>
+                  ) : orderPaymentStatus === "failed" ? (
+                    <>⚠️ فشل الدفع — تواصل مع الدعم</>
+                  ) : (
+                    <><Banknote className="w-3.5 h-3.5" /> الدفع عند الاستلام</>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -490,6 +571,43 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
                 <Label className="text-sm">ملاحظات (اختياري)</Label>
                 <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="نوع الورق، تاريخ التسليم..." rows={2} maxLength={500} className="mt-1" />
               </div>
+            </div>
+
+            {/* Payment method */}
+            <div className="rounded-lg border border-border p-3 space-y-2">
+              <Label className="text-sm">طريقة الدفع</Label>
+              <RadioGroup
+                value={paymentMethod}
+                onValueChange={(v) => setPaymentMethod(v as "cash" | "card" | "wallet")}
+                className="grid grid-cols-1 sm:grid-cols-3 gap-2"
+              >
+                {[
+                  { value: "cash", label: "عند الاستلام", icon: Banknote, hint: "ادفع نقداً للموزّع" },
+                  { value: "card", label: "بطاقة بنكية", icon: CreditCard, hint: "محاكاة (تجريبي)" },
+                  {
+                    value: "wallet", label: "محفظة (رصيد)", icon: Wallet,
+                    hint: walletBalance === null
+                      ? "سجّل الدخول"
+                      : `رصيدك ${walletBalance} • التكلفة ${walletCost}`,
+                    disabled: walletBalance === null || walletBalance < walletCost,
+                  },
+                ].map(({ value, label, icon: Icon, hint, disabled }) => (
+                  <label
+                    key={value}
+                    htmlFor={`pm-${value}`}
+                    className={`flex flex-col gap-1 rounded-md border p-2.5 cursor-pointer text-xs transition ${
+                      paymentMethod === value ? "border-primary bg-primary/5" : "border-border"
+                    } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem id={`pm-${value}`} value={value} disabled={disabled} />
+                      <Icon className="w-3.5 h-3.5" />
+                      <span className="font-medium">{label}</span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground pr-5">{hint}</span>
+                  </label>
+                ))}
+              </RadioGroup>
             </div>
 
             {/* Price summary */}

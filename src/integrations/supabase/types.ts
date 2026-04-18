@@ -1275,6 +1275,8 @@ export type Database = {
           order_code: string
           paper_size: string
           paper_type: string
+          payment_method: string
+          payment_status: string
           pdf_url: string | null
           phone: string
           print_type: string
@@ -1308,6 +1310,8 @@ export type Database = {
           order_code: string
           paper_size?: string
           paper_type?: string
+          payment_method?: string
+          payment_status?: string
           pdf_url?: string | null
           phone: string
           print_type?: string
@@ -1341,6 +1345,8 @@ export type Database = {
           order_code?: string
           paper_size?: string
           paper_type?: string
+          payment_method?: string
+          payment_status?: string
           pdf_url?: string | null
           phone?: string
           print_type?: string
@@ -2252,6 +2258,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      pay_print_order_with_wallet: {
+        Args: { _order_id: string; _quantity: number }
+        Returns: Json
       }
     }
     Enums: {
