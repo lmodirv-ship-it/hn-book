@@ -1,0 +1,1 @@
+UPDATE public.system_config SET value = '"https://books.hn-driver.online/api/deploy"'::jsonb, updated_at = now() WHERE key = 'deploy_url';
