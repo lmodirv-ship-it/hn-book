@@ -1,6 +1,14 @@
 import jsPDF from "jspdf";
-import { svg2pdf } from "svg2pdf.js";
-import { toPng } from "html-to-image";
+import html2canvas from "html2canvas";
+
+/**
+ * Hybrid PDF export: html2canvas rasterizes the live editor DOM (preserving
+ * Arabic shaping, ligatures, and webfonts exactly as on screen) at 300 DPI,
+ * then jsPDF embeds the resulting PNG into a print-ready sheet with bleed
+ * and crop marks. We deliberately avoid svg2pdf — it cannot shape Arabic.
+ */
+const TARGET_DPI = 300;
+const SCREEN_DPI = 96;
 
 export type PageSize = "A4" | "A3";
 
