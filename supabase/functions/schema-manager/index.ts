@@ -33,7 +33,12 @@ Deno.serve(async (req) => {
   if (!roles?.some((r: any) => r.role === "admin")) return j({ error: "forbidden" }, 403);
 
   if (!VPS_URL || !VPS_TOKEN) {
-    return j({ error: "VPS غير مهيأ — أضف VPS_BACKUP_URL و VPS_BACKUP_TOKEN" }, 400);
+    // VPS backup is optional — return a soft response instead of 400 so the admin UI doesn't error out.
+    return j({
+      ok: false,
+      vps_disabled: true,
+      message: "VPS backup not configured (VPS_BACKUP_URL / VPS_BACKUP_TOKEN missing). Feature disabled.",
+    }, 200);
   }
 
   const body = await req.json().catch(() => ({}));
