@@ -216,6 +216,34 @@ const AdminDashboard = () => {
       setTotalVisits(visitorsRes.count || 0);
       setTodayVisits(todayVisitorsRes.count || 0);
       setTotalUsers(profilesRes.count || 0);
+
+      // Last 7 days visitor trend + recent users (parallel)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+      sevenDaysAgo.setHours(0, 0, 0, 0);
+
+      const [trendRes, recentUsersRes] = await Promise.all([
+        supabase.from("visitors").select("visit_time").gte("visit_time", sevenDaysAgo.toISOString()),
+        supabase.from("profiles").select("id, display_name, avatar_url, created_at").order("created_at", { ascending: false }).limit(8),
+      ]);
+
+      const buckets: Record<string, number> = {};
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(sevenDaysAgo);
+        d.setDate(d.getDate() + i);
+        buckets[d.toISOString().slice(0, 10)] = 0;
+      }
+      (trendRes.data || []).forEach((v: any) => {
+        const k = new Date(v.visit_time).toISOString().slice(0, 10);
+        if (k in buckets) buckets[k]++;
+      });
+      setVisitorTrend(
+        Object.entries(buckets).map(([k, value]) => ({
+          label: new Date(k).toLocaleDateString("ar-MA", { weekday: "short" }),
+          value,
+        })),
+      );
+      setRecentUsers((recentUsersRes.data || []) as RecentUser[]);
     };
     fetchData();
   }, []);
