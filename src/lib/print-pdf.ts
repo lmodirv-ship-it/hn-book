@@ -1,6 +1,14 @@
 import jsPDF from "jspdf";
-import { svg2pdf } from "svg2pdf.js";
-import { toPng } from "html-to-image";
+import html2canvas from "html2canvas";
+
+/**
+ * Hybrid PDF export: html2canvas rasterizes the live editor DOM (preserving
+ * Arabic shaping, ligatures, and webfonts exactly as on screen) at 300 DPI,
+ * then jsPDF embeds the resulting PNG into a print-ready sheet with bleed
+ * and crop marks. We deliberately avoid svg2pdf — it cannot shape Arabic.
+ */
+const TARGET_DPI = 300;
+const SCREEN_DPI = 96;
 
 export type PageSize = "A4" | "A3";
 
@@ -105,45 +113,16 @@ function findSvg(node: HTMLElement): SVGSVGElement | null {
 }
 
 /**
- * Parse a fresh SVG clone from the live DOM with computed text styles inlined.
- * svg2pdf can mutate / consume the node it receives, so we always parse a fresh
- * copy from a serialized string instead of reusing the same DOM clone.
+ * Wrap any node (HTML or SVG) in a fixed off-screen container sized to the
+ * node's natural dimensions. html2canvas needs a real layout box and an HTML
+ * ancestor to rasterize properly, especially for bare <svg> roots.
  */
-function buildExportableSvg(svg: SVGSVGElement): SVGSVGElement {
-  // Inline computed font + fill styles on text first (read from the live node).
-  const sourceTexts = svg.querySelectorAll<SVGElement>("text, tspan");
-  const styles: string[] = [];
-  sourceTexts.forEach((src) => {
-    const cs = window.getComputedStyle(src);
-    styles.push(
-      `font-family:${cs.fontFamily};font-size:${cs.fontSize};font-weight:${cs.fontWeight};font-style:${cs.fontStyle};fill:${cs.fill || "#000"};`
-    );
-  });
-  // Serialize → re-parse for an isolated, mutable clone.
-  const serializer = new XMLSerializer();
-  const xml = serializer.serializeToString(svg);
-  const doc = new DOMParser().parseFromString(xml, "image/svg+xml");
-  const parserError = doc.querySelector("parsererror");
-  if (parserError) throw new Error("SVG parse error: " + parserError.textContent);
-  const clone = doc.documentElement as unknown as SVGSVGElement;
-  // Re-apply inline styles in the same order.
-  clone.querySelectorAll<SVGElement>("text, tspan").forEach((dst, i) => {
-    if (styles[i]) dst.setAttribute("style", styles[i]);
-  });
-  // Ensure width/height present so svg2pdf has a viewport.
-  if (!clone.getAttribute("width") && svg.viewBox?.baseVal) {
-    clone.setAttribute("width", String(svg.viewBox.baseVal.width || 850));
-  }
-  if (!clone.getAttribute("height") && svg.viewBox?.baseVal) {
-    clone.setAttribute("height", String(svg.viewBox.baseVal.height || 550));
-  }
-  return clone;
-}
-
-/** Wrap a bare <svg> in an HTML container so html-to-image can rasterize it. */
 function ensureHtmlWrapper(node: HTMLElement): { target: HTMLElement; cleanup: () => void } {
   const tag = node.tagName?.toLowerCase();
-  if (tag !== "svg") return { target: node, cleanup: () => {} };
+  if (tag !== "svg") {
+    // Already an HTML element — html2canvas can take it directly.
+    return { target: node, cleanup: () => {} };
+  }
   const svg = node as unknown as SVGSVGElement;
   const rect = svg.getBoundingClientRect();
   const vb = svg.viewBox?.baseVal;
@@ -154,25 +133,35 @@ function ensureHtmlWrapper(node: HTMLElement): { target: HTMLElement; cleanup: (
   const clone = svg.cloneNode(true) as SVGSVGElement;
   clone.setAttribute("width", String(w));
   clone.setAttribute("height", String(h));
+  // Force directional attributes so Arabic shaping is preserved by the browser.
+  if (!clone.getAttribute("direction")) clone.setAttribute("direction", "rtl");
   wrapper.appendChild(clone);
   document.body.appendChild(wrapper);
   return { target: wrapper, cleanup: () => wrapper.remove() };
 }
 
-/** High-res PNG fallback (~600 DPI). Optionally clamps to CMYK-ish gamut.
- *  `skipFonts: true` avoids CORS errors when reading cross-origin stylesheets
- *  (Google Fonts), which was the silent cause of the previous failure. */
+/**
+ * Rasterize a DOM node at print DPI using html2canvas. The browser handles
+ * font shaping (including Arabic ligatures) before we capture the pixels,
+ * which is why this approach produces correct Arabic output where svg2pdf
+ * fails. Returns a PNG data URL.
+ */
 async function nodeToHiResPng(node: HTMLElement, colorMode: ColorMode): Promise<string> {
   const { target, cleanup } = ensureHtmlWrapper(node);
   try {
-    const dataUrl = await toPng(target, {
-      pixelRatio: 4,
-      cacheBust: true,
+    const scale = TARGET_DPI / SCREEN_DPI; // ~3.125 for 300 DPI capture
+    const canvas = await html2canvas(target, {
+      scale,
+      useCORS: true,
+      allowTaint: false,
       backgroundColor: "#ffffff",
-      skipFonts: true,
-      style: { transform: "none" },
-    } as any);
-    if (!dataUrl?.startsWith("data:image")) throw new Error("Raster export returned empty data URL");
+      logging: false,
+      // Capture only the wrapper's natural size, ignoring the off-screen offset.
+      windowWidth: target.scrollWidth,
+      windowHeight: target.scrollHeight,
+    });
+    const dataUrl = canvas.toDataURL("image/png", 1.0);
+    if (!dataUrl?.startsWith("data:image")) throw new Error("Canvas returned empty data URL");
     if (colorMode !== "CMYK_SIM") return dataUrl;
     return await simulateCmykOnPng(dataUrl);
   } finally {
@@ -210,9 +199,10 @@ async function simulateCmykOnPng(dataUrl: string): Promise<string> {
 }
 
 /**
- * Draw one card at (x, y) — vector path preferred, raster fallback.
- * Card is drawn at trim size; bleed area around it is filled with the
- * card's edge content via simple background extension when raster.
+ * Draw one card at (x, y) using the canvas-rasterized image. We always use
+ * the high-DPI raster path so Arabic text shapes correctly — vector SVG
+ * export is not used because PDF viewers cannot reliably shape RTL text
+ * from raw <text> nodes.
  */
 async function drawCard(
   pdf: jsPDF,
@@ -222,30 +212,6 @@ async function drawCard(
   layout: PrintLayoutInfo,
   colorMode: ColorMode,
 ): Promise<void> {
-  const svg = findSvg(node);
-  if (svg && colorMode !== "CMYK_SIM") {
-    let holder: HTMLDivElement | null = null;
-    try {
-      const clone = buildExportableSvg(svg);
-      // svg2pdf needs the element attached to the DOM to read computed layout.
-      holder = document.createElement("div");
-      holder.style.cssText = "position:fixed;left:-99999px;top:0;opacity:0;pointer-events:none;";
-      holder.appendChild(clone);
-      document.body.appendChild(holder);
-      await svg2pdf(clone, pdf, {
-        x: x + layout.bleed,
-        y: y + layout.bleed,
-        width: layout.cardWidth,
-        height: layout.cardHeight,
-      });
-      return;
-    } catch (err) {
-      console.warn("[print-pdf] vector export failed at", { x, y }, err);
-    } finally {
-      holder?.remove();
-    }
-  }
-  // Hybrid fallback — high-res raster from the live DOM node.
   try {
     const png = await nodeToHiResPng(node, colorMode);
     pdf.addImage(
@@ -259,8 +225,7 @@ async function drawCard(
       "SLOW",
     );
   } catch (err) {
-    console.error("[print-pdf] raster fallback also failed at", { x, y }, err);
-    // Last-resort: draw a placeholder rectangle so the page still renders.
+    console.error("[print-pdf] raster export failed at", { x, y }, err);
     pdf.setFillColor(245, 245, 245);
     pdf.rect(x + layout.bleed, y + layout.bleed, layout.cardWidth, layout.cardHeight, "F");
     pdf.setTextColor(150);
@@ -268,6 +233,9 @@ async function drawCard(
     pdf.text("render error", x + layout.bleed + 5, y + layout.bleed + 8);
   }
 }
+
+// findSvg kept for potential future use (e.g., future vector path).
+void findSvg;
 
 /** Subtle finish simulation overlay — gloss = top highlight, matte = soft tint. */
 function drawFinishOverlay(pdf: jsPDF, x: number, y: number, layout: PrintLayoutInfo, finish: PaperFinish) {
@@ -445,14 +413,18 @@ export async function exportCardAsPng(
   await waitForFonts();
   const { target, cleanup } = ensureHtmlWrapper(node);
   try {
-    const dataUrl = await toPng(target, {
-      pixelRatio: 6,
-      cacheBust: true,
+    const scale = (TARGET_DPI * 2) / SCREEN_DPI; // 600 DPI for single-card export
+    const canvas = await html2canvas(target, {
+      scale,
+      useCORS: true,
       backgroundColor: "#ffffff",
-      skipFonts: true,
-    } as any);
-    const res = await fetch(dataUrl);
-    const blob = await res.blob();
+      logging: false,
+      windowWidth: target.scrollWidth,
+      windowHeight: target.scrollHeight,
+    });
+    const blob: Blob = await new Promise((resolve, reject) =>
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob failed"))), "image/png", 1.0),
+    );
     const url = URL.createObjectURL(blob);
     return { blob, url, fileName };
   } finally {
