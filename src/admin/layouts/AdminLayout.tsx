@@ -32,6 +32,7 @@ const navItems = [
   { path: "/admin/pricing", icon: DollarSign, label: "إدارة التسعير" },
   { path: "/admin/print-pricing", icon: DollarSign, label: "تسعير الطباعة" },
   { path: "/admin/database", icon: Database, label: "مدير قاعدة البيانات" },
+  { path: "/admin/schema-manager", icon: Database, label: "مخطط VPS الذكي" },
   { path: "/admin/sales", icon: Crown, label: "المبيعات والاشتراكات" },
   { path: "/admin/recommendations", icon: BookOpen, label: "التوصيات" },
   { path: "/admin/card-templates", icon: CreditCard, label: "تصاميم البطاقات" },

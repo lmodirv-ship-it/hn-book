@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hnbook
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  receiver:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-changeme}@db:5432/hnbook
+      VPS_BACKUP_TOKEN: ${VPS_BACKUP_TOKEN:-please-change-me}
+      PORT: 9090
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./migrations:/app/migrations:ro
+      - ./init.sql:/app/init.sql:ro
+
+volumes:
+  pgdata:
