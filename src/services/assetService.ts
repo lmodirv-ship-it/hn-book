@@ -18,6 +18,7 @@ export interface Asset {
   image_url: string;
   file_url: string | null;
   is_active: boolean;
+  is_editable: boolean;
   created_at: string;
   updated_at: string;
 }
