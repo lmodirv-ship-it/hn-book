@@ -52,9 +52,31 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [deliveryOption, setDeliveryOption] = useState<"standard" | "express">("standard");
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "wallet">("cash");
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [submittingOrder, setSubmittingOrder] = useState(false);
   const [orderCode, setOrderCode] = useState<string | null>(null);
   const [orderPdfUrl, setOrderPdfUrl] = useState<string | null>(null);
+  const [orderPaymentStatus, setOrderPaymentStatus] = useState<"unpaid" | "paid" | "failed">("unpaid");
+
+  const walletCost = walletCostFor(quantity);
+
+  // Load wallet balance when dialog opens
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setWalletBalance(null); return; }
+      const { data } = await supabase
+        .from("user_credits")
+        .select("balance")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!cancelled) setWalletBalance(data?.balance ?? 0);
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
 
   const printType = backNode ? "double_side" : "one_side";
 
