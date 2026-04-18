@@ -1797,6 +1797,7 @@ export type Database = {
           is_active: boolean
           name: string
           preview_image_url: string | null
+          slug: string | null
           template_type: string
           updated_at: string
         }
@@ -1815,6 +1816,7 @@ export type Database = {
           is_active?: boolean
           name: string
           preview_image_url?: string | null
+          slug?: string | null
           template_type?: string
           updated_at?: string
         }
@@ -1833,6 +1835,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           preview_image_url?: string | null
+          slug?: string | null
           template_type?: string
           updated_at?: string
         }
