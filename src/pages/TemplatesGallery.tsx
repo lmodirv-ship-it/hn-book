@@ -230,10 +230,10 @@ const TemplatesGallery = () => {
           </Card>
         ) : (
           <div className="container mx-auto px-4 py-10 space-y-14">
-            <SectionRow title="القوالب المميزة" icon={Sparkles} items={featured} />
-            <SectionRow title="جديدنا" icon={Clock} items={newItems} />
-            <SectionRow title="الأكثر طلبًا" icon={Flame} items={popular} />
-            <SectionRow title="تصاميم مقترحة" icon={Sparkles} items={suggested} />
+            <SectionRow title="القوالب المميزة" icon={Sparkles} items={featured} editableIds={editableAssetIds} />
+            <SectionRow title="جديدنا" icon={Clock} items={newItems} editableIds={editableAssetIds} />
+            <SectionRow title="الأكثر طلبًا" icon={Flame} items={popular} editableIds={editableAssetIds} />
+            <SectionRow title="تصاميم مقترحة" icon={Sparkles} items={suggested} editableIds={editableAssetIds} />
           </div>
         )}
       </main>
@@ -244,8 +244,8 @@ const TemplatesGallery = () => {
 };
 
 const SectionRow = ({
-  title, icon: Icon, items,
-}: { title: string; icon: typeof Sparkles; items: Asset[] }) => {
+  title, icon: Icon, items, editableIds,
+}: { title: string; icon: typeof Sparkles; items: Asset[]; editableIds: Set<string> }) => {
   if (items.length === 0) return null;
   return (
     <section className="space-y-5">
@@ -255,7 +255,7 @@ const SectionRow = ({
         <span className="h-px flex-1 bg-gradient-to-l from-transparent via-primary/30 to-transparent ms-3" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-        {items.map((a) => <PremiumCard key={a.id} asset={a} />)}
+        {items.map((a) => <PremiumCard key={a.id} asset={a} editable={editableIds.has(a.id)} />)}
       </div>
     </section>
   );
