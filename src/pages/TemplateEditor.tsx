@@ -31,6 +31,14 @@ import {
 import StyledSvgRenderer, { type FieldStyle } from "@/components/editor/StyledSvgRenderer";
 import PrintReadyDialog from "@/components/editor/PrintReadyDialog";
 import EditorSeo from "@/components/editor/EditorSeo";
+import {
+  CardCanvasOverlay,
+  GuideTogglesBar,
+  CARD_SIZE_PRESETS,
+  DEFAULT_GUIDES,
+  type CardSize,
+  type PrintGuideToggles,
+} from "@/components/editor/CardCanvasOverlay";
 import { buildPrintReadyPdf } from "@/lib/print-pdf";
 import { communicationsService, applyTemplate } from "@/services/communicationsService";
 
@@ -85,6 +93,15 @@ const TemplateEditor = () => {
   const [zoom, setZoom] = useState(1);
   const [showGrid, setShowGrid] = useState(true);
   const [activeTab, setActiveTab] = useState<"fields" | "logo">("fields");
+
+  // Print specifications — card size, bleed/safe-zone overlays
+  const [cardSize, setCardSize] = useState<CardSize>(CARD_SIZE_PRESETS[0]);
+  const [customWidth, setCustomWidth] = useState<number>(85);
+  const [customHeight, setCustomHeight] = useState<number>(55);
+  const [guides, setGuides] = useState<PrintGuideToggles>(DEFAULT_GUIDES);
+  // Visual width of the card on screen — used by the overlay to compute px/mm
+  const CARD_VISUAL_WIDTH_PX = 600;
+  const cardVisualHeightPx = Math.round((CARD_VISUAL_WIDTH_PX * cardSize.heightMm) / cardSize.widthMm);
 
   // Undo/redo
   const historyRef = useRef<HistoryEntry[]>([]);
@@ -287,15 +304,31 @@ const TemplateEditor = () => {
         else toast({ title: "تعذر التصدير", description: r.reason, variant: "destructive" });
         return;
       }
-      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [90, 50] });
-      const front = frontRef.current
-        ? await toPng(frontRef.current, { pixelRatio: 3, cacheBust: true })
-        : null;
-      if (front) pdf.addImage(front, "PNG", 0, 0, 90, 50);
+      // Use the high-DPI Arabic-safe rasterization helpers from print-pdf.
+      const { exportCardAsPng } = await import("@/lib/print-pdf");
+      const w = cardSize.widthMm;
+      const h = cardSize.heightMm;
+      const pdf = new jsPDF({ orientation: w >= h ? "landscape" : "portrait", unit: "mm", format: [w, h] });
+      if (frontRef.current) {
+        const { blob } = await exportCardAsPng(frontRef.current, "front.png");
+        const dataUrl = await new Promise<string>((res, rej) => {
+          const fr = new FileReader();
+          fr.onload = () => res(String(fr.result));
+          fr.onerror = () => rej(fr.error);
+          fr.readAsDataURL(blob);
+        });
+        pdf.addImage(dataUrl, "PNG", 0, 0, w, h, undefined, "SLOW");
+      }
       if (template?.back_svg_content && backRef.current) {
-        const back = await toPng(backRef.current, { pixelRatio: 3, cacheBust: true });
-        pdf.addPage([90, 50], "landscape");
-        pdf.addImage(back, "PNG", 0, 0, 90, 50);
+        const { blob } = await exportCardAsPng(backRef.current, "back.png");
+        const dataUrl = await new Promise<string>((res, rej) => {
+          const fr = new FileReader();
+          fr.onload = () => res(String(fr.result));
+          fr.onerror = () => rej(fr.error);
+          fr.readAsDataURL(blob);
+        });
+        pdf.addPage([w, h], w >= h ? "landscape" : "portrait");
+        pdf.addImage(dataUrl, "PNG", 0, 0, w, h, undefined, "SLOW");
       }
       pdf.save(`${template?.name ?? "card"}.pdf`);
       toast({ title: "تم تصدير PDF ✅", description: billing.plan?.is_unlimited ? "خطة Pro" : `تم خصم 2 نقطة • الرصيد: ${billing.credits?.balance ?? 0}` });
@@ -605,6 +638,58 @@ const TemplateEditor = () => {
             </Toggle>
           </div>
 
+          <Separator orientation="vertical" className="h-6" />
+
+          {/* Card size selector */}
+          <Select
+            value={cardSize.id}
+            onValueChange={(v) => {
+              if (v === "custom") {
+                setCardSize({ id: "custom", label: "مخصص", widthMm: customWidth, heightMm: customHeight });
+              } else {
+                const preset = CARD_SIZE_PRESETS.find((p) => p.id === v);
+                if (preset) setCardSize(preset);
+              }
+            }}
+          >
+            <SelectTrigger className="w-[170px] h-8" title="مقاس البطاقة">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {CARD_SIZE_PRESETS.map((p) => (
+                <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+              ))}
+              <SelectItem value="custom">مخصص…</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {cardSize.id === "custom" && (
+            <div className="flex items-center gap-1">
+              <Input
+                type="number" min={40} max={150} value={customWidth}
+                onChange={(e) => {
+                  const w = Number(e.target.value) || 85;
+                  setCustomWidth(w);
+                  setCardSize({ id: "custom", label: "مخصص", widthMm: w, heightMm: customHeight });
+                }}
+                className="w-14 h-8 text-xs text-center" title="العرض (مم)"
+              />
+              <span className="text-xs text-muted-foreground">×</span>
+              <Input
+                type="number" min={30} max={120} value={customHeight}
+                onChange={(e) => {
+                  const h = Number(e.target.value) || 55;
+                  setCustomHeight(h);
+                  setCardSize({ id: "custom", label: "مخصص", widthMm: customWidth, heightMm: h });
+                }}
+                className="w-14 h-8 text-xs text-center" title="الارتفاع (مم)"
+              />
+              <span className="text-[10px] text-muted-foreground">mm</span>
+            </div>
+          )}
+
+          <GuideTogglesBar guides={guides} onChange={setGuides} />
+
           <div className="flex-1" />
 
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setZoom((z) => Math.max(0.5, z - 0.1))}>
@@ -767,8 +852,19 @@ const TemplateEditor = () => {
                   className={`relative transition-transform duration-500 transform-style-3d ${
                     flipping ? "rotate-y-180" : ""
                   }`}
+                  style={{ width: CARD_VISUAL_WIDTH_PX, height: cardVisualHeightPx }}
                 >
-                  <div className={side === "front" ? "block" : "hidden"}>
+                  {/* Print-spec guides overlay (visual only — not in exports) */}
+                  <CardCanvasOverlay
+                    pxWidth={CARD_VISUAL_WIDTH_PX}
+                    pxHeight={cardVisualHeightPx}
+                    widthMm={cardSize.widthMm}
+                    guides={guides}
+                  />
+                  <div
+                    className={side === "front" ? "block" : "hidden"}
+                    style={{ width: CARD_VISUAL_WIDTH_PX, height: cardVisualHeightPx }}
+                  >
                     <StyledSvgRenderer
                       ref={frontRef}
                       svg={template.front_svg_content ?? ""}
@@ -779,11 +875,14 @@ const TemplateEditor = () => {
                       onSelect={setSelectedKey}
                       onDragEnd={onDragEnd}
                       onEdit={onInlineEdit}
-                      className="w-[600px] rounded-xl border border-border bg-white overflow-hidden shadow-2xl"
+                      className="w-full h-full rounded-xl border border-border bg-white overflow-hidden shadow-2xl"
                     />
                   </div>
                   {hasBack && (
-                    <div className={side === "back" ? "block" : "hidden"}>
+                    <div
+                      className={side === "back" ? "block" : "hidden"}
+                      style={{ width: CARD_VISUAL_WIDTH_PX, height: cardVisualHeightPx }}
+                    >
                       <StyledSvgRenderer
                         ref={backRef}
                         svg={template.back_svg_content ?? ""}
@@ -794,7 +893,7 @@ const TemplateEditor = () => {
                         onSelect={setSelectedKey}
                         onDragEnd={onDragEnd}
                         onEdit={onInlineEdit}
-                        className="w-[600px] rounded-xl border border-border bg-white overflow-hidden shadow-2xl"
+                        className="w-full h-full rounded-xl border border-border bg-white overflow-hidden shadow-2xl"
                       />
                     </div>
                   )}
