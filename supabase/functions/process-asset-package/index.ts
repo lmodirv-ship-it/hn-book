@@ -66,6 +66,16 @@ function cleanTitle(name: string): string {
 // Build a tree: for each top-level folder in the zip, its immediate sub-items
 type FileEntry = { path: string; data: Uint8Array };
 
+// Slugify a category code/name for storage paths
+function slugify(s: string): string {
+  return (s || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\u0600-\u06ff]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60) || "uncategorized";
+}
+
 async function processSingleAsset(
   supabase: any,
   rootName: string,
@@ -91,7 +101,9 @@ async function processSingleAsset(
   if (assetErr) throw assetErr;
 
   const assetCode = asset.code || asset.id;
-  const baseStoragePath = `${detectedType}/${assetCode}`;
+  // New layout: {asset_type}/{category_slug}/{asset_code}/{file}
+  const categorySlug = slugify(cat);
+  const baseStoragePath = `${detectedType}/${categorySlug}/${assetCode}`;
 
   // Find primary preview (first JPG/PNG at root of this asset)
   let primaryPreviewIdx = -1;
