@@ -191,7 +191,7 @@ const SvgTemplatesAdmin = () => {
                 </div>
                 <div className="flex items-center gap-1 pt-1">
                   <Switch checked={t.is_active} onCheckedChange={() => toggleActive(t)} />
-                  <Link to={`/editor/${t.id}`} className="ml-auto">
+                  <Link to={`/editor/${t.slug ?? t.id}`} className="ml-auto">
                     <Button size="sm" variant="outline" className="gap-1">
                       <Eye className="w-3.5 h-3.5" /> فتح المحرر
                     </Button>
