@@ -1,5 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 
+// Cast to any: these tables were just created and Supabase types regenerate async.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const sb = supabase as any;
+
 export type PaymentMethod = "manual" | "stripe" | "paddle" | "paypal";
 export type PaymentPurpose = "credits" | "print_order" | "subscription" | "asset";
 export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
