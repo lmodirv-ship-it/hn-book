@@ -74,8 +74,15 @@ const TemplatesGallery = () => {
     (async () => {
       setLoading(true);
       try {
-        const list = await assetService.list({ limit: 200 });
-        if (!cancelled) setAssets(list.filter((a) => a.is_active));
+        const [list, tplRes] = await Promise.all([
+          assetService.list({ limit: 200 }),
+          supabase.from("svg_templates" as never).select("id,asset_id").eq("is_active", true),
+        ]);
+        if (cancelled) return;
+        const tpls = (tplRes.data as Array<{ id: string; asset_id: string | null }>) || [];
+        setEditableAssetIds(new Set(tpls.map((t) => t.asset_id).filter(Boolean) as string[]));
+        setEditableTemplateIds(new Set(tpls.map((t) => t.id)));
+        setAssets(list.filter((a) => a.is_active));
       } finally {
         if (!cancelled) setLoading(false);
       }
