@@ -153,7 +153,7 @@ export const paymentService = {
   },
 
   async listAll(filter?: { status?: PaymentStatus }): Promise<Payment[]> {
-    let q = supabase.from("payments").select("*").order("created_at", { ascending: false }).limit(200);
+    let q = sb.from("payments").select("*").order("created_at", { ascending: false }).limit(200);
     if (filter?.status) q = q.eq("status", filter.status);
     const { data, error } = await q;
     if (error) throw error;
@@ -161,7 +161,7 @@ export const paymentService = {
   },
 
   async approve(paymentId: string, note?: string) {
-    const { data, error } = await supabase.rpc("approve_manual_payment", {
+    const { data, error } = await sb.rpc("approve_manual_payment", {
       _payment_id: paymentId,
       _admin_note: note ?? null,
     });
@@ -170,7 +170,7 @@ export const paymentService = {
   },
 
   async reject(paymentId: string, note?: string) {
-    const { data, error } = await supabase.rpc("reject_manual_payment", {
+    const { data, error } = await sb.rpc("reject_manual_payment", {
       _payment_id: paymentId,
       _admin_note: note ?? null,
     });
