@@ -304,15 +304,31 @@ const TemplateEditor = () => {
         else toast({ title: "تعذر التصدير", description: r.reason, variant: "destructive" });
         return;
       }
-      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [90, 50] });
-      const front = frontRef.current
-        ? await toPng(frontRef.current, { pixelRatio: 3, cacheBust: true })
-        : null;
-      if (front) pdf.addImage(front, "PNG", 0, 0, 90, 50);
+      // Use the high-DPI Arabic-safe rasterization helpers from print-pdf.
+      const { exportCardAsPng } = await import("@/lib/print-pdf");
+      const w = cardSize.widthMm;
+      const h = cardSize.heightMm;
+      const pdf = new jsPDF({ orientation: w >= h ? "landscape" : "portrait", unit: "mm", format: [w, h] });
+      if (frontRef.current) {
+        const { blob } = await exportCardAsPng(frontRef.current, "front.png");
+        const dataUrl = await new Promise<string>((res, rej) => {
+          const fr = new FileReader();
+          fr.onload = () => res(String(fr.result));
+          fr.onerror = () => rej(fr.error);
+          fr.readAsDataURL(blob);
+        });
+        pdf.addImage(dataUrl, "PNG", 0, 0, w, h, undefined, "SLOW");
+      }
       if (template?.back_svg_content && backRef.current) {
-        const back = await toPng(backRef.current, { pixelRatio: 3, cacheBust: true });
-        pdf.addPage([90, 50], "landscape");
-        pdf.addImage(back, "PNG", 0, 0, 90, 50);
+        const { blob } = await exportCardAsPng(backRef.current, "back.png");
+        const dataUrl = await new Promise<string>((res, rej) => {
+          const fr = new FileReader();
+          fr.onload = () => res(String(fr.result));
+          fr.onerror = () => rej(fr.error);
+          fr.readAsDataURL(blob);
+        });
+        pdf.addPage([w, h], w >= h ? "landscape" : "portrait");
+        pdf.addImage(dataUrl, "PNG", 0, 0, w, h, undefined, "SLOW");
       }
       pdf.save(`${template?.name ?? "card"}.pdf`);
       toast({ title: "تم تصدير PDF ✅", description: billing.plan?.is_unlimited ? "خطة Pro" : `تم خصم 2 نقطة • الرصيد: ${billing.credits?.balance ?? 0}` });
