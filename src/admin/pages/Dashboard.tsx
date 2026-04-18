@@ -164,6 +164,8 @@ const AdminDashboard = () => {
   const [totalVisits, setTotalVisits] = useState(0);
   const [todayVisits, setTodayVisits] = useState(0);
   const [totalUsers, setTotalUsers] = useState(0);
+  const [visitorTrend, setVisitorTrend] = useState<{ label: string; value: number }[]>([]);
+  const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
 
   // System monitoring
   const [jobStats, setJobStats] = useState({ pending: 0, processing: 0, done: 0, error: 0, todayUploads: 0 });
