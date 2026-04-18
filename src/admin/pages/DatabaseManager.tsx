@@ -3,7 +3,9 @@ import { motion } from "framer-motion";
 import {
   Database, Search, Edit, Trash2, Eye, EyeOff, Save, X, RefreshCw,
   ChevronLeft, ChevronRight, BookOpen, FileText, AlertTriangle,
+  Download, Server, Loader2, HardDrive,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -42,7 +44,61 @@ const DatabaseManager = () => {
   const [editFields, setEditFields] = useState<Partial<BookRow>>({});
   const [saving, setSaving] = useState(false);
 
+  // DB overview & VPS
+  const [tableStats, setTableStats] = useState<Array<{ table: string; rows: number | null }>>([]);
+  const [overviewLoading, setOverviewLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [pushing, setPushing] = useState(false);
+  const [lastVpsResult, setLastVpsResult] = useState<string>("");
+
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  const loadOverview = useCallback(async () => {
+    setOverviewLoading(true);
+    const { data, error } = await supabase.functions.invoke("db-admin", {
+      body: { action: "overview" },
+    });
+    setOverviewLoading(false);
+    if (error) { toast.error("فشل تحميل نظرة الجداول"); return; }
+    setTableStats(data?.tables ?? []);
+  }, []);
+
+  useEffect(() => { loadOverview(); }, [loadOverview]);
+
+  const handleExportJson = async () => {
+    setExporting(true);
+    const { data, error } = await supabase.functions.invoke("db-admin", {
+      body: { action: "export" },
+    });
+    setExporting(false);
+    if (error || !data) { toast.error("فشل التصدير"); return; }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `hn-book-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("تم تنزيل النسخة");
+  };
+
+  const handlePushVps = async () => {
+    if (!confirm("إرسال نسخة من البيانات إلى السيرفر VPS؟")) return;
+    setPushing(true);
+    setLastVpsResult("");
+    const { data, error } = await supabase.functions.invoke("db-admin", {
+      body: { action: "push-vps" },
+    });
+    setPushing(false);
+    if (error) { toast.error("فشل الإرسال"); setLastVpsResult(String(error.message ?? error)); return; }
+    if (!data?.ok) {
+      toast.error(data?.error || `فشل الإرسال (${data?.status})`);
+      setLastVpsResult(data?.error || data?.response || "");
+      return;
+    }
+    toast.success(`تم الإرسال بنجاح (${data.duration_ms} ms)`);
+    setLastVpsResult(`✓ ${data.status} • ${data.duration_ms}ms`);
+  };
 
   useEffect(() => {
     categoryService.getAll().then(r => {
@@ -155,6 +211,55 @@ const DatabaseManager = () => {
           </Button>
         </div>
       </motion.div>
+
+      {/* DB Overview + VPS actions */}
+      <div className="rounded-2xl border border-border bg-card p-4 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <HardDrive className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-bold text-foreground">نظرة عامة على قواعد البيانات</h2>
+            <span className="text-xs text-muted-foreground">
+              ({tableStats.length} جدول • {tableStats.reduce((s, t) => s + (t.rows ?? 0), 0).toLocaleString()} سجل)
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={loadOverview} disabled={overviewLoading}>
+              <RefreshCw className={`w-3.5 h-3.5 ${overviewLoading ? "animate-spin" : ""}`} /> تحديث
+            </Button>
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={handleExportJson} disabled={exporting}>
+              {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+              تنزيل JSON
+            </Button>
+            <Button size="sm" className="gap-1.5 text-xs" onClick={handlePushVps} disabled={pushing}>
+              {pushing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Server className="w-3.5 h-3.5" />}
+              إرسال إلى VPS
+            </Button>
+          </div>
+        </div>
+
+        {lastVpsResult && (
+          <div className="text-xs text-muted-foreground bg-secondary/40 rounded-lg px-3 py-2 font-mono break-all">
+            {lastVpsResult}
+          </div>
+        )}
+
+        {overviewLoading && tableStats.length === 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-12 rounded-lg" />)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+            {tableStats.map((t) => (
+              <div key={t.table} className="flex items-center justify-between rounded-lg bg-secondary/30 px-3 py-2 border border-border/40">
+                <span className="text-xs font-mono text-foreground/80 truncate">{t.table}</span>
+                <span className="text-xs font-bold text-primary tabular-nums">
+                  {t.rows == null ? "—" : t.rows.toLocaleString()}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Quick stats */}
       {(stats.noPdf > 0 || stats.noCover > 0 || stats.hidden > 0) && (
