@@ -1131,6 +1131,75 @@ export type Database = {
           },
         ]
       }
+      paddle_processed_events: {
+        Row: {
+          event_id: string
+          event_type: string
+          processed_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          event_id: string
+          event_type: string
+          processed_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          event_id?: string
+          event_type?: string
+          processed_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      paddle_subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean | null
+          created_at: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          environment: string
+          id: string
+          paddle_customer_id: string
+          paddle_subscription_id: string
+          price_id: string
+          product_id: string
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          environment?: string
+          id?: string
+          paddle_customer_id: string
+          paddle_subscription_id: string
+          price_id: string
+          product_id: string
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          environment?: string
+          id?: string
+          paddle_customer_id?: string
+          paddle_subscription_id?: string
+          price_id?: string
+          product_id?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       page_customizations: {
         Row: {
           created_at: string
@@ -2363,6 +2432,10 @@ export type Database = {
       grant_credits: {
         Args: { _amount: number; _reason?: string; _user_id: string }
         Returns: number
+      }
+      has_active_paddle_subscription: {
+        Args: { check_env?: string; user_uuid: string }
+        Returns: boolean
       }
       has_permission: {
         Args: { _permission: string; _user_id: string }
