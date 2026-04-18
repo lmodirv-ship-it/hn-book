@@ -48,6 +48,7 @@ import PricingManagement from "./admin/pages/PricingManagement.tsx";
 import PrintPricingManagement from "./admin/pages/PrintPricingManagement.tsx";
 import DatabaseManager from "./admin/pages/DatabaseManager.tsx";
 import SchemaManager from "./admin/pages/SchemaManager.tsx";
+import DatabaseMigrationManager from "./admin/pages/DatabaseMigrationManager.tsx";
 import SalesManagement from "./admin/pages/SalesManagement.tsx";
 import RecommendationsManagement from "./admin/pages/RecommendationsManagement.tsx";
 import PrintOrdersAdmin from "./admin/pages/PrintOrdersAdmin.tsx";
@@ -178,6 +179,7 @@ const App = () => (
               <Route path="print-pricing" element={<PrintPricingManagement />} />
               <Route path="database" element={<DatabaseManager />} />
               <Route path="schema-manager" element={<SchemaManager />} />
+              <Route path="database-manager" element={<DatabaseMigrationManager />} />
               <Route path="sales" element={<SalesManagement />} />
               <Route path="recommendations" element={<RecommendationsManagement />} />
               <Route path="print-orders" element={<PrintOrdersAdmin />} />

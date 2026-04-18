@@ -40,6 +40,26 @@ Deno.serve(async (req) => {
   const action = body.action ?? "schema";
   const base = VPS_URL.replace(/\/backup\/?$/, "").replace(/\/$/, "");
 
+  // Special action: read tables from Supabase and push to VPS as a backup payload.
+  if (action === "cloud-snapshot") {
+    return await cloudSnapshot(body, admin, base, VPS_TOKEN!, userRes.user.email ?? userRes.user.id);
+  }
+  // Special action: list public tables in Supabase (the "source" side).
+  if (action === "cloud-tables") {
+    const { data, error } = await admin.rpc("pg_catalog_tables" as any).catch(() => ({ data: null, error: null }));
+    // Fallback: query information_schema via REST is not allowed, so we use a known list.
+    // Instead, ask Postgres directly through a lightweight SQL helper if it exists,
+    // otherwise return the curated list of project tables.
+    const fallback = [
+      "products","categories","assets","asset_files","customers","orders","order_items",
+      "purchases","cart_items","profiles","print_orders","card_templates","svg_templates",
+      "logos","coupons","cms_content","page_customizations","feature_flags",
+      "pricing_rules","print_pricing_rules","manual_recommendations","subscription_plans",
+      "subscriptions","credit_transactions","api_integrations","integration_logs",
+    ];
+    return j({ ok: true, tables: data ?? fallback });
+  }
+
   // GET endpoints (no body)
   const getMap: Record<string, string> = {
     "schema":        "/schema",
@@ -93,3 +113,54 @@ Deno.serve(async (req) => {
     });
   }
 });
+
+/**
+ * Read selected tables from Supabase using the service role and POST them to
+ * the VPS /backup endpoint. The VPS upserts on `id`, so re-running is safe.
+ */
+async function cloudSnapshot(
+  body: any,
+  admin: ReturnType<typeof createClient>,
+  base: string,
+  vpsToken: string,
+  actor: string,
+) {
+  const tables: string[] = Array.isArray(body?.tables) ? body.tables : [];
+  const limit = Math.min(Math.max(Number(body?.limit) || 1000, 1), 5000);
+  if (tables.length === 0) {
+    return new Response(JSON.stringify({ ok: false, error: "no_tables_selected" }), {
+      status: 400,
+      headers: { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" },
+    });
+  }
+
+  const data: Record<string, any[]> = {};
+  const perTable: Array<{ table: string; rows: number; error?: string }> = [];
+  for (const t of tables) {
+    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(t)) {
+      perTable.push({ table: t, rows: 0, error: "unsafe_name" });
+      continue;
+    }
+    try {
+      const { data: rows, error } = await admin.from(t).select("*").limit(limit);
+      if (error) { perTable.push({ table: t, rows: 0, error: error.message }); continue; }
+      data[t] = rows || [];
+      perTable.push({ table: t, rows: rows?.length || 0 });
+    } catch (e: any) {
+      perTable.push({ table: t, rows: 0, error: e?.message ?? String(e) });
+    }
+  }
+
+  const t0 = Date.now();
+  const res = await fetch(`${base}/backup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${vpsToken}` },
+    body: JSON.stringify({ source: `lovable-cloud:${actor}`, data }),
+  });
+  const text = await res.text();
+  let parsed: any; try { parsed = JSON.parse(text); } catch { parsed = { raw: text }; }
+  return new Response(
+    JSON.stringify({ ok: res.ok, status: res.status, duration_ms: Date.now() - t0, snapshot: perTable, vps: parsed }),
+    { status: res.ok ? 200 : 502, headers: { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" } },
+  );
+}
