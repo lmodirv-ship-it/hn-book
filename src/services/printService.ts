@@ -53,8 +53,14 @@ export interface PrintOrder {
   shipped_at: string | null;
   delivered_at: string | null;
   created_at: string;
+  payment_method: "cash" | "card" | "wallet";
+  payment_status: "unpaid" | "paid" | "failed" | "refunded";
   template?: CardTemplate;
 }
+
+/** Compute wallet credit cost for a given quantity. 1 credit per 100 cards, min 1. */
+export const walletCostFor = (quantity: number): number =>
+  Math.max(1, Math.ceil((quantity || 0) / 100));
 
 // Shipping options (flat fees in MAD)
 export const DELIVERY_OPTIONS = [
