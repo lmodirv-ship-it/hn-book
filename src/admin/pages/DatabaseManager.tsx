@@ -44,7 +44,61 @@ const DatabaseManager = () => {
   const [editFields, setEditFields] = useState<Partial<BookRow>>({});
   const [saving, setSaving] = useState(false);
 
+  // DB overview & VPS
+  const [tableStats, setTableStats] = useState<Array<{ table: string; rows: number | null }>>([]);
+  const [overviewLoading, setOverviewLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [pushing, setPushing] = useState(false);
+  const [lastVpsResult, setLastVpsResult] = useState<string>("");
+
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  const loadOverview = useCallback(async () => {
+    setOverviewLoading(true);
+    const { data, error } = await supabase.functions.invoke("db-admin", {
+      body: { action: "overview" },
+    });
+    setOverviewLoading(false);
+    if (error) { toast.error("فشل تحميل نظرة الجداول"); return; }
+    setTableStats(data?.tables ?? []);
+  }, []);
+
+  useEffect(() => { loadOverview(); }, [loadOverview]);
+
+  const handleExportJson = async () => {
+    setExporting(true);
+    const { data, error } = await supabase.functions.invoke("db-admin", {
+      body: { action: "export" },
+    });
+    setExporting(false);
+    if (error || !data) { toast.error("فشل التصدير"); return; }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `hn-book-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("تم تنزيل النسخة");
+  };
+
+  const handlePushVps = async () => {
+    if (!confirm("إرسال نسخة من البيانات إلى السيرفر VPS؟")) return;
+    setPushing(true);
+    setLastVpsResult("");
+    const { data, error } = await supabase.functions.invoke("db-admin", {
+      body: { action: "push-vps" },
+    });
+    setPushing(false);
+    if (error) { toast.error("فشل الإرسال"); setLastVpsResult(String(error.message ?? error)); return; }
+    if (!data?.ok) {
+      toast.error(data?.error || `فشل الإرسال (${data?.status})`);
+      setLastVpsResult(data?.error || data?.response || "");
+      return;
+    }
+    toast.success(`تم الإرسال بنجاح (${data.duration_ms} ms)`);
+    setLastVpsResult(`✓ ${data.status} • ${data.duration_ms}ms`);
+  };
 
   useEffect(() => {
     categoryService.getAll().then(r => {
