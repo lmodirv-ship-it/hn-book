@@ -1,6 +1,9 @@
 // Edge function: schema-manager
-// Admin-only proxy to the VPS mirror for schema/migration operations.
-// Actions: "schema" | "migrate" | "sync-log" | "schema-events" | "health"
+// Admin-only proxy to the VPS mirror for schema/migration/data operations.
+// Actions:
+//   "schema" | "migrate" | "sync-log" | "schema-events" | "health"
+//   "overview" | "table-data" | "row-insert" | "row-update" | "row-delete"
+//   "query" | "add-column" | "audit-log"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -37,25 +40,45 @@ Deno.serve(async (req) => {
   const action = body.action ?? "schema";
   const base = VPS_URL.replace(/\/backup\/?$/, "").replace(/\/$/, "");
 
-  const map: Record<string, { path: string; method: string }> = {
-    "schema":        { path: "/schema",        method: "GET"  },
-    "sync-log":      { path: "/sync-log",      method: "GET"  },
-    "schema-events": { path: "/schema-events", method: "GET"  },
-    "migrate":       { path: "/migrate",       method: "POST" },
-    "health":        { path: "/health",        method: "GET"  },
+  // GET endpoints (no body)
+  const getMap: Record<string, string> = {
+    "schema":        "/schema",
+    "sync-log":      "/sync-log",
+    "schema-events": "/schema-events",
+    "health":        "/health",
+    "overview":      "/overview",
+    "audit-log":     "/audit-log",
   };
-  const op = map[action];
-  if (!op) return j({ error: "unknown_action" }, 400);
+
+  // POST endpoints (forward body minus `action`)
+  const postMap: Record<string, string> = {
+    "migrate":     "/migrate",
+    "table-data":  "/table-data",
+    "row-insert":  "/row-insert",
+    "row-update":  "/row-update",
+    "row-delete":  "/row-delete",
+    "query":       "/query",
+    "add-column":  "/add-column",
+  };
+
+  const isGet = action in getMap;
+  const isPost = action in postMap;
+  if (!isGet && !isPost) return j({ error: "unknown_action" }, 400);
+
+  const path = isGet ? getMap[action] : postMap[action];
+  const method = isGet ? "GET" : "POST";
 
   try {
     const t0 = Date.now();
-    const res = await fetch(`${base}${op.path}`, {
-      method: op.method,
+    // Forward actor info so the VPS can write to its audit log.
+    const forwardBody = isPost ? { ...body, _actor: userRes.user.email ?? userRes.user.id } : undefined;
+    const res = await fetch(`${base}${path}`, {
+      method,
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${VPS_TOKEN}`,
       },
-      body: op.method === "POST" ? JSON.stringify({}) : undefined,
+      body: forwardBody ? JSON.stringify(forwardBody) : undefined,
     });
     const text = await res.text();
     let data: any; try { data = JSON.parse(text); } catch { data = { raw: text }; }
