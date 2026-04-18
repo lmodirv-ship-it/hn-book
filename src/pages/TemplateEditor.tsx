@@ -861,7 +861,10 @@ const TemplateEditor = () => {
                     widthMm={cardSize.widthMm}
                     guides={guides}
                   />
-                  <div className={side === "front" ? "block" : "hidden"}>
+                  <div
+                    className={side === "front" ? "block" : "hidden"}
+                    style={{ width: CARD_VISUAL_WIDTH_PX, height: cardVisualHeightPx }}
+                  >
                     <StyledSvgRenderer
                       ref={frontRef}
                       svg={template.front_svg_content ?? ""}
@@ -872,12 +875,14 @@ const TemplateEditor = () => {
                       onSelect={setSelectedKey}
                       onDragEnd={onDragEnd}
                       onEdit={onInlineEdit}
-                      className="rounded-xl border border-border bg-white overflow-hidden shadow-2xl"
-                      style={{ width: CARD_VISUAL_WIDTH_PX, height: cardVisualHeightPx }}
+                      className="w-full h-full rounded-xl border border-border bg-white overflow-hidden shadow-2xl"
                     />
                   </div>
                   {hasBack && (
-                    <div className={side === "back" ? "block" : "hidden"}>
+                    <div
+                      className={side === "back" ? "block" : "hidden"}
+                      style={{ width: CARD_VISUAL_WIDTH_PX, height: cardVisualHeightPx }}
+                    >
                       <StyledSvgRenderer
                         ref={backRef}
                         svg={template.back_svg_content ?? ""}
@@ -888,8 +893,7 @@ const TemplateEditor = () => {
                         onSelect={setSelectedKey}
                         onDragEnd={onDragEnd}
                         onEdit={onInlineEdit}
-                        className="rounded-xl border border-border bg-white overflow-hidden shadow-2xl"
-                        style={{ width: CARD_VISUAL_WIDTH_PX, height: cardVisualHeightPx }}
+                        className="w-full h-full rounded-xl border border-border bg-white overflow-hidden shadow-2xl"
                       />
                     </div>
                   )}
