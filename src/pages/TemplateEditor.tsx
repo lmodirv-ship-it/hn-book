@@ -94,6 +94,15 @@ const TemplateEditor = () => {
   const [showGrid, setShowGrid] = useState(true);
   const [activeTab, setActiveTab] = useState<"fields" | "logo">("fields");
 
+  // Print specifications — card size, bleed/safe-zone overlays
+  const [cardSize, setCardSize] = useState<CardSize>(CARD_SIZE_PRESETS[0]);
+  const [customWidth, setCustomWidth] = useState<number>(85);
+  const [customHeight, setCustomHeight] = useState<number>(55);
+  const [guides, setGuides] = useState<PrintGuideToggles>(DEFAULT_GUIDES);
+  // Visual width of the card on screen — used by the overlay to compute px/mm
+  const CARD_VISUAL_WIDTH_PX = 600;
+  const cardVisualHeightPx = Math.round((CARD_VISUAL_WIDTH_PX * cardSize.heightMm) / cardSize.widthMm);
+
   // Undo/redo
   const historyRef = useRef<HistoryEntry[]>([]);
   const futureRef = useRef<HistoryEntry[]>([]);
