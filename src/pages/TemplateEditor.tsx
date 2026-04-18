@@ -428,8 +428,19 @@ const TemplateEditor = () => {
   const selectedStyle = selectedKey ? styles[selectedKey] || {} : {};
   const logoFields = template.fields.filter((f) => f.type === "image");
 
+  // SEO data — auto-generated from template
+  const typeSlug = TYPE_TO_SLUG[template.template_type] ?? "templates";
+  const typeLabel = SVG_TEMPLATE_TYPES.find((x) => x.value === template.template_type)?.label ?? "قالب";
+  const seoTitle = `${template.name} — ${typeLabel} قابل للتعديل | محرر القوالب`;
+  const seoDescription = `صمّم وعدّل ${typeLabel.toLowerCase()} «${template.name}» مباشرة من المتصفح: تخصيص النصوص والألوان والشعار، ثم تنزيل PNG/PDF أو إرسال للطباعة.`;
+  const seoImage = template.preview_image_url || null;
+  const canonicalUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/editor/${typeSlug}/${template.slug ?? template.id}`
+    : `/editor/${typeSlug}/${template.slug ?? template.id}`;
+
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden" dir="rtl">
+      <EditorSeo title={seoTitle} description={seoDescription} image={seoImage} canonical={canonicalUrl} />
       {/* TOP BAR */}
       <header className="border-b border-border bg-card/40 backdrop-blur shrink-0">
         <div className="px-4 py-2 flex items-center gap-3">
@@ -438,7 +449,17 @@ const TemplateEditor = () => {
               <ArrowRight className="w-4 h-4" /> عودة
             </Button>
           </Link>
-          <h1 className="font-bold text-sm flex-1 truncate">{template.name}</h1>
+          <nav aria-label="Breadcrumb" className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
+            <Link to="/" className="hover:text-foreground transition-colors">الرئيسية</Link>
+            <span className="opacity-50">/</span>
+            <Link to="/templates" className="hover:text-foreground transition-colors">القوالب</Link>
+            <span className="opacity-50">/</span>
+            <Link to={`/templates?type=${typeSlug}`} className="hover:text-foreground transition-colors">{typeLabel}</Link>
+            <span className="opacity-50">/</span>
+            <span className="text-foreground font-medium truncate max-w-[180px]" aria-current="page">{template.name}</span>
+          </nav>
+          <h1 className="font-bold text-sm flex-1 md:hidden truncate">{template.name}</h1>
+          <div className="flex-1 hidden md:block" />
           {billing.authed && (
             <div className="hidden md:flex items-center gap-1.5">
               <Badge variant={billing.plan?.is_unlimited ? "default" : "secondary"} className="gap-1 text-[10px]">
