@@ -52,16 +52,19 @@ const TemplatesGallery = () => {
   // Initial filters from URL (?type=FNT or ?category=DSN)
   const urlType = (searchParams.get("type") as TypeFilter) || "all";
   const urlCat = (searchParams.get("category") as CategoryFilter) || "all";
+  const urlStyle = (searchParams.get("style") as StyleFilter) || "all";
   const [category, setCategory] = useState<CategoryFilter>(urlCat);
   const [type, setType] = useState<TypeFilter>(urlType);
+  const [style, setStyle] = useState<StyleFilter>(urlStyle);
 
   // Keep URL in sync so links/share work.
   useEffect(() => {
     const next = new URLSearchParams();
     if (category !== "all") next.set("category", category);
     if (type !== "all") next.set("type", type);
+    if (style !== "all") next.set("style", style);
     setSearchParams(next, { replace: true });
-  }, [category, type, setSearchParams]);
+  }, [category, type, style, setSearchParams]);
 
   useEffect(() => {
     let cancelled = false;
