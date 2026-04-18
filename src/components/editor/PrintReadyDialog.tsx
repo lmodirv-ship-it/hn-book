@@ -203,6 +203,21 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
       toast({ title: "أدخل المدينة", variant: "destructive" });
       return;
     }
+    // Validate wallet upfront so user gets clear feedback
+    if (paymentMethod === "wallet") {
+      if (walletBalance === null) {
+        toast({ title: "سجّل الدخول لاستخدام المحفظة", variant: "destructive" });
+        return;
+      }
+      if (walletBalance < walletCost) {
+        toast({
+          title: "رصيد غير كافٍ",
+          description: `يلزمك ${walletCost} نقطة، رصيدك ${walletBalance}.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
     setSubmittingOrder(true);
     try {
       const pdfUrl = await printService.uploadPrintPdf(result.blob, result.fileName);
@@ -223,11 +238,40 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
         template_design: designData ?? {},
         notes: note,
         status: "pending",
-      });
+        payment_method: paymentMethod,
+        payment_status: "unpaid",
+      } as any);
       if (!created) throw new Error("No data returned");
+
+      // Process payment
+      let payStatus: "unpaid" | "paid" | "failed" = "unpaid";
+      if (paymentMethod === "wallet") {
+        const r = await printService.payOrderWithWallet(created.id, quantity);
+        if (!r.ok) {
+          payStatus = "failed";
+          toast({
+            title: "فشل الدفع من المحفظة",
+            description: r.reason === "insufficient_credits"
+              ? `رصيد غير كافٍ (${r.balance}/${r.cost})`
+              : r.reason,
+            variant: "destructive",
+          });
+        } else {
+          payStatus = "paid";
+          setWalletBalance(r.balance ?? null);
+          toast({ title: "تم الدفع من المحفظة ✅", description: `خُصمت ${r.cost} نقطة.` });
+        }
+      } else if (paymentMethod === "card") {
+        // Simulated card payment — replace with real provider later
+        await printService.markOrderPaidByCard(created.id);
+        payStatus = "paid";
+        toast({ title: "تم الدفع بالبطاقة ✅ (محاكاة)", description: "سيتم استبدالها بمزوّد حقيقي قريباً." });
+      } else {
+        toast({ title: "تم إنشاء الطلب ✅", description: `الدفع عند الاستلام • ${created.order_code}` });
+      }
+      setOrderPaymentStatus(payStatus);
       setOrderCode(created.order_code);
       setOrderPdfUrl(pdfUrl);
-      toast({ title: "تم إنشاء الطلب ✅", description: `رقم الطلب: ${created.order_code}` });
     } catch (e: any) {
       toast({ title: "فشل إنشاء الطلب", description: e.message, variant: "destructive" });
     } finally {
