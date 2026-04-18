@@ -113,3 +113,54 @@ Deno.serve(async (req) => {
     });
   }
 });
+
+/**
+ * Read selected tables from Supabase using the service role and POST them to
+ * the VPS /backup endpoint. The VPS upserts on `id`, so re-running is safe.
+ */
+async function cloudSnapshot(
+  body: any,
+  admin: ReturnType<typeof createClient>,
+  base: string,
+  vpsToken: string,
+  actor: string,
+) {
+  const tables: string[] = Array.isArray(body?.tables) ? body.tables : [];
+  const limit = Math.min(Math.max(Number(body?.limit) || 1000, 1), 5000);
+  if (tables.length === 0) {
+    return new Response(JSON.stringify({ ok: false, error: "no_tables_selected" }), {
+      status: 400,
+      headers: { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" },
+    });
+  }
+
+  const data: Record<string, any[]> = {};
+  const perTable: Array<{ table: string; rows: number; error?: string }> = [];
+  for (const t of tables) {
+    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(t)) {
+      perTable.push({ table: t, rows: 0, error: "unsafe_name" });
+      continue;
+    }
+    try {
+      const { data: rows, error } = await admin.from(t).select("*").limit(limit);
+      if (error) { perTable.push({ table: t, rows: 0, error: error.message }); continue; }
+      data[t] = rows || [];
+      perTable.push({ table: t, rows: rows?.length || 0 });
+    } catch (e: any) {
+      perTable.push({ table: t, rows: 0, error: e?.message ?? String(e) });
+    }
+  }
+
+  const t0 = Date.now();
+  const res = await fetch(`${base}/backup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${vpsToken}` },
+    body: JSON.stringify({ source: `lovable-cloud:${actor}`, data }),
+  });
+  const text = await res.text();
+  let parsed: any; try { parsed = JSON.parse(text); } catch { parsed = { raw: text }; }
+  return new Response(
+    JSON.stringify({ ok: res.ok, status: res.status, duration_ms: Date.now() - t0, snapshot: perTable, vps: parsed }),
+    { status: res.ok ? 200 : 502, headers: { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" } },
+  );
+}
