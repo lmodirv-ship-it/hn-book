@@ -5,11 +5,16 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { Search, Edit3, Printer, Sparkles, Flame, Clock } from "lucide-react";
+import { Search, Edit3, Printer, Sparkles, Flame, Clock, Lock, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
 
 /** Heuristic style inference from a template's name/description. */
 type StyleFilter = "all" | "modern" | "classic" | "luxury";
