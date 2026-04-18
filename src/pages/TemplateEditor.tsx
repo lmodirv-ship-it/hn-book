@@ -26,10 +26,11 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import {
-  svgTemplateService, type SvgTemplate, type SvgField,
+  svgTemplateService, SVG_TEMPLATE_TYPES, type SvgTemplate, type SvgField, type SvgTemplateType,
 } from "@/services/svgTemplateService";
 import StyledSvgRenderer, { type FieldStyle } from "@/components/editor/StyledSvgRenderer";
 import PrintReadyDialog from "@/components/editor/PrintReadyDialog";
+import EditorSeo from "@/components/editor/EditorSeo";
 import { buildPrintReadyPdf } from "@/lib/print-pdf";
 import { communicationsService, applyTemplate } from "@/services/communicationsService";
 
@@ -50,8 +51,17 @@ interface HistoryEntry {
   styles: Record<string, FieldStyle>;
 }
 
+const TYPE_SLUGS: Record<string, SvgTemplateType> = {
+  cards: "CRD", flyers: "FLY", logos: "LOG", posters: "PST",
+  invitations: "INV", banners: "BAN", templates: "TPL", other: "OTH",
+};
+const TYPE_TO_SLUG: Record<SvgTemplateType, string> = {
+  CRD: "cards", FLY: "flyers", LOG: "logos", PST: "posters",
+  INV: "invitations", BAN: "banners", TPL: "templates", OTH: "other",
+};
+
 const TemplateEditor = () => {
-  const { slug } = useParams<{ slug: string }>();
+  const { slug, type: typeParam } = useParams<{ slug: string; type?: string }>();
   const idOrSlug = slug;
   const [searchParams] = useSearchParams();
   const fromStudio = searchParams.get("from") === "studio";
@@ -84,7 +94,7 @@ const TemplateEditor = () => {
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
 
-  // Load template — accepts slug, template id, or asset id (with redirect to slug URL)
+  // Load template — accepts slug, template id, or asset id (with redirect to typed slug URL)
   useEffect(() => {
     if (!idOrSlug) return;
     let cancelled = false;
@@ -99,12 +109,16 @@ const TemplateEditor = () => {
           return;
         }
 
-        // Backward compat: if accessed via UUID and template has a slug, redirect to slug URL
+        // Canonical URL is /editor/{type}/{slug} — redirect when missing or wrong
+        const expectedTypeSlug = TYPE_TO_SLUG[t.template_type] ?? "templates";
+        const expectedIdSlug = t.slug ?? t.id;
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
-        if (isUuid && t.slug && t.slug !== idOrSlug) {
+        const wrongType = typeParam !== expectedTypeSlug;
+        const wrongSlug = isUuid && t.slug && t.slug !== idOrSlug;
+        if (wrongType || wrongSlug) {
           const base = fromStudio ? "/studio/editor" : "/editor";
           const qs = fromStudio ? "?from=studio" : "";
-          navigate(`${base}/${t.slug}${qs}`, { replace: true });
+          navigate(`${base}/${expectedTypeSlug}/${expectedIdSlug}${qs}`, { replace: true });
           return;
         }
 
@@ -112,7 +126,6 @@ const TemplateEditor = () => {
         const init: Record<string, string> = {};
         for (const f of t.fields) init[f.key] = f.defaultValue || "";
 
-        // Restore overrides from localStorage (keyed by template id, stable across asset/template entry)
         const saved = localStorage.getItem(`tpl-edit-${t.id}`);
         if (saved) {
           try {
@@ -133,15 +146,8 @@ const TemplateEditor = () => {
       }
     })();
     return () => { cancelled = true; };
-  }, [idOrSlug, fromStudio, navigate]);
+  }, [idOrSlug, typeParam, fromStudio, navigate]);
 
-  // Dynamic SEO title
-  useEffect(() => {
-    if (!template) return;
-    const prev = document.title;
-    document.title = `${template.name} — محرر القوالب`;
-    return () => { document.title = prev; };
-  }, [template]);
 
   // Persist + history
   useEffect(() => {
