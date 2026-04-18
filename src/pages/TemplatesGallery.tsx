@@ -5,10 +5,26 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { Search, Loader2, Edit3, Printer, Sparkles, Flame, Clock } from "lucide-react";
+import { Search, Edit3, Printer, Sparkles, Flame, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+
+/** Heuristic style inference from a template's name/description. */
+type StyleFilter = "all" | "modern" | "classic" | "luxury";
+const STYLE_HINTS: Record<Exclude<StyleFilter, "all">, RegExp> = {
+  modern: /(modern|minimal|clean|flat|عصري|حديث|بسيط)/i,
+  classic: /(classic|vintage|retro|كلاسيك|تراث|قديم)/i,
+  luxury: /(luxury|premium|gold|elegant|royal|فاخر|ذهب|راقي)/i,
+};
+const inferStyle = (a: { title: string; description?: string | null }): Exclude<StyleFilter, "all"> | null => {
+  const hay = `${a.title} ${a.description ?? ""}`;
+  for (const [style, re] of Object.entries(STYLE_HINTS)) {
+    if (re.test(hay)) return style as Exclude<StyleFilter, "all">;
+  }
+  return null;
+};
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -36,16 +52,19 @@ const TemplatesGallery = () => {
   // Initial filters from URL (?type=FNT or ?category=DSN)
   const urlType = (searchParams.get("type") as TypeFilter) || "all";
   const urlCat = (searchParams.get("category") as CategoryFilter) || "all";
+  const urlStyle = (searchParams.get("style") as StyleFilter) || "all";
   const [category, setCategory] = useState<CategoryFilter>(urlCat);
   const [type, setType] = useState<TypeFilter>(urlType);
+  const [style, setStyle] = useState<StyleFilter>(urlStyle);
 
   // Keep URL in sync so links/share work.
   useEffect(() => {
     const next = new URLSearchParams();
     if (category !== "all") next.set("category", category);
     if (type !== "all") next.set("type", type);
+    if (style !== "all") next.set("style", style);
     setSearchParams(next, { replace: true });
-  }, [category, type, setSearchParams]);
+  }, [category, type, style, setSearchParams]);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,10 +85,17 @@ const TemplatesGallery = () => {
     return assets.filter((a) => {
       if (category !== "all" && a.category !== category) return false;
       if (type !== "all" && a.asset_type !== type) return false;
+      if (style !== "all" && inferStyle(a) !== style) return false;
       if (q && !a.title.toLowerCase().includes(q) && !(a.code || "").toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [assets, search, category, type]);
+  }, [assets, search, category, type, style]);
+
+  // "Suggested" = a curated mix not affected by current filters (always shown).
+  const suggested = useMemo(
+    () => [...assets].sort(() => Math.random() - 0.5).slice(0, 4),
+    [assets],
+  );
 
   // Derive sections from the filtered set (no schema changes needed)
   const featured = useMemo(() => filtered.slice(0, 8), [filtered]);
@@ -166,24 +192,38 @@ const TemplatesGallery = () => {
                   ))}
                 </SelectContent>
               </Select>
+
+              <Select value={style} onValueChange={(v) => setStyle(v as StyleFilter)}>
+                <SelectTrigger className="h-11 min-w-[140px] bg-card/60 border-border/60">
+                  <SelectValue placeholder="النمط" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">كل الأنماط</SelectItem>
+                  <SelectItem value="modern">✨ عصري</SelectItem>
+                  <SelectItem value="classic">📜 كلاسيكي</SelectItem>
+                  <SelectItem value="luxury">👑 فاخر</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </section>
 
         {/* Sections */}
         {loading ? (
-          <div className="flex justify-center py-24">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <div className="container mx-auto px-4 py-10 space-y-10">
+            <SkeletonRow />
+            <SkeletonRow />
           </div>
         ) : filtered.length === 0 ? (
           <Card className="container mx-auto my-16 py-16 text-center text-muted-foreground bg-card/40">
-            لا توجد عناصر مطابقة.
+            لا توجد تصاميم حالياً
           </Card>
         ) : (
           <div className="container mx-auto px-4 py-10 space-y-14">
             <SectionRow title="القوالب المميزة" icon={Sparkles} items={featured} />
             <SectionRow title="جديدنا" icon={Clock} items={newItems} />
             <SectionRow title="الأكثر طلبًا" icon={Flame} items={popular} />
+            <SectionRow title="تصاميم مقترحة" icon={Sparkles} items={suggested} />
           </div>
         )}
       </main>
@@ -284,5 +324,23 @@ const PremiumCard = ({ asset }: { asset: Asset }) => {
     </div>
   );
 };
+
+/** Loading placeholder mirroring SectionRow's grid for a smooth perceived load. */
+const SkeletonRow = () => (
+  <section className="space-y-5">
+    <Skeleton className="h-7 w-48" />
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="rounded-xl overflow-hidden border border-border/60 bg-card">
+          <Skeleton className="aspect-[4/5] w-full rounded-none" />
+          <div className="p-4 space-y-2">
+            <Skeleton className="h-4 w-3/4 mx-auto" />
+            <Skeleton className="h-3 w-1/3 mx-auto" />
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+);
 
 export default TemplatesGallery;
