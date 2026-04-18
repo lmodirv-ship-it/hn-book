@@ -538,6 +538,84 @@ const AdminDashboard = () => {
           ))}
         </div>
       </motion.div>
+
+      {/* Visitor Trend (Last 7 Days) + Recent Users */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.55 }}
+          className="lg:col-span-2 glass-card rounded-2xl p-6 shadow-sm"
+        >
+          <div className="flex items-center justify-between mb-5">
+            <Badge variant="outline" className="text-green-400 border-green-400/30 bg-green-400/10">
+              آخر 7 أيام
+            </Badge>
+            <h3 className="font-bold text-foreground flex items-center gap-2">
+              <Eye className="w-4 h-4 text-primary" />
+              تطور الزيارات اليومية
+            </h3>
+          </div>
+          <BarChartPro data={visitorTrend} color="hsl(var(--accent))" />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="glass-card rounded-2xl overflow-hidden shadow-sm"
+        >
+          <div className="p-4 border-b border-border flex items-center justify-between">
+            <Badge variant="outline" className="text-purple-400 border-purple-400/30 bg-purple-400/10">
+              {recentUsers.length} مستخدم
+            </Badge>
+            <h3 className="font-bold text-foreground text-right flex items-center gap-2">
+              <Users className="w-4 h-4 text-primary" />
+              أحدث المستخدمين
+            </h3>
+          </div>
+          <div className="divide-y divide-border/50 max-h-80 overflow-auto">
+            {recentUsers.length === 0 && (
+              <div className="p-12 text-center">
+                <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mx-auto mb-3">
+                  <Users className="w-7 h-7 text-muted-foreground" />
+                </div>
+                <p className="text-muted-foreground text-sm">لا يوجد مستخدمون بعد</p>
+              </div>
+            )}
+            {recentUsers.map((u, i) => {
+              const initial = (u.display_name?.trim()?.[0] || "?").toUpperCase();
+              return (
+                <motion.div
+                  key={u.id}
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                  className="p-3.5 flex items-center justify-between hover:bg-secondary/30 transition-colors group"
+                >
+                  <span className="text-[11px] text-muted-foreground">
+                    {new Date(u.created_at).toLocaleDateString("ar-MA", { day: "numeric", month: "short" })}
+                  </span>
+                  <div className="flex items-center gap-3 text-right">
+                    <div className="min-w-0">
+                      <p className="text-sm text-foreground font-medium truncate group-hover:text-primary transition-colors max-w-[160px]">
+                        {u.display_name || "بدون اسم"}
+                      </p>
+                    </div>
+                    {u.avatar_url ? (
+                      <img src={u.avatar_url} alt={u.display_name || ""} className="w-8 h-8 rounded-full object-cover bg-secondary" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                        {initial}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 };
