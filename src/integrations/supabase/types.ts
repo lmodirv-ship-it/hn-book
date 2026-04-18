@@ -1167,6 +1167,118 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_proofs: {
+        Row: {
+          admin_note: string | null
+          created_at: string
+          id: string
+          image_url: string
+          payment_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          admin_note?: string | null
+          created_at?: string
+          id?: string
+          image_url: string
+          payment_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          admin_note?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string
+          payment_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_proofs_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          credits_to_add: number
+          currency: string
+          id: string
+          metadata: Json
+          method: string
+          paid_at: string | null
+          print_order_id: string | null
+          purpose: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          transaction_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          credits_to_add?: number
+          currency?: string
+          id?: string
+          metadata?: Json
+          method?: string
+          paid_at?: string | null
+          print_order_id?: string | null
+          purpose?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          credits_to_add?: number
+          currency?: string
+          id?: string
+          metadata?: Json
+          method?: string
+          paid_at?: string | null
+          print_order_id?: string | null
+          purpose?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_print_order_id_fkey"
+            columns: ["print_order_id"]
+            isOneToOne: false
+            referencedRelation: "print_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       permissions: {
         Row: {
           category: string
@@ -2238,6 +2350,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_manual_payment: {
+        Args: { _admin_note?: string; _payment_id: string }
+        Returns: Json
+      }
       asset_category_for_type: { Args: { _type: string }; Returns: string }
       classify_asset_folder: { Args: { _name: string }; Returns: string }
       consume_export_credit: {
@@ -2261,6 +2377,10 @@ export type Database = {
       }
       pay_print_order_with_wallet: {
         Args: { _order_id: string; _quantity: number }
+        Returns: Json
+      }
+      reject_manual_payment: {
+        Args: { _admin_note?: string; _payment_id: string }
         Returns: Json
       }
     }
