@@ -104,7 +104,7 @@ export default function DatabaseMigrationManager() {
     const r = await call("cloud-snapshot", { tables: Array.from(selected), limit });
     setSyncing(false);
     if (r.ok) { toast.success("تمت المزامنة"); refreshLogs(); }
-    else if (r.vps_disabled) toast.info("ميزة المزامنة إلى VPS غير مفعّلة");
+    else if ((r as any).vps_disabled) toast.info("ميزة المزامنة إلى VPS غير مفعّلة");
     else toast.error(r.error || "فشلت المزامنة");
   };
 
