@@ -413,14 +413,18 @@ export async function exportCardAsPng(
   await waitForFonts();
   const { target, cleanup } = ensureHtmlWrapper(node);
   try {
-    const dataUrl = await toPng(target, {
-      pixelRatio: 6,
-      cacheBust: true,
+    const scale = (TARGET_DPI * 2) / SCREEN_DPI; // 600 DPI for single-card export
+    const canvas = await html2canvas(target, {
+      scale,
+      useCORS: true,
       backgroundColor: "#ffffff",
-      skipFonts: true,
-    } as any);
-    const res = await fetch(dataUrl);
-    const blob = await res.blob();
+      logging: false,
+      windowWidth: target.scrollWidth,
+      windowHeight: target.scrollHeight,
+    });
+    const blob: Blob = await new Promise((resolve, reject) =>
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob failed"))), "image/png", 1.0),
+    );
     const url = URL.createObjectURL(blob);
     return { blob, url, fileName };
   } finally {
