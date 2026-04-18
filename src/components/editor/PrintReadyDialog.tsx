@@ -573,6 +573,43 @@ const PrintReadyDialog = ({ open, onOpenChange, frontNode, backNode, cardName, t
               </div>
             </div>
 
+            {/* Payment method */}
+            <div className="rounded-lg border border-border p-3 space-y-2">
+              <Label className="text-sm">طريقة الدفع</Label>
+              <RadioGroup
+                value={paymentMethod}
+                onValueChange={(v) => setPaymentMethod(v as "cash" | "card" | "wallet")}
+                className="grid grid-cols-1 sm:grid-cols-3 gap-2"
+              >
+                {[
+                  { value: "cash", label: "عند الاستلام", icon: Banknote, hint: "ادفع نقداً للموزّع" },
+                  { value: "card", label: "بطاقة بنكية", icon: CreditCard, hint: "محاكاة (تجريبي)" },
+                  {
+                    value: "wallet", label: "محفظة (رصيد)", icon: Wallet,
+                    hint: walletBalance === null
+                      ? "سجّل الدخول"
+                      : `رصيدك ${walletBalance} • التكلفة ${walletCost}`,
+                    disabled: walletBalance === null || walletBalance < walletCost,
+                  },
+                ].map(({ value, label, icon: Icon, hint, disabled }) => (
+                  <label
+                    key={value}
+                    htmlFor={`pm-${value}`}
+                    className={`flex flex-col gap-1 rounded-md border p-2.5 cursor-pointer text-xs transition ${
+                      paymentMethod === value ? "border-primary bg-primary/5" : "border-border"
+                    } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem id={`pm-${value}`} value={value} disabled={disabled} />
+                      <Icon className="w-3.5 h-3.5" />
+                      <span className="font-medium">{label}</span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground pr-5">{hint}</span>
+                  </label>
+                ))}
+              </RadioGroup>
+            </div>
+
             {/* Price summary */}
             <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-3 space-y-1.5 text-sm">
               {dynamicPrice?.promo && (
