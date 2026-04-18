@@ -441,16 +441,22 @@ const TemplateEditor = () => {
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-4 text-center" dir="rtl">
         <div className="w-14 h-14 rounded-full bg-destructive/10 text-destructive flex items-center justify-center text-2xl">!</div>
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-foreground">القالب غير متاح</h2>
+          <h2 className="text-lg font-semibold text-foreground">القالب غير قابل للتعديل بعد</h2>
           <p className="text-sm text-muted-foreground max-w-sm">
-            هذا التصميم لا يحتوي على ملف SVG قابل للتعديل بعد. اختر قالباً آخر من المعرض.
+            هذا التصميم متوفر كصورة فقط ولم يُربط بعد بملف SVG قابل للتعديل.
+            اختر قالباً مميزاً بشارة <span className="text-primary font-semibold">«قابل للتعديل»</span> من المعرض.
           </p>
         </div>
-        <Button asChild className="gap-1.5">
-          <Link to={backHref}>
-            <ArrowRight className="w-4 h-4" /> العودة إلى القوالب
-          </Link>
-        </Button>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <Button asChild className="gap-1.5">
+            <Link to={backHref}>
+              <ArrowRight className="w-4 h-4" /> تصفّح القوالب
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="gap-1.5">
+            <Link to="/studio">العودة إلى الاستوديو</Link>
+          </Button>
+        </div>
       </div>
     );
   }
