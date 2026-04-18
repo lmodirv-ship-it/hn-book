@@ -43,6 +43,7 @@ export interface SvgTemplate {
   category: string;
   template_type: SvgTemplateType;
   code: string | null;
+  slug: string | null;
   front_svg_url: string;
   front_svg_content: string | null;
   back_svg_url: string | null;
@@ -163,11 +164,31 @@ export const svgTemplateService = {
     return (data as unknown as SvgTemplate) ?? null;
   },
 
-  /** Resolve by either template id or asset id — used by the editor route. */
-  async resolve(id: string): Promise<SvgTemplate | null> {
-    const direct = await this.get(id);
+  /** Look up by slug (preferred URL identifier). */
+  async getBySlug(slug: string): Promise<SvgTemplate | null> {
+    const { data, error } = await supabase
+      .from("svg_templates" as never)
+      .select("*")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (error) throw error;
+    return (data as unknown as SvgTemplate) ?? null;
+  },
+
+  /**
+   * Resolve by slug, template id, or asset id — used by the editor route.
+   * Tries slug first (the new canonical form), then falls back to UUID lookups
+   * so old bookmarked /editor/{uuid} links keep working.
+   */
+  async resolve(idOrSlug: string): Promise<SvgTemplate | null> {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
+    if (!isUuid) {
+      const bySlug = await this.getBySlug(idOrSlug);
+      if (bySlug) return bySlug;
+    }
+    const direct = await this.get(idOrSlug);
     if (direct) return direct;
-    return await this.getByAssetId(id);
+    return await this.getByAssetId(idOrSlug);
   },
 
   async create(input: {
