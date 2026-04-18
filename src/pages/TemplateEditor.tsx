@@ -852,7 +852,15 @@ const TemplateEditor = () => {
                   className={`relative transition-transform duration-500 transform-style-3d ${
                     flipping ? "rotate-y-180" : ""
                   }`}
+                  style={{ width: CARD_VISUAL_WIDTH_PX, height: cardVisualHeightPx }}
                 >
+                  {/* Print-spec guides overlay (visual only — not in exports) */}
+                  <CardCanvasOverlay
+                    pxWidth={CARD_VISUAL_WIDTH_PX}
+                    pxHeight={cardVisualHeightPx}
+                    widthMm={cardSize.widthMm}
+                    guides={guides}
+                  />
                   <div className={side === "front" ? "block" : "hidden"}>
                     <StyledSvgRenderer
                       ref={frontRef}
@@ -864,7 +872,8 @@ const TemplateEditor = () => {
                       onSelect={setSelectedKey}
                       onDragEnd={onDragEnd}
                       onEdit={onInlineEdit}
-                      className="w-[600px] rounded-xl border border-border bg-white overflow-hidden shadow-2xl"
+                      className="rounded-xl border border-border bg-white overflow-hidden shadow-2xl"
+                      style={{ width: CARD_VISUAL_WIDTH_PX, height: cardVisualHeightPx }}
                     />
                   </div>
                   {hasBack && (
@@ -879,7 +888,8 @@ const TemplateEditor = () => {
                         onSelect={setSelectedKey}
                         onDragEnd={onDragEnd}
                         onEdit={onInlineEdit}
-                        className="w-[600px] rounded-xl border border-border bg-white overflow-hidden shadow-2xl"
+                        className="rounded-xl border border-border bg-white overflow-hidden shadow-2xl"
+                        style={{ width: CARD_VISUAL_WIDTH_PX, height: cardVisualHeightPx }}
                       />
                     </div>
                   )}
