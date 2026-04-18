@@ -85,10 +85,17 @@ const TemplatesGallery = () => {
     return assets.filter((a) => {
       if (category !== "all" && a.category !== category) return false;
       if (type !== "all" && a.asset_type !== type) return false;
+      if (style !== "all" && inferStyle(a) !== style) return false;
       if (q && !a.title.toLowerCase().includes(q) && !(a.code || "").toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [assets, search, category, type]);
+  }, [assets, search, category, type, style]);
+
+  // "Suggested" = a curated mix not affected by current filters (always shown).
+  const suggested = useMemo(
+    () => [...assets].sort(() => Math.random() - 0.5).slice(0, 4),
+    [assets],
+  );
 
   // Derive sections from the filtered set (no schema changes needed)
   const featured = useMemo(() => filtered.slice(0, 8), [filtered]);
