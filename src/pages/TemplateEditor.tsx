@@ -237,7 +237,7 @@ const TemplateEditor = () => {
     setExporting(true);
     try {
       // Server-validated deduction first — only generate if allowed
-      const r = await billing.consume("png", id ?? null);
+      const r = await billing.consume("png", template?.id ?? null);
       if (!r.allowed) {
         setExporting(false);
         if (r.reason === "insufficient_credits") setPaywallOpen("png");
@@ -274,7 +274,7 @@ const TemplateEditor = () => {
     }
     setExporting(true);
     try {
-      const r = await billing.consume("pdf", id ?? null);
+      const r = await billing.consume("pdf", template?.id ?? null);
       if (!r.allowed) {
         setExporting(false);
         if (r.reason === "insufficient_credits") setPaywallOpen("pdf");
