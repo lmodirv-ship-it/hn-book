@@ -192,18 +192,31 @@ const TemplatesGallery = () => {
                   ))}
                 </SelectContent>
               </Select>
+
+              <Select value={style} onValueChange={(v) => setStyle(v as StyleFilter)}>
+                <SelectTrigger className="h-11 min-w-[140px] bg-card/60 border-border/60">
+                  <SelectValue placeholder="النمط" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">كل الأنماط</SelectItem>
+                  <SelectItem value="modern">✨ عصري</SelectItem>
+                  <SelectItem value="classic">📜 كلاسيكي</SelectItem>
+                  <SelectItem value="luxury">👑 فاخر</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </section>
 
         {/* Sections */}
         {loading ? (
-          <div className="flex justify-center py-24">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <div className="container mx-auto px-4 py-10 space-y-10">
+            <SkeletonRow />
+            <SkeletonRow />
           </div>
         ) : filtered.length === 0 ? (
           <Card className="container mx-auto my-16 py-16 text-center text-muted-foreground bg-card/40">
-            لا توجد عناصر مطابقة.
+            لا توجد تصاميم حالياً
           </Card>
         ) : (
           <div className="container mx-auto px-4 py-10 space-y-14">
