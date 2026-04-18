@@ -141,6 +141,13 @@ interface Product {
   is_active: boolean | null;
 }
 
+interface RecentUser {
+  id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  created_at: string;
+}
+
 /* ── Main Dashboard ── */
 const AdminDashboard = () => {
   const [totalProducts, setTotalProducts] = useState(0);
