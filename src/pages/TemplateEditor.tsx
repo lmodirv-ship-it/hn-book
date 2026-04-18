@@ -437,26 +437,16 @@ const TemplateEditor = () => {
     );
   }
   if (notFound || !template) {
+    // Never show an error page — silently send the user back to the gallery
+    // with the editable-only filter on so they can pick a valid template.
+    if (typeof window !== "undefined") {
+      const target = fromStudio ? "/studio/templates?editable=1" : "/templates?editable=1";
+      // Defer navigation so React can finish this render cleanly.
+      setTimeout(() => navigate(target, { replace: true }), 0);
+    }
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-4 text-center" dir="rtl">
-        <div className="w-14 h-14 rounded-full bg-destructive/10 text-destructive flex items-center justify-center text-2xl">!</div>
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-foreground">القالب غير قابل للتعديل بعد</h2>
-          <p className="text-sm text-muted-foreground max-w-sm">
-            هذا التصميم متوفر كصورة فقط ولم يُربط بعد بملف SVG قابل للتعديل.
-            اختر قالباً مميزاً بشارة <span className="text-primary font-semibold">«قابل للتعديل»</span> من المعرض.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <Button asChild className="gap-1.5">
-            <Link to={backHref}>
-              <ArrowRight className="w-4 h-4" /> تصفّح القوالب
-            </Link>
-          </Button>
-          <Button asChild variant="outline" className="gap-1.5">
-            <Link to="/studio">العودة إلى الاستوديو</Link>
-          </Button>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-background" dir="rtl">
+        <Loader2 className="w-7 h-7 animate-spin text-primary" />
       </div>
     );
   }
