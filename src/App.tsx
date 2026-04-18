@@ -83,6 +83,9 @@ import BillingPage from "./pages/BillingPage.tsx";
 import DeployMonitor from "./admin/pages/DeployMonitor.tsx";
 import PaymentsAdmin from "./admin/pages/PaymentsAdmin.tsx";
 import ManualPayment from "./pages/ManualPayment.tsx";
+import Terms from "./pages/legal/Terms.tsx";
+import Privacy from "./pages/legal/Privacy.tsx";
+import Refund from "./pages/legal/Refund.tsx";
 import { useAutoDeploy } from "@/hooks/useAutoDeploy";
 
 // Lazy-load the heavy editor and viewer so non-editable assets never pull
@@ -161,6 +164,11 @@ const App = () => (
             <Route path="/my-orders" element={<MyOrders />} />
             <Route path="/billing" element={<BillingPage />} />
             <Route path="/pay/manual" element={<ManualPayment />} />
+
+            {/* Legal pages (required for Paddle Go-Live) */}
+            <Route path="/legal/terms" element={<Terms />} />
+            <Route path="/legal/privacy" element={<Privacy />} />
+            <Route path="/legal/refund" element={<Refund />} />
             
             
             {/* Admin Login */}

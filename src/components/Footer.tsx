@@ -1,5 +1,6 @@
 import { useI18n } from "@/lib/i18n";
 import { ExternalLink, Heart } from "lucide-react";
+import { Link } from "react-router-dom";
 import hnLogo from "@/assets/hn-logo.jpeg";
 
 const hnSites = [
@@ -43,16 +44,19 @@ const Footer = () => {
             ))}
           </div>
 
-          <nav className="flex gap-6 text-xs text-muted-foreground/60">
-            {[
-              { key: "footer.terms", label: t("footer.terms") },
-              { key: "footer.privacy", label: t("footer.privacy") },
-              { key: "footer.support", label: t("footer.support") },
-            ].map((item) => (
-              <a key={item.key} href="#" className="transition-colors hover:text-foreground">
-                {item.label}
-              </a>
-            ))}
+          <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground/60">
+            <Link to="/legal/terms" className="transition-colors hover:text-foreground">
+              {t("footer.terms")}
+            </Link>
+            <Link to="/legal/privacy" className="transition-colors hover:text-foreground">
+              {t("footer.privacy")}
+            </Link>
+            <Link to="/legal/refund" className="transition-colors hover:text-foreground">
+              Refund Policy
+            </Link>
+            <a href="mailto:support@hn-groupe.com" className="transition-colors hover:text-foreground">
+              {t("footer.support")}
+            </a>
           </nav>
         </div>
 
