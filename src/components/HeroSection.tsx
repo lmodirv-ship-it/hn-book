@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Play, CheckCircle2, Zap } from "lucide-react";
+import { ArrowRight, Play, CheckCircle2, Zap, Package, Crown, Clock } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import FuturisticBackground from "@/components/FuturisticBackground";
