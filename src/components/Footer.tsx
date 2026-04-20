@@ -13,9 +13,10 @@ const Footer = () => {
   const { t } = useI18n();
 
   return (
-    <footer className="relative py-12 border-t border-border/15">
+    <footer className="relative py-12 mt-12">
       <div className="absolute inset-0 gradient-mesh opacity-30" />
       <div className="container mx-auto px-4 relative">
+        <div className="glass-future rounded-3xl p-8">
         <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
           <div className="flex items-center gap-2.5">
             <img src={hnLogo} alt="HN Studio" className="h-8 w-8 rounded-full object-cover ring-1 ring-primary/40" />
@@ -65,6 +66,7 @@ const Footer = () => {
             © {new Date().getFullYear()} HN Book — HN Groupe. {t("footer.rights")}
             <Heart className="h-3 w-3 text-accent/50" />
           </span>
+        </div>
         </div>
       </div>
     </footer>

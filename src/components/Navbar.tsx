@@ -128,7 +128,7 @@ const Navbar = ({ categories, activeCategory, onCategorySelect, productCounts }:
         </Link>
 
         <nav className="hidden items-center md:flex absolute left-1/2 -translate-x-1/2">
-          <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5 bg-card/95 border border-primary/20 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.55)]">
+          <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5 glass-future">
             <div className="flex items-center gap-1 rounded-xl px-1.5 py-1 bg-primary/10 border border-primary/30 shadow-[0_0_20px_-5px_hsl(199,89%,48%,0.15)]">
               {navLinks.map((link, idx) => (
                 <React.Fragment key={link.href}>
