@@ -217,7 +217,193 @@
   .orb-1 { animation-delay: 0s; }
   .orb-2 { animation-delay: -2.5s; }
   .orb-3 { animation-delay: -5s; }
+
+  /* ─── GLASS FUTURE — futuristic glass system ─── */
+  .glass-future {
+    position: relative;
+    background: linear-gradient(135deg,
+      hsl(43 65% 52% / 0.06) 0%,
+      hsl(222 35% 9% / 0.55) 40%,
+      hsl(222 35% 7% / 0.65) 100%);
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    border: 1px solid hsl(43 65% 52% / 0.18);
+    box-shadow:
+      0 1px 0 0 hsl(43 75% 75% / 0.12) inset,
+      0 -1px 0 0 hsl(0 0% 0% / 0.4) inset,
+      0 20px 60px -20px hsl(0 0% 0% / 0.7),
+      0 0 40px -10px hsl(43 65% 52% / 0.15);
+  }
+
+  .glass-future::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg,
+      hsl(43 75% 68% / 0.5),
+      hsl(43 65% 52% / 0.05) 30%,
+      transparent 60%,
+      hsl(43 75% 68% / 0.3));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0.8;
+  }
+
+  .glass-future-hover {
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+                border-color 0.5s ease;
+  }
+  .glass-future-hover:hover {
+    transform: translateY(-4px);
+    border-color: hsl(43 75% 68% / 0.5);
+    box-shadow:
+      0 1px 0 0 hsl(43 75% 75% / 0.18) inset,
+      0 -1px 0 0 hsl(0 0% 0% / 0.4) inset,
+      0 30px 80px -20px hsl(0 0% 0% / 0.8),
+      0 0 60px -10px hsl(43 75% 68% / 0.35),
+      0 0 100px -20px hsl(43 75% 68% / 0.18);
+  }
+
+  /* Holographic shimmer (slides across on hover) */
+  .holo-sheen {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .holo-sheen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(115deg,
+      transparent 30%,
+      hsl(43 75% 75% / 0.18) 48%,
+      hsl(170 80% 70% / 0.12) 52%,
+      transparent 70%);
+    transform: translateX(-100%);
+    transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .holo-sheen:hover::after { transform: translateX(100%); }
+
+  /* Aurora background — slow drifting color clouds */
+  .aurora-bg {
+    position: absolute;
+    inset: -20%;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 30%, hsl(43 75% 60% / 0.18), transparent 60%),
+      radial-gradient(ellipse 50% 40% at 80% 70%, hsl(170 80% 55% / 0.14), transparent 60%),
+      radial-gradient(ellipse 40% 60% at 50% 100%, hsl(280 70% 60% / 0.10), transparent 65%);
+    filter: blur(40px);
+    animation: aurora-drift 18s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+
+  /* Animated grid floor — futuristic perspective */
+  .grid-floor {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(hsl(43 65% 52% / 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(43 65% 52% / 0.08) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 0%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 0%, transparent 75%);
+    animation: grid-pulse 8s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  /* Holographic text — shifting gradient */
+  .text-holo {
+    background: linear-gradient(120deg,
+      hsl(43 75% 75%) 0%,
+      hsl(43 90% 60%) 25%,
+      hsl(170 80% 65%) 50%,
+      hsl(43 90% 60%) 75%,
+      hsl(43 75% 75%) 100%);
+    background-size: 300% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: holo-shift 6s linear infinite;
+  }
+
+  /* Neon ring button */
+  .neon-ring {
+    position: relative;
+    background: linear-gradient(135deg, hsl(43 65% 52%), hsl(43 90% 60%));
+    color: hsl(222 35% 7%);
+    box-shadow:
+      0 0 0 1px hsl(43 90% 70% / 0.4) inset,
+      0 0 20px -2px hsl(43 75% 60% / 0.5),
+      0 0 50px -10px hsl(43 75% 60% / 0.4),
+      0 8px 24px -8px hsl(0 0% 0% / 0.6);
+    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .neon-ring:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      0 0 0 1px hsl(43 90% 80% / 0.6) inset,
+      0 0 30px -2px hsl(43 75% 60% / 0.7),
+      0 0 80px -10px hsl(43 75% 60% / 0.55),
+      0 12px 32px -8px hsl(0 0% 0% / 0.7);
+  }
+
+  /* Floating particles container */
+  .particles-bg {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .particles-bg span {
+    position: absolute;
+    display: block;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: hsl(43 75% 70%);
+    box-shadow: 0 0 8px 2px hsl(43 75% 60% / 0.6);
+    opacity: 0;
+    animation: particle-rise linear infinite;
+  }
 }
+
+@keyframes aurora-drift {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  100% { transform: translate(4%, -3%) rotate(8deg); }
+}
+
+@keyframes grid-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+@keyframes holo-shift {
+  0% { background-position: 0% center; }
+  100% { background-position: 300% center; }
+}
+
+@keyframes particle-rise {
+  0% { transform: translateY(100vh) scale(0); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(-10vh) scale(1.2); opacity: 0; }
+}
+
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.float-y { animation: float-y 4s ease-in-out infinite; }
 
 /* ─── Animations ─── */
 @keyframes shimmer {
