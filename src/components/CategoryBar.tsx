@@ -102,19 +102,17 @@ const CategoryBar = ({ categories, activeCategory, onSelect, productCounts }: Ca
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: i * 0.04 }}
               className={`
-                relative group flex items-center gap-2 px-4 py-2.5 rounded-xl
-                border text-sm font-medium transition-all duration-300
+                relative group flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300
                 ${isActive
-                  ? `bg-gradient-to-b ${config.glow} shadow-lg text-foreground`
-                  : "border-border/30 bg-card/40 text-muted-foreground hover:bg-card/70 hover:text-foreground hover:border-border/60"
+                  ? "glass-future text-foreground shadow-[0_0_24px_-4px_hsl(195_95%_55%/0.55)] border-[hsl(195_95%_60%/0.6)]"
+                  : "glass-subtle text-muted-foreground hover:text-foreground hover:border-[hsl(195_95%_60%/0.35)]"
                 }
               `}
             >
-              {/* Glow effect behind active button */}
               {isActive && (
                 <motion.div
                   layoutId="categoryGlow"
-                  className={`absolute inset-0 rounded-xl bg-gradient-to-b ${config.glow} blur-md opacity-40 -z-10`}
+                  className="absolute inset-0 rounded-xl bg-[hsl(195_95%_55%/0.18)] blur-md opacity-70 -z-10"
                   transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
                 />
               )}
