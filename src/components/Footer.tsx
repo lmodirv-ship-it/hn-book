@@ -67,6 +67,7 @@ const Footer = () => {
             <Heart className="h-3 w-3 text-accent/50" />
           </span>
         </div>
+        </div>
       </div>
     </footer>
   );
