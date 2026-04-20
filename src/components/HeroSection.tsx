@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Play, CheckCircle2, Zap } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
+import FuturisticBackground from "@/components/FuturisticBackground";
 
 const HeroSection = () => {
   const { t } = useI18n();
@@ -22,21 +23,12 @@ const HeroSection = () => {
 
   return (
     <section className="relative min-h-[92vh] flex items-center overflow-hidden">
-      {/* Animated orbs */}
+      <FuturisticBackground particles={32} />
+      {/* Soft orbs over the futuristic backdrop */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="orb orb-1 absolute top-[10%] left-[15%] h-[400px] w-[400px] bg-primary/10" />
-        <div className="orb orb-2 absolute top-[50%] right-[10%] h-[350px] w-[350px] bg-accent/8" />
-        <div className="orb orb-3 absolute bottom-[5%] left-[40%] h-[300px] w-[300px] bg-[hsl(270,70%,50%)]/6" />
-        {/* Grid */}
-        <div
-          className="absolute inset-0 opacity-[0.02]"
-          style={{
-            backgroundImage: `linear-gradient(hsl(210 40% 98%) 1px, transparent 1px), linear-gradient(90deg, hsl(210 40% 98%) 1px, transparent 1px)`,
-            backgroundSize: "60px 60px",
-          }}
-        />
-        {/* Radial vignette */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
+        <div className="orb orb-1 absolute top-[10%] left-[15%] h-[400px] w-[400px] bg-primary/15" />
+        <div className="orb orb-2 absolute top-[50%] right-[10%] h-[350px] w-[350px] bg-accent/12" />
+        <div className="orb orb-3 absolute bottom-[5%] left-[40%] h-[300px] w-[300px] bg-[hsl(170,80%,55%)]/10" />
       </div>
 
       <div className="container mx-auto px-4 py-20">
@@ -66,7 +58,7 @@ const HeroSection = () => {
           >
             <span className="text-foreground">{t("hero.title1")}</span>
             <br />
-            <span className="text-gradient">{t("hero.title2")}</span>
+            <span className="text-holo">{t("hero.title2")}</span>
           </motion.h1>
 
           {/* Description */}
@@ -127,7 +119,7 @@ const HeroSection = () => {
 
           {/* Stats */}
           <motion.div
-            className="mt-16 grid grid-cols-3 gap-px overflow-hidden rounded-2xl glass-glow"
+            className="mt-16 grid grid-cols-3 gap-px overflow-hidden rounded-2xl glass-future holo-sheen"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
@@ -137,9 +129,9 @@ const HeroSection = () => {
               { value: "PLR/MRR", label: t("hero.statRights") },
               { value: "24/7", label: t("hero.statAccess") },
             ].map((stat, i) => (
-              <div key={stat.label} className={`bg-card/60 backdrop-blur-xl px-6 py-6 text-center ${i < 2 ? 'border-r border-border/30' : ''}`}>
-                <div className="text-2xl font-bold text-gradient-static md:text-3xl">{stat.value}</div>
-                <div className="mt-1 text-xs text-muted-foreground/70">{stat.label}</div>
+              <div key={stat.label} className={`relative px-6 py-7 text-center ${i < 2 ? 'border-r border-primary/15' : ''}`}>
+                <div className="text-2xl font-bold text-holo md:text-3xl">{stat.value}</div>
+                <div className="mt-1.5 text-[11px] uppercase tracking-[0.18em] text-muted-foreground/80">{stat.label}</div>
               </div>
             ))}
           </motion.div>
