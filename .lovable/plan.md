@@ -1,60 +1,50 @@
 
 
-## Problem
-The `BooksPage` fetches 1000 books in a single request from a database of 4069 books. This causes a long "جاري التحميل..." wait with no visual feedback.
+## الخطة: إكمال ترقية "Glass Future" على باقي الموقع
 
-## Plan
+لا، لم ننتهِ بعد. طبّقنا التصميم على Hero و ProductCard و Navbar و Footer و AdminLogin. باقي عناصر مهمة في الصفحة الرئيسية وباقي الصفحات.
 
-### 1. Reduce initial fetch to 24 books
-- Change `ITEMS_PER_PAGE` from 60 to 24
-- Fetch only 24 books initially via `bookService.getAll({ limit: 24 })`
-- On "Load More" click, fetch the next batch (offset-based) and append to existing list
+### ما سيتم تحديثه
 
-### 2. Replace spinner with Skeleton grid
-- While loading, show a grid of 12 skeleton cards matching the `ProductCard` layout (aspect-[4/5] image placeholder + text lines)
-- Uses the existing `Skeleton` component from `src/components/ui/skeleton.tsx`
-- Show skeletons both on initial load AND when loading more (append skeleton cards at bottom)
+**1. الصفحة الرئيسية (Landing)**
+- `HeroSection`: مراجعة الأزرار لاستخدام `.btn-driver-primary` و `.neon-ring`
+- `FeaturesSection`: تحويل بطاقات المزايا إلى `.glass-future` مع `.icon-chip` ملوّنة (أزرق/سماوي/ذهبي/أخضر) لكل ميزة + تأثير `.holo-sheen` عند الـ hover
+- `CategoryBar`: شرائط الفئات بستايل زجاجي مع توهج سماوي على النشط
+- `BookRecommendations`: نفس بطاقات المنتجات الجديدة
+- إضافة `FuturisticBackground` كخلفية للأقسام الرئيسية
 
-### 3. Add `loading="lazy"` to images
-- Already present on `ProductCard` line 49 — confirmed, no change needed
+**2. صفحات الكتالوج**
+- `BooksPage` و `CategoryPage` و `TablouPage`: شبكة بطاقات بنفس ستايل ProductCard الجديد، + فلاتر بـ `.glass-future`
+- `ProductDetail` و `TablouDetail`: بطاقة المنتج الرئيسية بـ `.glass-future` + زر الشراء `.btn-driver-primary` + شارات بـ `.icon-chip`
 
-### 4. Adjust data fetching strategy
-- Instead of loading all books into `allProducts` and filtering client-side, keep the current approach but with smaller batches
-- Since language/category filtering happens client-side using `CATEGORY_LANG_MAP`, we still need all data for accurate counts — **compromise**: fetch first 24 for instant display, then background-fetch the rest for counts
-- Alternative (simpler): keep client-side filtering but paginate the visible list, fetching in chunks of 24 as user scrolls/clicks "Load More"
+**3. صفحات الحساب والدفع**
+- `CartPage`: عناصر السلة كبطاقات زجاجية، زر Checkout `.btn-driver-primary`
+- `CheckoutPage` و `BillingPage` و `Profile` و `MyOrders`: حاويات `.glass-future`، حقول إدخال بحدود سماوية خفيفة
+- `CustomerAuth` / `ForgotPassword` / `ResetPassword`: نفس ستايل AdminLogin (بطاقة زجاجية + زر Google neon)
 
-**Chosen approach**: Two-phase loading:
-- Phase 1: Fetch 24 books immediately → display them → `setLoading(false)`
-- Phase 2: Background-fetch remaining books in batches of 200 for category counts and filtering (non-blocking, user already sees content)
+**4. القارئ (Reader)**
+- `ReaderHeader` و `ReaderToolbar` و `ReaderSidebar` و `ToolsPanel`: أشرطة زجاجية داكنة مع توهج سماوي
+- `ReaderSettings`: لوحة منزلقة بـ `.glass-future`
 
-### 5. Files to modify
+**5. مكوّنات UI المشتركة (دون حذف)**
+- `src/components/ui/button.tsx`: إضافة variants جديدة `driver` و `driver-primary` تستخدم الكلاسات الجاهزة، مع الإبقاء على كل الـ variants القديمة
+- `src/components/ui/card.tsx`: إضافة prop اختياري `variant="glass"` يطبّق `.glass-future` (افتراضياً يبقى السلوك القديم)
+- `src/components/ui/input.tsx` و `textarea.tsx` و `select.tsx`: ضبط الحدود والـ focus ring لتتبع لون السماوي (`--ring`)
+- `Dialog`, `Sheet`, `Popover`, `DropdownMenu`: خلفية `.glass-future` بدل الخلفية الصلبة
 
-| File | Change |
-|------|--------|
-| `src/pages/BooksPage.tsx` | Two-phase fetch, skeleton grid, reduce ITEMS_PER_PAGE to 24 |
-| `src/services/bookService.ts` | Already supports `limit`/`offset` — no change needed |
+**6. تفاصيل تقنية**
+- لا حذف لأي ملف أو ميزة — فقط استبدال classNames وإضافة wrappers
+- الحفاظ على دعم RTL والترجمة العربية
+- الأيقونات تستخدم `.icon-chip-{blue|cyan|gold|green|purple|orange|red}` للتنويع البصري
+- إضافة `holo-sheen` بشكل انتقائي (الأزرار والبطاقات الرئيسية فقط) لتجنّب الإفراط البصري
 
-### Technical details
+### ترتيب التنفيذ
+1. UI primitives (button, card, input, dialog) — لأن أثرها يمتد للموقع كله
+2. FeaturesSection + CategoryBar + Landing
+3. صفحات الكتالوج والتفاصيل
+4. السلة والدفع وصفحات الحساب
+5. القارئ
 
-**Skeleton card component** (inline in BooksPage):
-```text
-┌──────────────┐
-│  ████████████ │  ← aspect-[4/5] skeleton
-│  ████████████ │
-│  ████████████ │
-│              │
-│  ███████     │  ← category line
-│  █████████████│  ← title line
-│  ████████     │  ← description line
-│  ███   ██████ │  ← price + code
-└──────────────┘
-```
-
-**Two-phase fetch logic**:
-```
-Phase 1: bookService.getAll({ limit: 24 }) → show immediately
-Phase 2: bookService.getAll({ limit: 1000, offset: 24 }) → append silently
-```
-
-No design changes. No new features. Performance only.
+### النتيجة المتوقعة
+موقع موحّد بالكامل بهوية "Navy + Cyan Glass Future" على كل صفحة وكل زر وكل بطاقة، مع الإبقاء على 100% من الوظائف الحالية.
 
