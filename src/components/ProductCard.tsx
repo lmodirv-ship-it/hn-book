@@ -46,9 +46,9 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
       whileHover={{ y: -4 }}
     >
       <Link to={`/book/${product.slug || product.id}`}>
-        <div className="group relative rounded-2xl p-3 bg-card/80 border border-border/30 shadow-lg hover:shadow-xl hover:shadow-primary/10 hover:border-primary/30 transition-all duration-500">
+        <div className="group relative rounded-2xl p-3 glass-future glass-future-hover holo-sheen transition-all duration-500">
           {/* Inner box */}
-          <div className="relative overflow-hidden rounded-xl bg-background/50 border border-border/20 group-hover:border-primary/20 transition-colors duration-500">
+          <div className="relative overflow-hidden rounded-xl bg-background/40 border border-primary/10 group-hover:border-primary/30 transition-colors duration-500">
             {/* Image */}
             <div className="relative aspect-[4/5] overflow-hidden bg-muted/10 p-3">
               {product.image ? (
