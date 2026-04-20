@@ -43,12 +43,12 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: Math.min(index * 0.03, 0.2), ease: "easeOut" }}
       viewport={{ once: true, margin: "-30px" }}
-      whileHover={{ y: -4 }}
+      whileHover={{ y: -6 }}
     >
       <Link to={`/book/${product.slug || product.id}`}>
-        <div className="group relative rounded-2xl p-3 glass-future glass-future-hover holo-sheen transition-all duration-500">
+        <div className="group relative rounded-2xl p-2.5 glass-future glass-future-hover holo-sheen transition-all duration-500">
           {/* Inner box */}
-          <div className="relative overflow-hidden rounded-xl bg-background/40 border border-primary/10 group-hover:border-primary/30 transition-colors duration-500">
+          <div className="relative overflow-hidden rounded-xl bg-[hsl(215_55%_7%/0.6)] border border-[hsl(200_70%_45%/0.15)] group-hover:border-[hsl(195_95%_60%/0.5)] transition-colors duration-500">
             {/* Image */}
             <div className="relative aspect-[4/5] overflow-hidden bg-muted/10 p-3">
               {product.image ? (
@@ -95,7 +95,7 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
                     <motion.div
                       initial={{ scale: 0.6 }}
                       whileHover={{ scale: 1.1 }}
-                      className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 backdrop-blur-sm"
+                      className="neon-ring flex h-12 w-12 items-center justify-center rounded-full"
                     >
                       <Eye className="h-5 w-5" />
                     </motion.div>
@@ -200,7 +200,7 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
                     e.stopPropagation();
                     navigate(`/read/${product.slug || product.id}`);
                   }}
-                  className="mt-1 flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 shadow-sm hover:shadow-md hover:shadow-primary/20 active:scale-[0.98] transition-all duration-200"
+                  className="btn-driver btn-driver-primary mt-1 w-full !py-2 !rounded-xl !text-xs"
                 >
                   <BookOpen className="h-3.5 w-3.5" />
                   مطالعة
