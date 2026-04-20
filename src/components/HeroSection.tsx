@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Play, CheckCircle2, Zap } from "lucide-react";
+import { ArrowRight, Play, CheckCircle2, Zap, Package, Crown, Clock } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import FuturisticBackground from "@/components/FuturisticBackground";
@@ -125,15 +125,23 @@ const HeroSection = () => {
             transition={{ delay: 0.25 }}
           >
             {[
-              { value: `${productCount.toLocaleString()}+`, label: t("hero.statProducts") },
-              { value: "PLR/MRR", label: t("hero.statRights") },
-              { value: "24/7", label: t("hero.statAccess") },
-            ].map((stat, i) => (
-              <div key={stat.label} className={`relative px-6 py-7 text-center ${i < 2 ? 'border-r border-primary/15' : ''}`}>
-                <div className="text-2xl font-bold text-holo md:text-3xl">{stat.value}</div>
-                <div className="mt-1.5 text-[11px] uppercase tracking-[0.18em] text-muted-foreground/80">{stat.label}</div>
-              </div>
-            ))}
+              { value: `${productCount.toLocaleString()}+`, label: t("hero.statProducts"), icon: Package, color: "blue" },
+              { value: "PLR/MRR", label: t("hero.statRights"), icon: Crown, color: "gold" },
+              { value: "24/7", label: t("hero.statAccess"), icon: Clock, color: "cyan" },
+            ].map((stat, i) => {
+              const Icon = stat.icon;
+              return (
+                <div key={stat.label} className={`relative px-6 py-7 text-center ${i < 2 ? 'border-r border-primary/15' : ''}`}>
+                  <div className="flex justify-center mb-3">
+                    <span className={`icon-chip icon-chip-${stat.color}`}>
+                      <Icon className="h-5 w-5" />
+                    </span>
+                  </div>
+                  <div className="text-2xl font-bold text-holo md:text-3xl">{stat.value}</div>
+                  <div className="mt-1.5 text-[11px] uppercase tracking-[0.18em] text-muted-foreground/80">{stat.label}</div>
+                </div>
+              );
+            })}
           </motion.div>
         </div>
       </div>
