@@ -412,27 +412,17 @@
   .neon-ring:hover {
     transform: translateY(-1px);
     box-shadow:
-      0 0 0 1px hsl(43 90% 80% / 0.6) inset,
-      0 0 30px -2px hsl(43 75% 60% / 0.7),
-      0 0 80px -10px hsl(43 75% 60% / 0.55),
+      0 0 0 1px hsl(195 100% 90% / 0.6) inset,
+      0 0 30px -2px hsl(195 95% 60% / 0.7),
+      0 0 80px -10px hsl(195 95% 60% / 0.55),
       0 12px 32px -8px hsl(0 0% 0% / 0.7);
   }
 
-  /* Floating particles container */
-  .particles-bg {
-    position: absolute;
-    inset: 0;
-    overflow: hidden;
-    pointer-events: none;
-  }
+  .particles-bg { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
   .particles-bg span {
-    position: absolute;
-    display: block;
-    width: 3px;
-    height: 3px;
-    border-radius: 50%;
-    background: hsl(43 75% 70%);
-    box-shadow: 0 0 8px 2px hsl(43 75% 60% / 0.6);
+    position: absolute; display: block; width: 3px; height: 3px; border-radius: 50%;
+    background: hsl(195 95% 75%);
+    box-shadow: 0 0 8px 2px hsl(195 95% 60% / 0.7);
     opacity: 0;
     animation: particle-rise linear infinite;
   }
