@@ -55,6 +55,15 @@ const Footer = () => {
             <Link to="/legal/refund" className="transition-colors hover:text-foreground">
               Refund Policy
             </Link>
+            <Link to="/legal/about" className="transition-colors hover:text-foreground">
+              About
+            </Link>
+            <Link to="/legal/contact" className="transition-colors hover:text-foreground">
+              Contact
+            </Link>
+            <Link to="/legal/community" className="transition-colors hover:text-foreground">
+              Community
+            </Link>
             <a href="mailto:support@hn-groupe.com" className="transition-colors hover:text-foreground">
               {t("footer.support")}
             </a>

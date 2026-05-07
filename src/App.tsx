@@ -86,6 +86,9 @@ import ManualPayment from "./pages/ManualPayment.tsx";
 import Terms from "./pages/legal/Terms.tsx";
 import Privacy from "./pages/legal/Privacy.tsx";
 import Refund from "./pages/legal/Refund.tsx";
+import About from "./pages/legal/About.tsx";
+import Contact from "./pages/legal/Contact.tsx";
+import Community from "./pages/legal/Community.tsx";
 import { useAutoDeploy } from "@/hooks/useAutoDeploy";
 
 // Lazy-load the heavy editor and viewer so non-editable assets never pull
@@ -169,6 +172,9 @@ const App = () => (
             <Route path="/legal/terms" element={<Terms />} />
             <Route path="/legal/privacy" element={<Privacy />} />
             <Route path="/legal/refund" element={<Refund />} />
+            <Route path="/legal/about" element={<About />} />
+            <Route path="/legal/contact" element={<Contact />} />
+            <Route path="/legal/community" element={<Community />} />
             
             
             {/* Admin Login */}
