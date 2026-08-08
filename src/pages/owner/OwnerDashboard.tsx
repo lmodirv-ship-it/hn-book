@@ -77,7 +77,7 @@ const OwnerDashboard = () => {
     <div className="min-h-screen bg-background p-4 md:p-8 space-y-6" dir="rtl">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="icon-chip-gold"><Crown className="w-5 h-5" /></div>
+          <div className="icon-chip icon-chip-gold"><Crown className="w-5 h-5" /></div>
           <div>
             <h1 className="text-2xl font-extrabold text-foreground">غرفة العمليات المركزية</h1>
             <p className="text-xs text-muted-foreground">{email}</p>

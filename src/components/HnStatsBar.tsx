@@ -30,7 +30,7 @@ const HnStatsBar = () => {
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3" dir="rtl">
       {items.map((it) => (
         <div key={it.label} className="glass-future rounded-xl p-3 flex items-center gap-3">
-          <div className={`${it.chip} shrink-0`}>
+          <div className={`icon-chip ${it.chip} shrink-0`}>
             <it.icon className="w-4 h-4" />
           </div>
           <div className="min-w-0">

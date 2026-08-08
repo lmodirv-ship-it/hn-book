@@ -51,7 +51,7 @@ const UserDashboard = () => {
         <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {links.map((l) => (
             <Link key={l.to} to={l.to} className="glass-future rounded-xl p-4 flex items-center gap-3 hover:opacity-90">
-              <div className="icon-chip-blue"><l.icon className="w-4 h-4" /></div>
+              <div className="icon-chip icon-chip-blue"><l.icon className="w-4 h-4" /></div>
               <span className="text-sm font-semibold text-foreground">{l.label}</span>
             </Link>
           ))}
