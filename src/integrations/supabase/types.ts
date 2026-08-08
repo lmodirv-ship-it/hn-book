@@ -777,6 +777,146 @@ export type Database = {
         }
         Relationships: []
       }
+      hn_apps: {
+        Row: {
+          app_id: string
+          code: string
+          created_at: string
+          description: string | null
+          is_active: boolean
+          name: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          app_id?: string
+          code: string
+          created_at?: string
+          description?: string | null
+          is_active?: boolean
+          name: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          app_id?: string
+          code?: string
+          created_at?: string
+          description?: string | null
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
+      hn_roles: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          label: string
+          level: number
+          role_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          label: string
+          level?: number
+          role_id?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          label?: string
+          level?: number
+          role_id?: string
+        }
+        Relationships: []
+      }
+      hn_user_roles_apps: {
+        Row: {
+          app_code: string
+          created_at: string
+          granted_by: string | null
+          id: string
+          is_active: boolean
+          role_code: string
+          user_id: string
+        }
+        Insert: {
+          app_code: string
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          is_active?: boolean
+          role_code: string
+          user_id: string
+        }
+        Update: {
+          app_code?: string
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          is_active?: boolean
+          role_code?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hn_user_roles_apps_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "hn_users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      hn_users: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          email: string
+          is_active: boolean
+          last_login_at: string | null
+          locale: string
+          origin_app: string | null
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email: string
+          is_active?: boolean
+          last_login_at?: string | null
+          locale?: string
+          origin_app?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string
+          is_active?: boolean
+          last_login_at?: string | null
+          locale?: string
+          origin_app?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       integration_logs: {
         Row: {
           action: string
@@ -2448,6 +2588,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      hn_bootstrap_me: { Args: { _app_code?: string }; Returns: Json }
+      hn_public_stats: { Args: never; Returns: Json }
       pay_print_order_with_wallet: {
         Args: { _order_id: string; _quantity: number }
         Returns: Json

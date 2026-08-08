@@ -21,6 +21,9 @@ import CheckoutPage from "./pages/CheckoutPage.tsx";
 import OrderConfirmation from "./pages/OrderConfirmation.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import CustomerAuth from "./pages/CustomerAuth.tsx";
+import HnBridge from "./pages/HnBridge.tsx";
+import OwnerDashboard from "./pages/owner/OwnerDashboard.tsx";
+import UserDashboard from "./pages/user/UserDashboard.tsx";
 import ForgotPassword from "./pages/ForgotPassword.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
 import Profile from "./pages/Profile.tsx";
@@ -161,6 +164,9 @@ const App = () => (
               element={<Suspense fallback={<PageFallback />}><AssetViewer /></Suspense>}
             />
             <Route path="/auth" element={<CustomerAuth />} />
+            <Route path="/bridge" element={<Suspense fallback={<PageFallback />}><HnBridge /></Suspense>} />
+            <Route path="/owner/dashboard" element={<Suspense fallback={<PageFallback />}><OwnerDashboard /></Suspense>} />
+            <Route path="/user/dashboard" element={<Suspense fallback={<PageFallback />}><UserDashboard /></Suspense>} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/profile" element={<Profile />} />

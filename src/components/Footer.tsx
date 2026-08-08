@@ -2,6 +2,7 @@ import { useI18n } from "@/lib/i18n";
 import { ExternalLink, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import hnLogo from "@/assets/hn-logo.jpeg";
+import HnStatsBar from "@/components/HnStatsBar";
 
 const hnSites = [
   { name: "HN Book", href: "#", current: true },
@@ -70,12 +71,22 @@ const Footer = () => {
           </nav>
         </div>
 
-        <div className="mt-8 pt-6 text-center text-xs text-muted-foreground/40 border-t border-border/10">
-          <span className="flex items-center justify-center gap-1.5">
-            © {new Date().getFullYear()} HN Book — HN Groupe. {t("footer.rights")}
-            <Heart className="h-3 w-3 text-accent/50" />
-          </span>
+        <div className="mt-8 pt-6 border-t border-border/10 space-y-4">
+          <HnStatsBar />
+          <div className="text-center text-xs text-muted-foreground/50 leading-relaxed" dir="rtl">
+            <p className="flex items-center justify-center gap-1.5">
+              جميع الحقوق محفوظة للحسني مولاي اسماعيل
+              <Heart className="h-3 w-3 text-accent/50" />
+            </p>
+            <p className="mt-1 text-muted-foreground/40">
+              groupe-hn-2026 —{" "}
+              <a href="mailto:lmodirv@gmail.com" className="hover:text-foreground transition-colors">
+                lmodirv@gmail.com
+              </a>
+            </p>
+          </div>
         </div>
+
         </div>
       </div>
     </footer>
